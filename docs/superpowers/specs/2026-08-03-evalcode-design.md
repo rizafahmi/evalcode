@@ -8,10 +8,11 @@
 
 When a new model is released, there is no repeatable way to answer "how good is this at *my* kind of work?" Public benchmarks measure Python and JavaScript on problems every model has memorised.
 
-`ariya/hono-saas-starter` solves this with a skeleton Hono app, one task ("add basic auth"), and a README table of duration and cost per model. This project takes that shape and changes two things:
+`ariya/hono-saas-starter` solves this with a skeleton Hono app, one task ("add basic auth"), and a README table of duration and cost per model. This project takes that shape and changes three things:
 
-1. **Elixir 1.20's gradual type system.** It shipped 2026-06-03. No public benchmark tests it and most models have never seen it. This is the part that produces signal a published leaderboard cannot.
-2. **Held-out tests.** A duration-and-cost table cannot distinguish "done" from "looks done." One extra test file per task, copied in only at grading, closes that gap cheaply.
+1. **Phoenix LiveView.** Stateful server-rendered UI is a different discipline from request/response, and it is what the operator actually builds.
+2. **Elixir 1.20's gradual type system.** It shipped 2026-06-03. No public benchmark tests it and most models have never seen it.
+3. **Held-out tests.** A duration-and-cost table cannot distinguish "done" from "looks done." One extra test file per task, copied in only at grading, closes that gap cheaply.
 
 ## Approach
 
@@ -23,7 +24,7 @@ The script never calls a model API. It copies directories, runs `mix test`, and 
 
 **In scope:**
 
-- One skeleton Phoenix 1.8 app (`Warung`)
+- One skeleton Phoenix 1.8 LiveView app (`Warung`)
 - Two tasks
 - A shell script with two subcommands: `start`, `grade`
 - `RESULTS.md` — a markdown table, appended to
@@ -46,13 +47,16 @@ The script never calls a model API. It copies directories, runs `mix test`, and 
 |---|---|
 | Elixir | 1.20.2 (pinned via flake) |
 | Erlang/OTP | 27 |
-| Phoenix | 1.8 |
+| Phoenix | 1.8, LiveView 1.1 |
 | Database | SQLite via `ecto_sqlite3` |
+| Node | 22, for esbuild and tailwind |
 | Harness | `bash` |
 
-`flake.nix` follows the shape already used in `~/code/learn_loop`: `beam.packages.erlang_27`, `elixir_1_20`, a `shellHook` asserting the versions, `MIX_HOME`/`HEX_HOME` under the project root. `.envrc` is `use flake`.
+`flake.nix` follows the shape already used in `~/code/learn_loop`: `beam.packages.erlang_27`, `elixir_1_20`, `nodejs_22`, a `shellHook` asserting the versions, `MIX_HOME`/`HEX_HOME` under the project root. `.envrc` is `use flake`.
 
 Because `runs/` sits inside the project, direnv walks up and loads the root `.envrc` automatically — a workspace shell has the correct Elixir with no per-run setup, and the hex cache is shared across runs.
+
+`mix test` does not need built assets, so grading never depends on esbuild or tailwind. Node is present only so the agent can run the dev server and look at the page.
 
 Elixir 1.20 has **no user-facing type annotation syntax**; explicit type signatures do not exist in this version. The type task is about making code survive the inference engine, never about writing signatures.
 
@@ -63,9 +67,9 @@ evalcode/
 ├── flake.nix
 ├── .envrc
 ├── bin/evalcode              # bash, two subcommands
-├── skeleton/                 # Phoenix 1.8 API, compiles clean, tests pass
+├── skeleton/                 # Phoenix 1.8 LiveView app, compiles clean, tests pass
 ├── tasks/
-│   ├── 01-idempotent-orders/
+│   ├── 01-live-orders/
 │   │   ├── task.md           # the prompt
 │   │   └── holdout/          # tests copied in at grade only
 │   └── 02-type-clean/
@@ -83,47 +87,53 @@ A task is a directory holding a prompt, an optional overlay, and held-out tests.
 
 ## The skeleton: `Warung`
 
-A Phoenix 1.8 JSON API — `mix phx.new warung --no-html --no-assets --no-mailer --database sqlite3`. Small on purpose:
+`mix phx.new warung --database sqlite3 --no-mailer` — HTML, assets, and LiveView included. Small on purpose:
 
 - `Warung.Catalog` — `Product` (sku, name, price as `Decimal`, stock)
-- `Warung.Orders` — `Order`, `OrderItem`, `create_order/1`
-- `WarungWeb.OrderController` — `POST /api/orders`, working
+- `Warung.Orders` — `Order`, `OrderItem`, `create_order/1`, `list_orders/0`
+- `WarungWeb.OrderLive.Index` — a LiveView listing orders, with a form that places one
 - A passing test suite; compiles clean under `mix compile --warnings-as-errors`
 
-Orders already work. Both tasks build on that rather than reconstructing it.
+Orders already work and the page already renders. Both tasks build on that rather than reconstructing it.
 
-## Task 01 — `01-idempotent-orders`
+Held-out tests use `Phoenix.LiveViewTest` — `live/2`, `render_submit/2`, `has_element?/2` — not a wrapper library. The benchmark should not measure whether a model knows `phoenix_test`.
 
-**Add idempotency to order submission.** `POST /api/orders` accepts an `Idempotency-Key` header. A repeated request with the same key returns the original order instead of creating a duplicate.
+## Task 01 — `01-live-orders`
 
-Not solvable by a generator, and not a memorised recipe. It needs a migration, a unique constraint, constraint-violation handling, and decisions about what "same request" means.
+**Make the orders dashboard live.** An order placed in one browser session appears immediately in every other connected session, without a refresh.
 
-`task.md` specifies the happy path: same key twice returns the same order, different keys create different orders. It does not specify the edge cases.
+LiveView-distinctive and not solvable by a generator. It needs PubSub subscription in `mount/3`, a broadcast on order creation, `handle_info/2`, and a stream update.
+
+`task.md` specifies the happy path: two sessions open, one places an order, the other sees it. It does not specify the edge cases.
 
 Held-out tests cover what `task.md` leaves out:
 
 | | expected |
 |---|---|
-| Same key, different request body | `422`, no new order |
-| Two concurrent requests, same key | Exactly one order created |
-| Missing `Idempotency-Key` | Still works, creates an order |
-| Key reuse after the original failed | Not treated as a duplicate |
+| Order created by calling `Orders.create_order/1` directly, no LiveView involved | Still appears in connected sessions |
+| The session that placed the order | Exactly one row, not two |
+| Disconnected mount (a plain `get`) | Renders existing orders, does not crash |
+| Two orders in sequence | Both appear, correct count |
 | Existing order tests | Still pass |
 
-The naive implementation — look up by key, return if found — passes the visible path and fails the body-comparison and concurrency cases.
+The first row is the architectural discriminator. Broadcasting from `handle_event` passes every visible test and fails it — the broadcast belongs in the `Orders` context so it fires regardless of who created the order. The second row catches the other naive shape: broadcasting to all subscribers *and* updating locally, which double-inserts for the acting client.
 
 **Why this task and not "add auth":** `mix phx.gen.auth` exists, so authentication in Phoenix measures whether a model remembers a generator name.
 
+**Alternatives considered.** Live search with URL state via `push_patch` — heavily represented in tutorials. File uploads with `allow_upload` — less memorised, but its failure modes are "did you read the docs" rather than "did you reason." A `start_async` price lookup — good, but thinner held-out surface.
+
 ## Task 02 — `02-type-clean`
 
-**Make the code survive Elixir 1.20's type checker.** `overlay/` replaces one module with a version carrying four planted violations, one per inference capability:
+**Make the code survive Elixir 1.20's type checker.** `overlay/` replaces a LiveView and its helper module with versions carrying four planted violations, one per inference capability:
 
 | violation | 1.20 feature |
 |---|---|
 | A `case` that re-checks `nil` after the first clause eliminated it (dead code), *and separately* a real `nil` reaching `String.upcase/1` (a verified bug) | cross-clause narrowing |
-| A branch guarded by `not is_map_key(opts, :timeout)` that reads `opts.timeout` | `is_map_key` / `not_set()` |
+| A `handle_event` branch guarded by `not is_map_key(socket.assigns, :filter)` that then reads `socket.assigns.filter` | `is_map_key` / `not_set()` |
 | `elem(x, 2)` under a `tuple_size(x) < 3` guard | tuple size bounds |
 | Decoded JSON passed to `Map.fetch!/2` with disjoint types | `dynamic()` compatibility |
+
+Socket assigns are plain maps, so the `not_set()` violation sits naturally in LiveView code rather than being contrived.
 
 The first row is the discriminator. Both look like nil-safety problems and require opposite fixes: one check must be deleted, the other must be made real. Treating them alike fails either way.
 
@@ -133,7 +143,7 @@ The first row is the discriminator. Both look like nil-safety problems and requi
 2. Held-out behaviour tests pass
 3. No `@compile` or `@dialyzer` suppression attributes were added
 
-The third is checked by grepping the diff. The gate invites shortcuts, and each has a counter:
+The third is checked by diffing against the start state. The gate invites shortcuts, and each has a counter:
 
 | shortcut | caught by |
 |---|---|
@@ -171,13 +181,15 @@ Cost is entered by hand from the agent's own reporting — `/cost` in Claude Cod
 
 The skeleton's own suite is the regression check: it must pass and compile clean before any task is authored.
 
-Each task is validated by hand, once, at authoring time — confirm the start state fails the held-out tests, then solve it yourself and confirm they pass. This is what `verify` automated in the previous design. At two tasks, doing it by hand is correct; the automation earns its way back when a fixture change could silently break a task without anyone noticing.
+Each task is validated by hand, once, at authoring time — confirm the start state fails the held-out tests, then solve it yourself and confirm they pass. This is what `verify` automated in the previous design. At two tasks, doing it by hand is correct; the automation earns its way back when a skeleton change could silently break a task without anyone noticing.
 
 ## Known limitations
 
+**The clean-compile gate is unverified against LiveView.** Task 02 assumes a stock Phoenix 1.8 LiveView app compiles clean under Elixir 1.20 with `--warnings-as-errors`. HEEx templates compile to generated functions, and the 1.20 release notes acknowledge known inference false positives. If macro-generated code produces warnings the operator cannot fix, the global gate is unusable and must narrow to warnings originating in the task's own modules. **This is the first thing the implementation plan checks**, because it is the one assumption that can invalidate task 02.
+
 **Wall-clock timing includes operator idle time.** `duration` runs from `start` to `grade`. Use `--duration` to override with the agent's own reported figure when it gives one.
 
-**Two tasks is not a benchmark, it is a probe.** Task-level differences between models are noise. The purpose of v1 is to find out whether this measurement teaches you anything at all before investing in more tasks — and, specifically, whether the type task discriminates more sharply than the feature task. That answer determines where task three onward goes.
+**Two tasks is not a benchmark, it is a probe.** Task-level differences between models are noise. The purpose of v1 is to find out whether this measurement teaches you anything at all before investing in more tasks — and, specifically, whether the type task discriminates more sharply than the LiveView task. That answer determines where task three onward goes.
 
 **The skeleton is synthetic.** It is cleaner than real code, so it measures capability on well-structured Elixir. That is a floor, not a prediction of behaviour in a messy repository.
 
@@ -186,10 +198,11 @@ Each task is validated by hand, once, at authoring time — confirm the start st
 ## Implementation sequence
 
 1. `flake.nix`, `.envrc`, repository skeleton
-2. The `Warung` skeleton app, passing and compiling clean
-3. `bin/evalcode` — `start` and `grade`
-4. Task 01, validated by hand end to end
-5. Task 02, validated by hand end to end
-6. First real run against a model you already have access to
+2. Generate a stock Phoenix 1.8 LiveView app and **confirm it compiles clean under Elixir 1.20 with `--warnings-as-errors`**. If it does not, narrow the task 02 gate to per-module warnings before going further.
+3. The `Warung` skeleton — orders context, `OrderLive.Index`, passing suite
+4. `bin/evalcode` — `start` and `grade`
+5. Task 01, validated by hand end to end
+6. Task 02, validated by hand end to end
+7. First real run against a model you already have access to
 
-Step 6 is the point of the whole thing. Everything after it is informed by data instead of by guessing.
+Step 7 is the point of the whole thing. Everything after it is informed by data instead of by guessing.
