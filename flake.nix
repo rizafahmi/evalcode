@@ -29,8 +29,19 @@
       devShells = forAllSystems (
         pkgs:
         let
+          inherit (pkgs) lib;
           beam = pkgs.beam.packages.erlang_27;
           elixir = beam.elixir_1_20;
+
+          # Evaluated before any shell exists, so a wrong nixpkgs pin fails
+          # `nix develop` itself rather than printing a warning nobody reads.
+          pinnedVersionsOk =
+            lib.assertMsg
+              (lib.versionAtLeast elixir.version "1.20" && lib.versionOlder elixir.version "1.21")
+              "evalcode: pinned nixpkgs must provide Elixir 1.20.x, got ${elixir.version}"
+            && lib.assertMsg
+              (lib.versionAtLeast beam.erlang.version "27" && lib.versionOlder beam.erlang.version "28")
+              "evalcode: pinned nixpkgs must provide Erlang/OTP 27, got ${beam.erlang.version}";
 
           commonPackages = with pkgs; [
             beam.erlang
@@ -51,6 +62,7 @@
           linuxPackages = with pkgs; [ inotify-tools ];
           darwinPackages = with pkgs; [ libiconv ];
         in
+        assert pinnedVersionsOk;
         {
           default = pkgs.mkShell {
             packages =
@@ -75,13 +87,13 @@
                 *"Elixir 1.20."*) ;;
                 *)
                   echo "Expected Elixir 1.20.x from the pinned flake, got: $elixir_version" >&2
-                  return 1
+                  exit 1
                   ;;
               esac
 
               if [ "$otp_release" != "27" ]; then
                 echo "Expected Erlang/OTP 27 from the pinned flake, got: $otp_release" >&2
-                return 1
+                exit 1
               fi
 
               echo "evalcode shell: $elixir_version"
