@@ -1,0 +1,57 @@
+defmodule Warung.CatalogTest do
+  use Warung.DataCase, async: true
+
+  alias Warung.Catalog
+  alias Warung.Catalog.Product
+
+  describe "create_product/1" do
+    test "creates a product with valid attributes" do
+      assert {:ok, %Product{} = product} =
+               Catalog.create_product(%{
+                 sku: "TEA-01",
+                 name: "Teh Botol",
+                 price: Decimal.new("12.50"),
+                 stock: 10
+               })
+
+      assert product.sku == "TEA-01"
+      assert Decimal.equal?(product.price, Decimal.new("12.50"))
+    end
+
+    test "rejects a product without a sku" do
+      assert {:error, changeset} = Catalog.create_product(%{name: "No SKU", price: Decimal.new("1")})
+      assert %{sku: ["can't be blank"]} = errors_on(changeset)
+    end
+
+    test "rejects a duplicate sku" do
+      attrs = %{sku: "DUP-01", name: "First", price: Decimal.new("1.00")}
+      assert {:ok, _} = Catalog.create_product(attrs)
+      assert {:error, changeset} = Catalog.create_product(%{attrs | name: "Second"})
+      assert %{sku: ["has already been taken"]} = errors_on(changeset)
+    end
+  end
+
+  describe "list_products/0" do
+    test "returns products ordered by name" do
+      {:ok, _} = Catalog.create_product(%{sku: "B", name: "Beta", price: Decimal.new("2.00")})
+      {:ok, _} = Catalog.create_product(%{sku: "A", name: "Alpha", price: Decimal.new("1.00")})
+
+      assert ["Alpha", "Beta"] = Enum.map(Catalog.list_products(), & &1.name)
+    end
+
+    test "returns an empty list when there are no products" do
+      assert [] = Catalog.list_products()
+    end
+  end
+
+  describe "get_product!/1" do
+    test "returns the product" do
+      {:ok, product} = Catalog.create_product(%{sku: "G-01", name: "Gula", price: Decimal.new("3.00")})
+      assert Catalog.get_product!(product.id).id == product.id
+    end
+
+    test "raises when the product does not exist" do
+      assert_raise Ecto.NoResultsError, fn -> Catalog.get_product!(-1) end
+    end
+  end
+end
