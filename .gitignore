@@ -1,0 +1,10 @@
+runs/
+.nix-mix/
+.nix-hex/
+.nix-dialyzer/
+_build/
+deps/
+*.db
+*.db-shm
+*.db-wal
+.direnv/
