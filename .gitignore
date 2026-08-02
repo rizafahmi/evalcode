@@ -1,11 +1,12 @@
 runs/
 .nix-mix/
 .nix-hex/
-.nix-dialyzer/
+.direnv/
 _build/
 deps/
 *.db
 *.db-shm
 *.db-wal
-.direnv/
+skeleton/assets/node_modules/
+skeleton/priv/static/assets/
 .superpowers/
