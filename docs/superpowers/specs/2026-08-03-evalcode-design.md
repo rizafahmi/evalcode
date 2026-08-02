@@ -108,7 +108,7 @@ LiveView-distinctive and not solvable by a generator. It needs PubSub subscripti
 
 Held-out tests cover what `task.md` leaves out:
 
-| | expected |
+|  | expected |
 |---|---|
 | Order created by calling `Orders.create_order/1` directly, no LiveView involved | Still appears in connected sessions |
 | The session that placed the order | Exactly one row, not two |
