@@ -8,3 +8,4 @@ deps/
 *.db-shm
 *.db-wal
 .direnv/
+.superpowers/
