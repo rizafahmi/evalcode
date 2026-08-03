@@ -206,8 +206,12 @@ Compilation failed due to warnings while using the --warnings-as-errors option
 exit=1
 ```
 
-7 warnings, all of the form `no route path for Router matches "..."`,
-all pointing at `~p` sigil uses inside `lib/gatecheck_web/live/post_live/`
+8 warnings, all of the form
+`no route path for <App>Web.Router matches "..."` — note the router module
+is **app-namespaced** in the real output (`GatecheckWeb.Router` above), never
+bare `Router`. Anything matching against this text must allow for the
+namespace; a literal `for Router matches` pattern cannot match real output.
+All point at `~p` sigil uses inside `lib/gatecheck_web/live/post_live/`
 (`show.ex`, `index.ex`, `form.ex`). Every one of these is caused by the
 router not having the four `live "/posts...`" routes wired — none of them
 is a type-inference warning.
