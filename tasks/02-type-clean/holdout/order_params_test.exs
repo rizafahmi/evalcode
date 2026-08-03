@@ -44,6 +44,10 @@ defmodule WarungWeb.OrderParamsTest do
       assert OrderParams.third_field({:a, :b, :c}) == :c
     end
 
+    test "returns the third element when the tuple has more than three" do
+      assert OrderParams.third_field({:a, :b, :c, :d}) == :c
+    end
+
     test "handles a tuple with fewer than three elements" do
       assert OrderParams.third_field({:a, :b}) == nil
     end
@@ -56,6 +60,10 @@ defmodule WarungWeb.OrderParamsTest do
 
     test "returns an error tuple for a list payload rather than raising" do
       assert OrderParams.currency_from(~s([1,2,3])) == {:error, :not_an_object}
+    end
+
+    test "returns an error tuple for a bare JSON scalar rather than raising" do
+      assert OrderParams.currency_from("42") == {:error, :not_an_object}
     end
 
     test "returns an error tuple when the key is missing" do
