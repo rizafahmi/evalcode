@@ -27,9 +27,14 @@ is incompatible. If a union type has even one compatible member (e.g.
 stays silent, because at runtime the value *might* be the compatible one.
 The three violations that didn't fire as drafted all had this shape: a
 union type flowing into an incompatible call where part of the union was
-still valid. The fix in each case was to restructure the code — without
-changing which 1.20 feature it exercises — so the incompatible call sees
-only the disjoint part of the type, not the whole union.
+still valid. The fix in each case was to restructure the code so the
+incompatible call sees only the disjoint part of the type, not the whole
+union. The intent was to keep each rewrite a genuine instance of the
+feature it was labeled as — two of the three (`display_name/1`,
+`currency_from/1`) turned out, on external review, to have drifted to a
+different mechanism (guard narrowing) than their original label during
+that restructuring. See "Fix round 1" below for the correction; the
+warnings themselves and the reference solution are unaffected.
 
 ## Per-violation: what was planted, what fired, what changed
 
@@ -78,7 +83,7 @@ Reference fix: replace the single clause + redundant re-check with two
 function clauses, `status_label(nil)` and `status_label(status)`, so there's
 nothing left to compare.
 
-### 2. `display_name/1` — cross-clause narrowing — did NOT fire as drafted, rewritten
+### 2. `display_name/1` — guard narrowing — did NOT fire as drafted, rewritten
 
 Planted (as drafted in the brief): compute `name` from a `case` — `n` when
 the map's `:name` is a binary, `nil` otherwise — giving `name` the union
@@ -89,9 +94,13 @@ unconditionally.
 isolated `elixirc` repro of the identical snippet. Reason: `binary() or
 nil` is not *completely* disjoint from `String.upcase/1`'s expected
 `binary()` — the `binary()` half of the union is compatible, so under the
-"only guaranteed failures" rule the checker stays silent. The call might
-succeed, so it's not flagged, even though it provably fails for half the
-domain.
+"only guaranteed failures" rule the checker stays silent. This isn't a gap
+in what was tried — it is **provably unwarnable** under 1.20's stated
+disjointness rule: any `case` that produces a "sometimes valid, sometimes
+not" union feeding straight into an incompatible call has a compatible
+member by construction, so the rule can never fire on it, for any shape of
+that kind. A real fix was required, not a different way of writing the
+same bug.
 
 Rewrite: kept `name`'s computation exactly as drafted, and added a direct
 `is_binary/1` re-check whose two branches both call `String.upcase(name)` —
@@ -99,6 +108,27 @@ the same "redundant check, but the wrong branch does the wrong thing" shape
 already used by violation 3 (`is_map_key`) in this same module. In the
 `else` branch, `name`'s type is narrowed to `dynamic(nil)` alone (not a
 union), which **is** completely disjoint from `binary()`.
+
+**Correction (fix round 1 review):** the heading above originally read
+"cross-clause narrowing," inherited from the drafted violation this was
+rewritten from. That's wrong. This is **guard narrowing** — the same
+mechanism as violation 3, not a distinct one — and the `case` above is not
+what makes it warn. Proof: deleting it entirely,
+
+```elixir
+def f(customer) do
+  name = customer
+  if is_binary(name), do: String.upcase(name), else: String.upcase(name)
+end
+```
+
+still warns, on the same line, for the same reason (`is_binary/1` narrows
+`name` to "not a binary" in the `else` branch). The reported type differs
+slightly — `dynamic(not binary())` here, against `dynamic(nil)` for the
+shipped version, because the `case` does still narrow *what specifically*
+gets excluded — but the warning is the same class, at the same call site,
+fired by the same mechanism: the `if/else`'s own guard narrowing, not the
+`case` in front of it.
 
 ```elixir
 def display_name(customer) do
@@ -207,7 +237,7 @@ two identically-worded accesses correctly.
 
 Reference fix: `Map.get(opts, :timeout, @default_timeout)`.
 
-### 4. `third_field/1` — tuple size bounds — did NOT fire as drafted, rewritten
+### 4. `third_field/1` — tuple arity → `elem/2` bounds — did NOT fire as drafted, rewritten
 
 Planted (as drafted in the brief): `tuple_size(row) < 3` as the guard,
 `elem(row, 2)` in the body — index 2 is out of bounds for every tuple that
@@ -227,12 +257,12 @@ against. This is the clearest case in this task of release-note prose
 not matching observed 1.20.2 behavior for the shape shown.
 
 Rewrite: changed the guard from `tuple_size(row) < 3` to
-`tuple_size(row) == 2` — same feature (tuple size bounds), same
-out-of-bounds `elem(row, 2)`, but an exact-arity guard instead of a bound.
-(A pattern-matched `{_, _} = row` produces the same precise 2-tuple type and
-the same warning — tried as a cross-check — but the guard form was kept
-since it reads closest to the drafted violation and to "tuple size bounds"
-as a named feature.)
+`tuple_size(row) == 2` — same feature (tuple arity tracking feeding an
+`elem/2` bounds check), same out-of-bounds `elem(row, 2)`, but an
+exact-arity guard instead of a bound. (A pattern-matched `{_, _} = row`
+produces the same precise 2-tuple type and the same warning — tried as a
+cross-check — but the guard form was kept since it reads closest to the
+drafted violation.)
 
 ```elixir
 def third_field(row) when tuple_size(row) == 2 do
@@ -284,21 +314,45 @@ examples) — a strictly stronger discriminator, not a different one.
 Reference fix: two clauses — `tuple_size(row) >= 3` returning `elem(row,
 2)`, and a fallback `is_tuple(row)` returning `nil`.
 
-### 5. `currency_from/1` — `dynamic()` compatibility — did NOT fire as drafted, rewritten
+### 5. `currency_from/1` — guard narrowing — did NOT fire as drafted, rewritten
 
 Planted (as drafted in the brief): decode JSON, merge the list-or-map result
 into a single `decoded` variable (type `dynamic(list() or map())`), then
 call `Map.fetch!(decoded, "currency")` unconditionally.
 
 **This produced no warning** — the same "union has a compatible member"
-reason as violation 2. `map()` is compatible with `Map.fetch!/2`, so the
-`list()` half being wrong isn't enough to trip the "completely disjoint"
-rule once the two are merged into one variable.
+reason as violation 2, and for the same underlying reason it is **provably
+unwarnable**: `map()` is compatible with `Map.fetch!/2`, so a merged
+`list()`-or-`map()` value can never be completely disjoint from what
+`Map.fetch!/2` accepts, no matter how the merge is written.
 
 Rewrite: dropped the merge. Call `Map.fetch!/2` separately inside each
 `case` clause, directly on the clause-local variable, so in the list clause
 the argument's type is `list()` alone — not a union — which **is**
 completely disjoint from `map()`.
+
+**Correction (fix round 1 review):** the heading above originally read
+"`dynamic()` compatibility." That's wrong, and more specifically wrong than
+violation 2's mislabeling: this is **guard narrowing**, the identical
+mechanism to violation 2's fix rather than a merely-similar one, and
+`JSON.decode!/1` turns out not to be load-bearing at all. Proof: replacing
+the decode with a bare unconstrained parameter,
+
+```elixir
+def f(x) do
+  case x do
+    list when is_list(list) -> Map.fetch!(list, "currency")
+    map when is_map(map) -> Map.fetch!(map, "currency")
+  end
+end
+```
+
+produces a warning whose "given types" and "where list was given the
+types" text is **byte-for-byte identical** to the shipped version's
+(confirmed by diffing both compiler outputs directly), because
+`JSON.decode!/1`'s return type carries no information into the `case` at
+all here — the `is_list/1` guard alone does all of the narrowing, on an
+argument that was already fully unconstrained either way.
 
 ```elixir
 def currency_from(payload) when is_binary(payload) do
@@ -375,6 +429,102 @@ what was validated in the reference run): `mix compile --force
 --warnings-as-errors` exits 0 with zero warnings; `mix test` passes all 39
 tests (12 held-out + 27 pre-existing); `mix format --check-formatted`
 passes.
+
+*(These held-out counts are from the original authoring pass. Fix round 1,
+below, adds two more held-out tests — 14 held-out + 27 pre-existing = 41 —
+after finding two contracts that were under-covered. The five-warning,
+zero-route-confound compile-gate result above is unaffected.)*
+
+## Fix round 1 (external review)
+
+An external review of this authored task, run independently against the
+same 1.20.2 toolchain, confirmed the crux (all five violations warn, no
+function in the dirty module is a red herring, the reference solution
+clears both gates) and found two real problems: two of the five violations
+were mislabeled, and two of the module's stated contracts were
+under-tested. Both are fixed here; nothing in this section changes what
+the dirty module warns on or what the reference solution does.
+
+### Mechanism relabeling: four distinct mechanisms, not five
+
+`display_name/1` and `currency_from/1` were headed above as "cross-clause
+narrowing" and "`dynamic()` compatibility" respectively — inherited labels
+from the *drafted* violations they were rewritten from, not descriptions of
+what actually made the *shipped* rewrites warn. Both shipped rewrites fire
+from **guard narrowing** — the identical mechanism to each other, and the
+same general mechanism violation 3 uses more specifically (via
+`is_map_key`/`not_set()`). This was confirmed by deleting the context each
+one sits inside (the `case` for #2, the `JSON.decode!/1` call for #5) and
+replacing it with a bare unconstrained parameter — both still warn, for #5
+with byte-for-byte identical compiler output. Full detail, including the
+probe code and diffed output, is inline in sections 2 and 5 above under
+"Correction (fix round 1 review)".
+
+**This module's five violations exercise four distinct Elixir 1.20
+mechanisms, not five:**
+
+| # | Function | Mechanism | Distinct? |
+|---|---|---|---|
+| 1 | `status_label/1` | cross-clause narrowing | yes — the only example of this mechanism |
+| 2 | `display_name/1` | guard narrowing (`is_binary/1` in an `if/else`) | shared with #5 |
+| 3 | `timeout_for/1` | `is_map_key`/`not_set()` | yes — a separately-named inference path in the 1.20 changelog, not generic guard narrowing |
+| 4 | `third_field/1` | tuple arity → `elem/2` bounds | yes — the only example of this mechanism |
+| 5 | `currency_from/1` | guard narrowing (`is_list/1` in a `case`) | shared with #2 |
+
+Headings above and the overlay's own code comments now say "guard
+narrowing" for #2 and #5. #4's heading is renamed from "tuple size bounds"
+to "tuple arity → `elem/2` bounds" for the same reason discussed in section
+4: the shipped guard is exact-arity (`== 2`), not an inequality bound —
+"bounds" alone overstated what 1.20.2 actually tracks here. No runtime
+behavior changed anywhere in this correction; it is a labeling fix only,
+and it matters because five warnings firing is necessary but is not the
+same claim as five distinct capabilities being exercised. Overstating the
+count would understate how narrow this benchmark's actual coverage of
+1.20's type system is — the thing worth knowing if this task is
+re-validated against a future Elixir release and only some mechanisms still
+warn.
+
+### Held-out coverage gaps closed
+
+Two contracts in `task.md` were under-covered by the original 12 held-out
+tests, letting a plausible partial fix pass every gate:
+
+- **`third_field/1`** — `task.md` says "the third element for a tuple that
+  has one," but no held-out test used a tuple with *more* than three
+  elements. A fix guarding on `tuple_size(row) == 3` instead of `>= 3`
+  (returning `nil` for anything else, including a 4-tuple) passed every
+  original held-out test.
+- **`currency_from/1`** — `task.md` says a payload that "decodes to
+  anything other than an object gives `{:error, :not_an_object}`," but no
+  held-out test used a bare JSON scalar (the most common non-object shape
+  after a list). A fix whose `case` has a `list when is_list(list) ->
+  {:error, :not_an_object}` clause but no catch-all raises
+  `CaseClauseError` on a scalar payload like `"42"` instead of returning
+  the contracted error tuple, and no original test caught it.
+
+Two assertions added, one per gap, exact equality like every other
+assertion in the file:
+
+```elixir
+assert OrderParams.third_field({:a, :b, :c, :d}) == :c
+assert OrderParams.currency_from("42") == {:error, :not_an_object}
+```
+
+Verified against a reconstruction of exactly the partial-fix shape
+described above (`third_field/1` guarded on `== 3` with a `nil` fallback;
+`currency_from/1`'s `case` given a `list when is_list(list) -> {:error,
+:not_an_object}` clause and no catch-all) in a throwaway run: that
+partial fix compiles clean (`mix compile --force --warnings-as-errors`,
+exit 0, zero warnings) and **passes all 12 original held-out tests** —
+exactly the false "complete" result the review flagged — but **fails both
+new assertions** (`12/14 passed`; the two failures are exactly the two new
+tests — `third_field({:a, :b, :c, :d})` returns `nil` instead of `:c`, and
+`currency_from("42")` raises `CaseClauseError` instead of returning the
+error tuple). Restoring the actual reference solution in the same run
+passes all 14 held-out tests, all 41 tests project-wide (14 held-out + 27
+pre-existing), with `mix compile --force --warnings-as-errors` still
+exiting 0 and `mix format --check-formatted` still clean. No change was
+needed to the reference solution — it already satisfied both contracts.
 
 ## Not tested, deliberately
 
