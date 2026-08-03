@@ -117,4 +117,22 @@ defmodule WarungWeb.OrderLiveTest do
     assert html =~ "could not be placed"
     assert Orders.list_orders() == []
   end
+
+  test "does not crash on an out-of-range quantity", %{conn: conn} do
+    tea = product("Teh", "12.50")
+
+    {:ok, view, _html} = live(conn, ~p"/orders")
+
+    html =
+      view
+      |> form("#place-order", %{
+        "customer_email" => "siti@example.com",
+        "product_id" => tea.id,
+        "quantity" => "99999999999999999999999999999999999999"
+      })
+      |> render_submit()
+
+    assert html =~ "could not be placed"
+    assert Orders.list_orders() == []
+  end
 end
