@@ -1,5 +1,9 @@
 defmodule Warung.OrdersTest do
-  use Warung.DataCase, async: true
+  # async: false — SQLite locks the whole database for writes, so concurrent
+  # writers intermittently raise (Exqlite.Error) Database busy. Measured at
+  # roughly 1 run in 30. A benchmark cannot afford a test suite that fails
+  # for reasons unrelated to the work being scored.
+  use Warung.DataCase, async: false
 
   alias Warung.Catalog
   alias Warung.Orders
