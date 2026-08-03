@@ -192,7 +192,7 @@ cmd_grade() {
     warn_count="$(grep -c 'warning:' "$run.compile.log" || true)"
     if [ "$warn_count" -eq 0 ]; then
       compile="error"
-    elif grep -q 'no route path for Router matches' "$run.compile.log"; then
+    elif grep -qE 'no route path for [A-Za-z0-9_.]*Router matches' "$run.compile.log"; then
       compile="$warn_count warnings (routes)"
     else
       compile="$warn_count warnings"
