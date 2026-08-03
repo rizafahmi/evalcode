@@ -54,6 +54,7 @@
             nodejs_22
             openssl
             pkg-config
+            rsync
             sqlite
             stdenv.cc
             zlib
