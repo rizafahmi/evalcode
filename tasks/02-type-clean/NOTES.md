@@ -534,3 +534,36 @@ cannot catch; only the compile gate catches it. That's fine: the task's
 "done means" requires both a clean compile *and* passing tests, so a model
 that fixes only the four runtime bugs and leaves `status_label/1`'s dead
 code in place still fails the compile gate.
+
+## Held-out file and module naming
+
+The held-out file is `holdout/holdout_order_params_test.exs` and its module is
+`WarungWeb.Holdout.OrderParamsTest`. Both carry the prefix on purpose.
+
+This task tells the model, in `task.md`, exactly which module to fix:
+`lib/warung_web/order_params.ex`. The single most predictable extra step after
+fixing it is writing `test/warung_web/order_params_test.exs` containing
+`defmodule WarungWeb.OrderParamsTest`. That is precisely what the held-out
+module used to be called, in a file called `order_params_test.exs`. When
+`grade` copied the held-out file into `test/`, the run failed to compile:
+
+```
+error: cannot define module WarungWeb.OrderParamsTest because it is currently
+being defined in test/order_params_test.exs:1
+```
+
+`mix test` exits non-zero, so a model that solved the task **and then did the
+diligent thing** scored `completed=no`. Reproduced by planting exactly that
+model-authored test in a run and grading it; after the rename the same run
+compiles and scores on merit.
+
+The rule for every future task: held-out modules go under a `Holdout`
+namespace and held-out filenames start with `holdout_`, so neither the module
+name nor the path can clash with anything a model would naturally write.
+
+## Test-count floor
+
+`tasks/02-type-clean/grading.conf` sets `min_tests=41` — 27 skeleton tests plus
+14 held-out. Verified by running the reference solution, not by counting by
+hand. If the held-out file gains or loses a test, that number has to move with
+it.
