@@ -43,6 +43,19 @@ format_row() {
   printf '| %s | %s | %s | %s | %s | %s | %s |\n' "$1" "$2" "$3" "$4" "$5" "$cost" "$7"
 }
 
+# elapsed_minutes <iso8601-start> <iso8601-end>  ->  14m
+elapsed_minutes() {
+  local start_s end_s
+  if date -u -d "1970-01-01" +%s >/dev/null 2>&1; then
+    start_s="$(date -u -d "$1" +%s)"   # GNU date
+    end_s="$(date -u -d "$2" +%s)"
+  else
+    start_s="$(date -u -j -f "%Y-%m-%dT%H:%M:%SZ" "$1" +%s)"   # BSD date (macOS)
+    end_s="$(date -u -j -f "%Y-%m-%dT%H:%M:%SZ" "$2" +%s)"
+  fi
+  printf '%dm\n' "$(( (end_s - start_s) / 60 ))"
+}
+
 # --- subcommands ------------------------------------------------------------
 
 cmd_start() {
@@ -89,6 +102,65 @@ cmd_start() {
   echo "$run"
 }
 
+cmd_grade() {
+  local run_id="${1:?usage: evalcode grade <run-id> [--cost N] [--duration Nm]}"
+  shift
+
+  local cost="" duration=""
+  while [ $# -gt 0 ]; do
+    case "$1" in
+      --cost) cost="${2:?--cost needs a value}"; shift 2 ;;
+      --duration) duration="${2:?--duration needs a value}"; shift 2 ;;
+      *) echo "unknown option: $1" >&2; exit 1 ;;
+    esac
+  done
+
+  local run="$ROOT/runs/$run_id" base="$ROOT/runs/$run_id.base" meta="$ROOT/runs/$run_id.meta"
+  [ -d "$run" ] || { echo "no such run: $run" >&2; exit 1; }
+  [ -f "$meta" ] || { echo "missing meta: $meta" >&2; exit 1; }
+
+  # shellcheck disable=SC1090
+  source "$meta"   # provides: task, model, harness, started
+
+  cp -R "$ROOT/tasks/$task/holdout/." "$run/test/"
+
+  # The generated `mix test` alias creates and migrates but never drops, so
+  # rows a model wrote outside a sandboxed test — an iex session, a `mix run`
+  # — survive into grading and fail tests that have nothing to do with the
+  # task. That scores a model as failing for work it did correctly, which is
+  # worse than a false pass because it looks like a real result.
+  (cd "$run" && MIX_ENV=test mix ecto.drop --quiet) >/dev/null 2>&1 || true
+
+  local tests compile suppressions completed
+  if (cd "$run" && mix test) > "$run.test.log" 2>&1; then tests=pass; else tests=fail; fi
+
+  if (cd "$run" && mix compile --force --warnings-as-errors) > "$run.compile.log" 2>&1; then
+    compile=clean
+  else
+    compile="$(grep -c 'warning:' "$run.compile.log" || true) warnings"
+  fi
+
+  if diff -r "${DIFF_EXCLUDES[@]}" "$base" "$run" 2>/dev/null \
+     | grep -qE '^> *@(compile|dialyzer)'; then
+    suppressions=yes
+  else
+    suppressions=no
+  fi
+
+  [ -n "$duration" ] || duration="$(elapsed_minutes "$started" "$(date -u +%Y-%m-%dT%H:%M:%SZ)")"
+  completed="$(evalcode_status "$task" "$tests" "$compile" "$suppressions")"
+
+  local row
+  row="$(format_row "$task" "$model" "$harness" "$completed" "$duration" "$cost" "$compile")"
+  echo "$row" >> "$ROOT/RESULTS.md"
+  echo "$row"
+
+  if [ "$suppressions" = yes ]; then
+    echo "note: compiler suppression attributes were added — recorded as not completed" >&2
+  fi
+  echo "logs: $run.test.log  $run.compile.log" >&2
+}
+
 # --- dispatch ---------------------------------------------------------------
 
 if [ "${EVALCODE_LIB_ONLY:-0}" = "1" ]; then
@@ -97,8 +169,9 @@ fi
 
 case "${1:-}" in
   start) shift; cmd_start "$@" ;;
+  grade) shift; cmd_grade "$@" ;;
   *)
-    echo "usage: evalcode start <task-id> <model> <harness>" >&2
+    echo "usage: evalcode {start <task-id> <model> <harness> | grade <run-id> [--cost N] [--duration Nm]}" >&2
     exit 1
     ;;
 esac

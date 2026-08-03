@@ -38,4 +38,9 @@ assert_eq "| 01-live-orders | opus5 | claude-code | yes | 14m | \$2.10 | clean |
 assert_eq "| 01-live-orders | opus5 | claude-code | no | 9m | — | clean |" \
   "$(format_row 01-live-orders opus5 claude-code no 9m "" clean)" "renders an em dash for missing cost"
 
+echo "elapsed_minutes"
+assert_eq "14m" "$(elapsed_minutes 2026-08-03T09:00:00Z 2026-08-03T09:14:30Z)" "rounds down to whole minutes"
+assert_eq "0m"  "$(elapsed_minutes 2026-08-03T09:00:00Z 2026-08-03T09:00:20Z)" "handles sub-minute runs"
+assert_eq "95m" "$(elapsed_minutes 2026-08-03T09:00:00Z 2026-08-03T10:35:00Z)" "handles runs over an hour"
+
 exit "$FAILED"
