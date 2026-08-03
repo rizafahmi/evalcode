@@ -1,0 +1,89 @@
+#!/usr/bin/env bash
+set -euo pipefail
+
+ROOT="$(cd "$(dirname "${BASH_SOURCE[0]}")/.." && pwd)"
+
+# Paths excluded from the base-vs-run diff. Build artefacts and the database
+# change on every run and would drown the suppression scan in noise.
+DIFF_EXCLUDES=(-x deps -x _build -x '.elixir_ls' -x '*.db' -x '*.db-shm' -x '*.db-wal' -x node_modules)
+
+# --- pure helpers, unit-tested by test/evalcode_test.sh ----------------------
+
+# run_id_for <date> <model> <task-id>  ->  2026-08-03-opus5-01
+run_id_for() {
+  local date="$1" model="$2" task="$3"
+  printf '%s-%s-%s\n' "$date" "$model" "${task%%-*}"
+}
+
+# evalcode_status <task-id> <pass|fail> <compile-result> <yes|no suppressions>
+evalcode_status() {
+  local task="$1" tests="$2" compile="$3" suppressions="$4"
+
+  [ "$tests" = pass ] || { echo no; return; }
+  [ "$suppressions" = no ] || { echo no; return; }
+
+  if [ "$task" = "02-type-clean" ] && [ "$compile" != clean ]; then
+    echo no
+    return
+  fi
+
+  echo yes
+}
+
+# format_row <task> <model> <harness> <completed> <duration> <cost> <compile>
+format_row() {
+  local cost="$6"
+  if [ -n "$cost" ]; then cost="\$$cost"; else cost="—"; fi
+  printf '| %s | %s | %s | %s | %s | %s | %s |\n' "$1" "$2" "$3" "$4" "$5" "$cost" "$7"
+}
+
+# --- subcommands ------------------------------------------------------------
+
+cmd_start() {
+  local task="${1:?usage: evalcode start <task-id> <model> <harness>}"
+  local model="${2:?usage: evalcode start <task-id> <model> <harness>}"
+  local harness="${3:?usage: evalcode start <task-id> <model> <harness>}"
+
+  [ -d "$ROOT/tasks/$task" ] || { echo "no such task: $task" >&2; exit 1; }
+
+  local run_id run base meta
+  run_id="$(run_id_for "$(date +%Y-%m-%d)" "$model" "$task")"
+  run="$ROOT/runs/$run_id"
+  base="$ROOT/runs/$run_id.base"
+  meta="$ROOT/runs/$run_id.meta"
+
+  [ -e "$run" ] && { echo "run already exists: $run" >&2; exit 1; }
+
+  mkdir -p "$run"
+  cp -R "$ROOT/skeleton/." "$run/"
+
+  if [ -d "$ROOT/tasks/$task/overlay" ]; then
+    cp -R "$ROOT/tasks/$task/overlay/." "$run/"
+  fi
+
+  cp "$ROOT/tasks/$task/task.md" "$run/TASK.md"
+
+  # Snapshot before deps/build artefacts exist, so the Task 7 diff stays small.
+  cp -R "$run" "$base"
+
+  printf 'task=%s\nmodel=%s\nharness=%s\nstarted=%s\n' \
+    "$task" "$model" "$harness" "$(date -u +%Y-%m-%dT%H:%M:%SZ)" > "$meta"
+
+  (cd "$run" && mix deps.get && mix ecto.setup) >/dev/null
+
+  echo "$run"
+}
+
+# --- dispatch ---------------------------------------------------------------
+
+if [ "${EVALCODE_LIB_ONLY:-0}" = "1" ]; then
+  return 0 2>/dev/null || exit 0
+fi
+
+case "${1:-}" in
+  start) shift; cmd_start "$@" ;;
+  *)
+    echo "usage: evalcode start <task-id> <model> <harness>" >&2
+    exit 1
+    ;;
+esac
