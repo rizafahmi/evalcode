@@ -19,7 +19,9 @@ defmodule Warung.CatalogTest do
     end
 
     test "rejects a product without a sku" do
-      assert {:error, changeset} = Catalog.create_product(%{name: "No SKU", price: Decimal.new("1")})
+      assert {:error, changeset} =
+               Catalog.create_product(%{name: "No SKU", price: Decimal.new("1")})
+
       assert %{sku: ["can't be blank"]} = errors_on(changeset)
     end
 
@@ -36,7 +38,10 @@ defmodule Warung.CatalogTest do
       {:ok, _} = Catalog.create_product(%{sku: "B", name: "Beta", price: Decimal.new("2.00")})
       {:ok, _} = Catalog.create_product(%{sku: "A", name: "Alpha", price: Decimal.new("1.00")})
 
-      assert ["Alpha", "Beta"] = Enum.map(Catalog.list_products(), & &1.name)
+      assert [alpha, beta] = Catalog.list_products()
+      assert ["Alpha", "Beta"] = Enum.map([alpha, beta], & &1.name)
+      assert Decimal.equal?(alpha.price, Decimal.new("1.00"))
+      assert Decimal.equal?(beta.price, Decimal.new("2.00"))
     end
 
     test "returns an empty list when there are no products" do
@@ -46,8 +51,12 @@ defmodule Warung.CatalogTest do
 
   describe "get_product!/1" do
     test "returns the product" do
-      {:ok, product} = Catalog.create_product(%{sku: "G-01", name: "Gula", price: Decimal.new("3.00")})
-      assert Catalog.get_product!(product.id).id == product.id
+      {:ok, product} =
+        Catalog.create_product(%{sku: "G-01", name: "Gula", price: Decimal.new("3.00")})
+
+      fetched = Catalog.get_product!(product.id)
+      assert fetched.id == product.id
+      assert Decimal.equal?(fetched.price, Decimal.new("3.00"))
     end
 
     test "raises when the product does not exist" do
