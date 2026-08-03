@@ -16,9 +16,9 @@ defmodule Warung.Orders do
   end
 
   def create_order(attrs) do
-    items = Map.get(attrs, :items, [])
+    raw_items = Map.get(attrs, :items, [])
 
-    with {:ok, priced} <- price_items(items) do
+    with {:ok, priced} <- price_items(raw_items) do
       total = Enum.reduce(priced, Decimal.new(0), &Decimal.add(line_total(&1), &2))
 
       Multi.new()
@@ -39,7 +39,7 @@ defmodule Warung.Orders do
       end)
       |> Repo.transaction()
       |> case do
-        {:ok, %{order: order, items: items}} -> {:ok, %{order | items: items}}
+        {:ok, %{order: order, items: inserted}} -> {:ok, %{order | items: inserted}}
         {:error, _step, changeset, _changes} -> {:error, changeset}
       end
     end
@@ -48,25 +48,27 @@ defmodule Warung.Orders do
   defp price_items([]), do: {:error, :no_items}
 
   defp price_items(items) do
-    Enum.reduce_while(items, {:ok, []}, fn item, {:ok, acc} ->
-      case Repo.get(Product, Map.get(item, :product_id)) do
-        nil ->
-          {:halt, {:error, :product_not_found}}
-
-        product ->
-          {:cont,
-           {:ok,
-            acc ++
-              [
-                %{
-                  product_id: product.id,
-                  quantity: Map.get(item, :quantity, 1),
-                  unit_price: product.price
-                }
-              ]}}
+    items
+    |> Enum.reduce_while({:ok, []}, fn item, {:ok, acc} ->
+      with {:ok, quantity} <- validate_quantity(Map.get(item, :quantity, 1)),
+           %Product{} = product <- Repo.get(Product, Map.get(item, :product_id)) do
+        priced = %{product_id: product.id, quantity: quantity, unit_price: product.price}
+        {:cont, {:ok, [priced | acc]}}
+      else
+        nil -> {:halt, {:error, :product_not_found}}
+        {:error, reason} -> {:halt, {:error, reason}}
       end
     end)
+    |> case do
+      {:ok, acc} -> {:ok, Enum.reverse(acc)}
+      error -> error
+    end
   end
+
+  defp validate_quantity(quantity) when is_integer(quantity) and quantity > 0,
+    do: {:ok, quantity}
+
+  defp validate_quantity(_quantity), do: {:error, :invalid_quantity}
 
   defp line_total(%{unit_price: price, quantity: quantity}) do
     Decimal.mult(price, Decimal.new(quantity))
