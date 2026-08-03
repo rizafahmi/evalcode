@@ -15,20 +15,45 @@ DIFF_EXCLUDES=(-x deps -x _build -x '.elixir_ls' -x '*.db' -x '*.db-shm' -x '*.d
 
 # --- pure helpers, unit-tested by test/evalcode_test.sh ----------------------
 
+# require_elixir_120
+#
+# Both subcommands invoke whatever `mix` is on PATH, and the whole of task 02
+# is a warning class that exists only in Elixir 1.20's type checker. Under
+# 1.18 the dirty overlay compiles clean under `--warnings-as-errors`, so
+# grading an untouched start state reports `compile=clean` and scores
+# `completed=yes` for zero work. A benchmark that prints a confident wrong
+# number is worse than one that refuses to run, so this refuses to run.
+require_elixir_120() {
+  local v
+  v="$(elixir --version 2>/dev/null | tr '\n' ' ')"
+  case "$v" in
+    *"Elixir 1.20."*) ;;
+    *)
+      echo "evalcode: requires Elixir 1.20.x, found: ${v:-none on PATH}" >&2
+      echo "evalcode: run inside the pinned devshell — 'direnv allow', or 'nix develop'" >&2
+      exit 1
+      ;;
+  esac
+}
+
 # run_id_for <date> <model> <task-id>  ->  2026-08-03-opus5-01
 run_id_for() {
   local date="$1" model="$2" task="$3"
   printf '%s-%s-%s\n' "$date" "$model" "${task%%-*}"
 }
 
-# evalcode_status <task-id> <pass|fail> <compile-result> <yes|no suppressions>
+# evalcode_status <requires-clean-compile yes|no> <pass|fail> <compile-result> <yes|no suppressions>
+#
+# The clean-compile gate used to be keyed on the literal task id
+# `02-type-clean`, which meant any future task silently got no compile gate at
+# all. It is a per-task setting now, read from `tasks/<id>/grading.conf`.
 evalcode_status() {
-  local task="$1" tests="$2" compile="$3" suppressions="$4"
+  local requires_clean_compile="$1" tests="$2" compile="$3" suppressions="$4"
 
   [ "$tests" = pass ] || { echo no; return; }
   [ "$suppressions" = no ] || { echo no; return; }
 
-  if [ "$task" = "02-type-clean" ] && [ "$compile" != clean ]; then
+  if [ "$requires_clean_compile" = yes ] && [ "$compile" != clean ]; then
     echo no
     return
   fi
@@ -36,11 +61,71 @@ evalcode_status() {
   echo yes
 }
 
-# format_row <task> <model> <harness> <completed> <duration> <cost> <compile>
+# format_row <task> <model> <harness> <completed> <duration> <cost> <compile> <notes>
 format_row() {
   local cost="$6"
   if [ -n "$cost" ]; then cost="\$$cost"; else cost="—"; fi
-  printf '| %s | %s | %s | %s | %s | %s | %s |\n' "$1" "$2" "$3" "$4" "$5" "$cost" "$7"
+  printf '| %s | %s | %s | %s | %s | %s | %s | %s |\n' \
+    "$1" "$2" "$3" "$4" "$5" "$cost" "$7" "${8:-}"
+}
+
+# valid_duration <string>  -> 0 when it looks like `14m`
+#
+# `--duration`/`--cost` land in the results table verbatim. Without this a
+# typo produced `| ... | not-a-duration | ... |`, a row that reads as data.
+valid_duration() { [[ "${1:-}" =~ ^[0-9]+m$ ]]; }
+
+# valid_cost <string>  -> 0 when it looks like `2.10`
+valid_cost() { [[ "${1:-}" =~ ^[0-9]+([.][0-9]+)?$ ]]; }
+
+# test_count_from <mix-test-log>  ->  the number of tests that actually ran
+#
+# `mix test` exiting 0 says nothing about how many tests ran. Two verified
+# ways to exit 0 having run almost nothing: `ExUnit.configure(exclude:
+# [:test])` in `test_helper.exs` (`Result: 0 tests, 10 excluded`, exit 0), and
+# simply deleting the test files that do not go green. Both scored
+# `completed=yes`. So the count is parsed and compared against the task's
+# floor.
+#
+# ExUnit 1.20 prints one of these as its last summary line:
+#
+#   Result: 27 passed
+#   Result: 2/3 passed          (2 of the 3 that ran passed)
+#   Result: 2 passed, 1 skipped
+#   Result: 0 tests, 3 excluded
+#
+# Skipped and excluded tests did not run, so they are not counted. The
+# pre-1.19 `N tests, M failures` form is handled too. Anything unrecognised
+# returns non-zero — an unreadable count must fail the floor, never satisfy
+# it.
+test_count_from() {
+  local log="${1:-}" line
+  [ -f "$log" ] || return 1
+
+  line="$(grep -E '^Result: ' "$log" | tail -n 1)"
+
+  case "$line" in
+    "Result: "[0-9]*"/"[0-9]*" passed"*)
+      printf '%s\n' "$line" | sed -E 's|^Result: [0-9]+/([0-9]+) passed.*|\1|'
+      return 0
+      ;;
+    "Result: "[0-9]*" passed"*)
+      printf '%s\n' "$line" | sed -E 's|^Result: ([0-9]+) passed.*|\1|'
+      return 0
+      ;;
+    "Result: "[0-9]*" test"*)
+      printf '%s\n' "$line" | sed -E 's|^Result: ([0-9]+) tests?.*|\1|'
+      return 0
+      ;;
+  esac
+
+  line="$(grep -E '^[0-9]+ tests?, [0-9]+ failures?' "$log" | tail -n 1)"
+  if [ -n "$line" ]; then
+    printf '%s\n' "$line" | sed -E 's|^([0-9]+) tests?,.*|\1|'
+    return 0
+  fi
+
+  return 1
 }
 
 # elapsed_minutes <iso8601-start> <iso8601-end>  ->  14m
@@ -80,29 +165,71 @@ elapsed_minutes() {
 # --- subcommands ------------------------------------------------------------
 
 cmd_start() {
+  require_elixir_120
+
   local task="${1:?usage: evalcode start <task-id> <model> <harness>}"
   local model="${2:?usage: evalcode start <task-id> <model> <harness>}"
   local harness="${3:?usage: evalcode start <task-id> <model> <harness>}"
 
   [ -d "$ROOT/tasks/$task" ] || { echo "no such task: $task" >&2; exit 1; }
+  # Fail here rather than an hour later at grade time: without a grading.conf
+  # there is no test-count floor and no compile-gate setting, and `grade` will
+  # refuse the run.
+  [ -f "$ROOT/tasks/$task/grading.conf" ] || {
+    echo "task $task has no grading.conf — grade would refuse this run" >&2
+    exit 1
+  }
 
-  local run_id run base meta
-  run_id="$(run_id_for "$(date +%Y-%m-%d)" "$model" "$task")"
+  local run_id base_id run base meta n
+  base_id="$(run_id_for "$(date +%Y-%m-%d)" "$model" "$task")"
+
+  # Within-model variance is the first thing you would want to measure, and
+  # refusing a second run of the same model/task on the same day made that
+  # impossible — as well as making a failed `start` poison the rest of the day.
+  run_id="$base_id"
+  n=1
+  while [ -e "$ROOT/runs/$run_id" ] || [ -e "$ROOT/runs/$run_id.meta" ] || [ -e "$ROOT/runs/$run_id.base" ]; do
+    n=$((n + 1))
+    run_id="$base_id-$n"
+  done
+
   run="$ROOT/runs/$run_id"
   base="$ROOT/runs/$run_id.base"
   meta="$ROOT/runs/$run_id.meta"
 
-  [ -e "$run" ] && { echo "run already exists: $run" >&2; exit 1; }
-
   mkdir -p "$run"
-  cp -R "$ROOT/skeleton/." "$run/"
 
-  # `skeleton/` accumulates a dev and test database from being worked in
-  # directly. `mix ecto.create` will not overwrite an existing file, so
-  # without this every run would start with whatever rows happened to be
-  # sitting in the author's local database — and two runs a week apart
-  # would not start from the same state.
-  rm -f "$run"/*.db "$run"/*.db-shm "$run"/*.db-wal
+  # No compiled output may be copied. `mix ecto.setup` recompiles dev only, so
+  # `_build/test` used to keep beams built from the *clean* skeleton — and for
+  # task 02 the clean `skeleton/lib/warung_web/order_params.ex` is the
+  # reference solution. Decompiling `_build/test/.../OrderParams.beam`
+  # recovered its source verbatim, so a fresh run shipped the answer. It also
+  # made the start state depend on whatever the author's skeleton was last
+  # built as, which is not reproducible across machines or weeks.
+  #
+  # The two exceptions are the esbuild and tailwind executables, which the
+  # installers park at `_build/`'s top level rather than under an env
+  # directory. They are downloaded, version-pinned third-party binaries, not
+  # compiled project code, and they cannot carry a solution. Without them the
+  # dev server's watchers try to download on first boot: offline that fails,
+  # `priv/static/assets/js/app.js` is never written, the LiveView socket never
+  # connects, and the dashboard silently does nothing when you submit the
+  # form. Everything else under `_build` is excluded, so a future compiled
+  # artefact landing there is dropped rather than copied.
+  #
+  # `deps` *is* copied: it is what lets `start` work offline. The databases
+  # are not: `skeleton/` accumulates a dev and test database from being worked
+  # in directly and `mix ecto.create` will not overwrite an existing file, so
+  # copying them would start every run from whatever rows happened to be
+  # sitting in the author's local database.
+  rsync -a \
+    --include '/_build/' \
+    --include '/_build/esbuild-*' \
+    --include '/_build/tailwind-*' \
+    --exclude '/_build/**' \
+    --exclude '.elixir_ls' \
+    --exclude '*.db' --exclude '*.db-shm' --exclude '*.db-wal' \
+    "$ROOT/skeleton/" "$run/"
 
   if [ -d "$ROOT/tasks/$task/overlay" ]; then
     cp -R "$ROOT/tasks/$task/overlay/." "$run/"
@@ -110,33 +237,59 @@ cmd_start() {
 
   cp "$ROOT/tasks/$task/task.md" "$run/TASK.md"
 
-  # Snapshot source only. `skeleton/deps` and `skeleton/_build` are ~144MB
-  # together; copying them here would double every run's cost to produce a
-  # snapshot whose entire purpose is a diff that excludes those paths anyway.
+  # Snapshot source only. `skeleton/deps` is ~30MB; copying it here would
+  # inflate every run to produce a snapshot whose entire purpose is a diff
+  # that excludes that path anyway.
   rsync -a --exclude deps --exclude _build --exclude '.elixir_ls' "$run/" "$base/"
 
   printf 'task=%s\nmodel=%s\nharness=%s\nstarted=%s\n' \
     "$task" "$model" "$harness" "$(date -u +%Y-%m-%dT%H:%M:%SZ)" > "$meta"
 
-  (cd "$run" && mix deps.get && mix ecto.setup) >/dev/null
+  # Both streams go to the log. Task 02's overlay is *supposed* to emit five
+  # type warnings, and dumping them on the operator's terminal at `start`
+  # reads like the tool broke. A failed setup leaves no half-built run behind:
+  # a partial workspace would otherwise be indistinguishable from a real one
+  # at grade time.
+  local setup_log="$ROOT/runs/$run_id.start.log"
+  if ! (cd "$run" && mix deps.get && mix ecto.setup) > "$setup_log" 2>&1; then
+    echo "start: mix deps.get / mix ecto.setup failed — last lines of $setup_log:" >&2
+    tail -n 20 "$setup_log" >&2
+    rm -rf "$run" "$base" "$meta"
+    echo "start: removed the partial run $run_id" >&2
+    exit 1
+  fi
 
   echo "$run"
 }
 
 cmd_grade() {
-  local run_id="${1:?usage: evalcode grade <run-id> [--cost N] [--duration Nm]}"
+  require_elixir_120
+
+  local run_id="${1:?usage: evalcode grade <run-id> [--cost N] [--duration Nm] [--regrade]}"
   shift
 
-  local cost="" duration=""
+  local cost="" duration="" regrade=no
   while [ $# -gt 0 ]; do
     case "$1" in
       --cost) cost="${2:?--cost needs a value}"; shift 2 ;;
       --duration) duration="${2:?--duration needs a value}"; shift 2 ;;
+      --regrade) regrade=yes; shift ;;
       *) echo "unknown option: $1" >&2; exit 1 ;;
     esac
   done
 
+  if [ -n "$duration" ] && ! valid_duration "$duration"; then
+    echo "grade: --duration must look like '14m', got '$duration'" >&2
+    exit 1
+  fi
+
+  if [ -n "$cost" ] && ! valid_cost "$cost"; then
+    echo "grade: --cost must be a decimal number like '2.10', got '$cost'" >&2
+    exit 1
+  fi
+
   local run="$ROOT/runs/$run_id" base="$ROOT/runs/$run_id.base" meta="$ROOT/runs/$run_id.meta"
+  local marker="$ROOT/runs/$run_id.graded"
   [ -d "$run" ] || { echo "no such run: $run" >&2; exit 1; }
   [ -f "$meta" ] || { echo "missing meta: $meta" >&2; exit 1; }
   # Without this, `diff -rN` against a missing directory silently treats it as
@@ -144,8 +297,60 @@ cmd_grade() {
   # suppression attribute is misattributed to the model.
   [ -d "$base" ] || { echo "missing base snapshot: $base" >&2; exit 1; }
 
+  # Grading twice appended two identical rows to RESULTS.md, and the second
+  # pass diffed a run that already contained the held-out tests the first pass
+  # copied in — so a held-out file carrying `@compile`/`@dialyzer` would be
+  # attributed to the model.
+  if [ -e "$marker" ] && [ "$regrade" = no ]; then
+    echo "grade: $run_id has already been graded — see $marker" >&2
+    echo "grade: pass --regrade to grade it again" >&2
+    exit 1
+  fi
+
   # shellcheck disable=SC1090
   source "$meta"   # provides: task, model, harness, started
+
+  # Per-task grading settings. A task without this file is refused rather than
+  # graded with no floor and no compile gate.
+  local conf="$ROOT/tasks/$task/grading.conf"
+  [ -f "$conf" ] || {
+    echo "grade: missing $conf" >&2
+    echo "grade: every task needs a grading.conf (min_tests, requires_clean_compile)" >&2
+    exit 1
+  }
+
+  local min_tests="" requires_clean_compile=""
+  # shellcheck disable=SC1090
+  source "$conf"
+
+  case "$min_tests" in
+    ''|*[!0-9]*)
+      echo "grade: $conf: min_tests must be a positive integer, got '$min_tests'" >&2
+      exit 1
+      ;;
+  esac
+  [ "$min_tests" -gt 0 ] || {
+    echo "grade: $conf: min_tests must be a positive integer, got '$min_tests'" >&2
+    exit 1
+  }
+  case "$requires_clean_compile" in
+    yes|no) ;;
+    *)
+      echo "grade: $conf: requires_clean_compile must be yes or no, got '$requires_clean_compile'" >&2
+      exit 1
+      ;;
+  esac
+
+  # On a regrade the run already holds the held-out tests this tool copied in
+  # last time. Left in place they would show up in the base-vs-run diff below
+  # as model-authored. Remove them, scan, then copy pristine ones back.
+  if [ "$regrade" = yes ]; then
+    local held
+    for held in "$ROOT/tasks/$task/holdout/"*; do
+      [ -e "$held" ] || continue
+      rm -f "$run/test/$(basename "$held")"
+    done
+  fi
 
   # Scan for suppression attributes BEFORE the held-out tests are copied in,
   # so the diff contains only what the model actually wrote.
@@ -176,8 +381,17 @@ cmd_grade() {
   # worse than a false pass because it looks like a real result.
   (cd "$run" && MIX_ENV=test mix ecto.drop --quiet) >/dev/null 2>&1 || true
 
-  local tests compile completed
+  local tests compile completed notes=""
   if (cd "$run" && mix test) > "$run.test.log" 2>&1; then tests=pass; else tests=fail; fi
+
+  local executed floor_ok=yes floor_note=""
+  if ! executed="$(test_count_from "$run.test.log")"; then
+    executed=""
+    floor_ok=no
+  elif [ "$executed" -lt "$min_tests" ]; then
+    floor_ok=no
+    floor_note="only $executed of $min_tests tests ran"
+  fi
 
   # Three states, not two. A hard CompileError — the `~p` route failure Task 2
   # documented, for one — contains no `warning:` lines at all, so counting them
@@ -206,15 +420,56 @@ cmd_grade() {
       exit 1
     }
   fi
-  completed="$(evalcode_status "$task" "$tests" "$compile" "$suppressions")"
+
+  completed="$(evalcode_status "$requires_clean_compile" "$tests" "$compile" "$suppressions")"
+
+  # A floor violation is never a pass, whatever the exit codes said.
+  [ "$floor_ok" = yes ] || completed=no
+
+  # RESULTS.md could not tell a model that tried and failed from one that
+  # silenced the checker: the suppression note went to stderr only and the
+  # evidence lived in a gitignored log. The reason now travels with the row.
+  #
+  # Order matters. A suppression is the most important thing to surface. A
+  # count below the floor comes next: that is evidence the suite was tampered
+  # with, which a bare "tests failed" would hide. "tests failed" outranks
+  # "test count unreadable" because a suite that does not compile produces no
+  # summary line at all, and reporting *that* as an unreadable count would be
+  # obscure. An unreadable count on a suite that exited 0 is the genuinely
+  # suspicious case, and it keeps its own wording.
+  if [ "$completed" = no ]; then
+    if [ "$suppressions" = yes ]; then
+      notes="suppressions added"
+    elif [ -n "$floor_note" ]; then
+      notes="$floor_note"
+    elif [ "$tests" = fail ]; then
+      notes="tests failed"
+    elif [ "$floor_ok" = no ]; then
+      notes="test count unreadable"
+    elif [ "$compile" != clean ]; then
+      notes="compile failed"
+    else
+      notes="not completed"
+    fi
+  else
+    notes=""
+  fi
 
   local row
-  row="$(format_row "$task" "$model" "$harness" "$completed" "$duration" "$cost" "$compile")"
+  row="$(format_row "$task" "$model" "$harness" "$completed" "$duration" "$cost" "$compile" "$notes")"
   echo "$row" >> "$ROOT/RESULTS.md"
   echo "$row"
 
+  printf 'graded=%s\ntests_run=%s\nmin_tests=%s\nrow=%s\n' \
+    "$(date -u +%Y-%m-%dT%H:%M:%SZ)" "${executed:-unparsed}" "$min_tests" "$row" > "$marker"
+
   if [ "$suppressions" = yes ]; then
     echo "note: compiler suppression attributes were added — recorded as not completed" >&2
+  fi
+  if [ -n "$floor_note" ]; then
+    echo "note: $floor_note — recorded as not completed" >&2
+  elif [ "$floor_ok" = no ]; then
+    echo "note: could not read a test count from $run.test.log — recorded as not completed" >&2
   fi
   echo "logs: $run.test.log  $run.compile.log  $run.diff.log" >&2
 }
@@ -229,7 +484,7 @@ case "${1:-}" in
   start) shift; cmd_start "$@" ;;
   grade) shift; cmd_grade "$@" ;;
   *)
-    echo "usage: evalcode {start <task-id> <model> <harness> | grade <run-id> [--cost N] [--duration Nm]}" >&2
+    echo "usage: evalcode {start <task-id> <model> <harness> | grade <run-id> [--cost N] [--duration Nm] [--regrade]}" >&2
     exit 1
     ;;
 esac
