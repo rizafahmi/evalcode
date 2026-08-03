@@ -122,6 +122,26 @@ cmd_grade() {
   # shellcheck disable=SC1090
   source "$meta"   # provides: task, model, harness, started
 
+  # Scan for suppression attributes BEFORE the held-out tests are copied in,
+  # so the diff contains only what the model actually wrote.
+  #
+  # Written to a file rather than piped into grep. `diff` exits 1 whenever it
+  # finds differences — the normal case — and under `set -o pipefail` that 1
+  # wins over grep's 0, so a piped form reports "no suppressions" for every
+  # input, forever. An anti-cheat that cannot fire is worse than none, because
+  # it implies a protection that is not there.
+  #
+  # -N diffs a file present only in the run against /dev/null, so a suppression
+  # added in a brand-new file is scanned too.
+  local suppressions
+  diff -rN "${DIFF_EXCLUDES[@]}" "$base" "$run" > "$run.diff.log" 2>/dev/null || true
+
+  if grep -qE '^> *@(compile|dialyzer)' "$run.diff.log"; then
+    suppressions=yes
+  else
+    suppressions=no
+  fi
+
   cp -R "$ROOT/tasks/$task/holdout/." "$run/test/"
 
   # The generated `mix test` alias creates and migrates but never drops, so
@@ -131,20 +151,13 @@ cmd_grade() {
   # worse than a false pass because it looks like a real result.
   (cd "$run" && MIX_ENV=test mix ecto.drop --quiet) >/dev/null 2>&1 || true
 
-  local tests compile suppressions completed
+  local tests compile completed
   if (cd "$run" && mix test) > "$run.test.log" 2>&1; then tests=pass; else tests=fail; fi
 
   if (cd "$run" && mix compile --force --warnings-as-errors) > "$run.compile.log" 2>&1; then
     compile=clean
   else
     compile="$(grep -c 'warning:' "$run.compile.log" || true) warnings"
-  fi
-
-  if diff -r "${DIFF_EXCLUDES[@]}" "$base" "$run" 2>/dev/null \
-     | grep -qE '^> *@(compile|dialyzer)'; then
-    suppressions=yes
-  else
-    suppressions=no
   fi
 
   [ -n "$duration" ] || duration="$(elapsed_minutes "$started" "$(date -u +%Y-%m-%dT%H:%M:%SZ)")"
@@ -158,7 +171,7 @@ cmd_grade() {
   if [ "$suppressions" = yes ]; then
     echo "note: compiler suppression attributes were added — recorded as not completed" >&2
   fi
-  echo "logs: $run.test.log  $run.compile.log" >&2
+  echo "logs: $run.test.log  $run.compile.log  $run.diff.log" >&2
 }
 
 # --- dispatch ---------------------------------------------------------------
