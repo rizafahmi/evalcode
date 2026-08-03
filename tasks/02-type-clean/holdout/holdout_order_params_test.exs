@@ -1,4 +1,11 @@
-defmodule WarungWeb.OrderParamsTest do
+# Namespaced under `Holdout` on purpose. A model that solves this task and
+# then writes the canonically-named test for the module it was told to fix
+# — `test/warung_web/order_params_test.exs`, `WarungWeb.OrderParamsTest` —
+# used to collide with this file when `grade` copied it in, and the whole run
+# failed to compile. That scored `completed=no` for a model that did the task
+# and then did the diligent thing. The module name and the filename both carry
+# the prefix so neither can clash.
+defmodule WarungWeb.Holdout.OrderParamsTest do
   use ExUnit.Case, async: true
 
   alias WarungWeb.OrderParams

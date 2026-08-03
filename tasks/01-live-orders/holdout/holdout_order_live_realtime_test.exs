@@ -1,4 +1,12 @@
-defmodule WarungWeb.OrderLiveRealtimeTest do
+# Namespaced under `Holdout` on purpose — see `NOTES.md`. A model-authored
+# test with the obvious name for the module it just changed used to collide
+# with the held-out module when `grade` copied it in, failing the whole
+# compile. The module name and the filename both carry the prefix so neither
+# can clash.
+#
+# `async: false` because SQLite locks the whole database file; async writers
+# flake roughly one run in thirty.
+defmodule WarungWeb.Holdout.OrderLiveRealtimeTest do
   use WarungWeb.ConnCase, async: false
 
   import Phoenix.LiveViewTest
@@ -66,11 +74,17 @@ defmodule WarungWeb.OrderLiveRealtimeTest do
 
     html = render(watcher)
     assert html =~ "newer@example.com"
+    assert html =~ "older@example.com"
 
-    [first_row | _] =
-      Regex.scan(~r/<tr[^>]*id="orders-\d+"[^>]*>.*?<\/tr>/s, html) |> Enum.map(&hd/1)
+    # Ordering is asserted on where the two emails land in the rendered
+    # string, not on a row id. The previous version scanned for
+    # `id="orders-\d+"`, but that prefix comes from the stream name, which
+    # `task.md` only hints at — a model that renamed the stream got a
+    # MatchError and scored `no` for correct work.
+    {newer_at, _} = :binary.match(html, "newer@example.com")
+    {older_at, _} = :binary.match(html, "older@example.com")
 
-    assert first_row =~ "newer@example.com"
+    assert newer_at < older_at
   end
 
   test "two orders in sequence both appear", %{conn: conn} do
