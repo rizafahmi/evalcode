@@ -70,6 +70,26 @@ defmodule Warung.OrdersTest do
                  items: [%{product_id: -1, quantity: 1}]
                })
     end
+
+    test "rejects a non-positive quantity" do
+      tea = product(%{name: "Teh", price: Decimal.new("1.00")})
+
+      assert {:error, :invalid_quantity} =
+               Orders.create_order(%{
+                 customer_email: "a@example.com",
+                 items: [%{product_id: tea.id, quantity: 0}]
+               })
+    end
+
+    test "rejects a quantity that is not an integer" do
+      tea = product(%{name: "Teh", price: Decimal.new("1.00")})
+
+      assert {:error, :invalid_quantity} =
+               Orders.create_order(%{
+                 customer_email: "a@example.com",
+                 items: [%{product_id: tea.id, quantity: "two"}]
+               })
+    end
   end
 
   describe "list_orders/0" do
