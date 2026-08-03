@@ -53,42 +53,44 @@ defmodule WarungWeb.OrderLive.Index do
   @impl true
   def render(assigns) do
     ~H"""
-    <div class="mx-auto max-w-3xl p-6">
-      <h1 class="text-2xl font-bold mb-6">Orders</h1>
+    <Layouts.app flash={@flash}>
+      <div class="mx-auto max-w-3xl p-6">
+        <h1 class="text-2xl font-bold mb-6">Orders</h1>
 
-      <form id="place-order" phx-submit="place" class="flex flex-wrap gap-2 mb-6">
-        <input
-          type="email"
-          name="customer_email"
-          placeholder="customer@example.com"
-          class="input input-bordered"
-        />
-        <select name="product_id" class="select select-bordered">
-          <option :for={product <- @products} value={product.id}>{product.name}</option>
-        </select>
-        <input type="number" name="quantity" value="1" min="1" class="input input-bordered w-24" />
-        <button type="submit" class="btn btn-primary">Place order</button>
-      </form>
+        <form id="place-order" phx-submit="place" class="flex flex-wrap gap-2 mb-6">
+          <input
+            type="email"
+            name="customer_email"
+            placeholder="customer@example.com"
+            class="input input-bordered"
+          />
+          <select name="product_id" class="select select-bordered">
+            <option :for={product <- @products} value={product.id}>{product.name}</option>
+          </select>
+          <input type="number" name="quantity" value="1" min="1" class="input input-bordered w-24" />
+          <button type="submit" class="btn btn-primary">Place order</button>
+        </form>
 
-      <p :if={@error} class="alert alert-error mb-4">{@error}</p>
+        <p :if={@error} class="alert alert-error mb-4">{@error}</p>
 
-      <table class="table">
-        <thead>
-          <tr>
-            <th>Customer</th>
-            <th>Items</th>
-            <th>Total</th>
-          </tr>
-        </thead>
-        <tbody id="orders" phx-update="stream">
-          <tr :for={{dom_id, order} <- @streams.orders} id={dom_id}>
-            <td>{order.customer_email}</td>
-            <td>{length(order.items)}</td>
-            <td>{order.total}</td>
-          </tr>
-        </tbody>
-      </table>
-    </div>
+        <table class="table">
+          <thead>
+            <tr>
+              <th>Customer</th>
+              <th>Items</th>
+              <th>Total</th>
+            </tr>
+          </thead>
+          <tbody id="orders" phx-update="stream">
+            <tr :for={{dom_id, order} <- @streams.orders} id={dom_id}>
+              <td>{order.customer_email}</td>
+              <td>{length(order.items)}</td>
+              <td>{order.total}</td>
+            </tr>
+          </tbody>
+        </table>
+      </div>
+    </Layouts.app>
     """
   end
 end
