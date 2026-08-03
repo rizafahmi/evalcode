@@ -86,7 +86,13 @@ defmodule Warung.MixProject do
         "esbuild warung --minify",
         "phx.digest"
       ],
-      precommit: ["compile --warning-as-errors", "deps.unlock --unused", "format", "test"]
+      # `--warnings-as-errors`, plural. `mix phx.new` 1.8.0 generates the
+      # singular `--warning-as-errors`; Mix silently ignores the unknown switch
+      # and the alias exits 0 with every warning outstanding. AGENTS.md tells
+      # the model to run `mix precommit` when it is done, so a model following
+      # this fixture's own instructions got a green light on precisely the gate
+      # task 02 scores it on.
+      precommit: ["compile --warnings-as-errors", "deps.unlock --unused", "format", "test"]
     ]
   end
 end
