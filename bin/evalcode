@@ -44,15 +44,36 @@ format_row() {
 }
 
 # elapsed_minutes <iso8601-start> <iso8601-end>  ->  14m
+#
+# Returns non-zero on anything it cannot parse. This matters more than it
+# looks: bash does not inherit errexit into command substitutions unless
+# `shopt -s inherit_errexit` is set, and that option does not exist in bash
+# 3.2, which is what macOS ships. So a `date` failure inside this function
+# cannot abort the caller on its own — an empty `start_s` would be coerced to
+# 0 by arithmetic and yield minutes-since-the-epoch. Observed: a malformed
+# `started` produced `29762072m` and exited 0. Every caller must check the
+# return status explicitly.
 elapsed_minutes() {
   local start_s end_s
-  if date -u -d "1970-01-01" +%s >/dev/null 2>&1; then
-    start_s="$(date -u -d "$1" +%s)"   # GNU date
-    end_s="$(date -u -d "$2" +%s)"
-  else
-    start_s="$(date -u -j -f "%Y-%m-%dT%H:%M:%SZ" "$1" +%s)"   # BSD date (macOS)
-    end_s="$(date -u -j -f "%Y-%m-%dT%H:%M:%SZ" "$2" +%s)"
+
+  if [ -z "${1:-}" ] || [ -z "${2:-}" ]; then
+    echo "elapsed_minutes: missing timestamp (start='${1:-}' end='${2:-}')" >&2
+    return 1
   fi
+
+  if date -u -d "1970-01-01" +%s >/dev/null 2>&1; then
+    start_s="$(date -u -d "$1" +%s 2>/dev/null)" || start_s=""   # GNU date
+    end_s="$(date -u -d "$2" +%s 2>/dev/null)" || end_s=""
+  else
+    start_s="$(date -u -j -f "%Y-%m-%dT%H:%M:%SZ" "$1" +%s 2>/dev/null)" || start_s=""   # BSD
+    end_s="$(date -u -j -f "%Y-%m-%dT%H:%M:%SZ" "$2" +%s 2>/dev/null)" || end_s=""
+  fi
+
+  if [ -z "$start_s" ] || [ -z "$end_s" ]; then
+    echo "elapsed_minutes: unparseable timestamp (start='$1' end='$2')" >&2
+    return 1
+  fi
+
   printf '%dm\n' "$(( (end_s - start_s) / 60 ))"
 }
 
@@ -118,6 +139,10 @@ cmd_grade() {
   local run="$ROOT/runs/$run_id" base="$ROOT/runs/$run_id.base" meta="$ROOT/runs/$run_id.meta"
   [ -d "$run" ] || { echo "no such run: $run" >&2; exit 1; }
   [ -f "$meta" ] || { echo "missing meta: $meta" >&2; exit 1; }
+  # Without this, `diff -rN` against a missing directory silently treats it as
+  # empty, so every line in the run reads as freshly added and any pre-existing
+  # suppression attribute is misattributed to the model.
+  [ -d "$base" ] || { echo "missing base snapshot: $base" >&2; exit 1; }
 
   # shellcheck disable=SC1090
   source "$meta"   # provides: task, model, harness, started
@@ -154,13 +179,33 @@ cmd_grade() {
   local tests compile completed
   if (cd "$run" && mix test) > "$run.test.log" 2>&1; then tests=pass; else tests=fail; fi
 
+  # Three states, not two. A hard CompileError — the `~p` route failure Task 2
+  # documented, for one — contains no `warning:` lines at all, so counting them
+  # would label a build that never compiled as "0 warnings", which reads as
+  # almost-clean. The route flag exists because that is the one confounder
+  # known to fail this gate for reasons unrelated to type inference, and the
+  # exit code cannot distinguish it.
+  local warn_count
   if (cd "$run" && mix compile --force --warnings-as-errors) > "$run.compile.log" 2>&1; then
     compile=clean
   else
-    compile="$(grep -c 'warning:' "$run.compile.log" || true) warnings"
+    warn_count="$(grep -c 'warning:' "$run.compile.log" || true)"
+    if [ "$warn_count" -eq 0 ]; then
+      compile="error"
+    elif grep -q 'no route path for Router matches' "$run.compile.log"; then
+      compile="$warn_count warnings (routes)"
+    else
+      compile="$warn_count warnings"
+    fi
   fi
 
-  [ -n "$duration" ] || duration="$(elapsed_minutes "$started" "$(date -u +%Y-%m-%dT%H:%M:%SZ)")"
+  if [ -z "$duration" ]; then
+    duration="$(elapsed_minutes "$started" "$(date -u +%Y-%m-%dT%H:%M:%SZ)")" || {
+      echo "grade: cannot compute duration from meta (started='$started')" >&2
+      echo "grade: pass --duration explicitly, or repair $meta" >&2
+      exit 1
+    }
+  fi
   completed="$(evalcode_status "$task" "$tests" "$compile" "$suppressions")"
 
   local row
