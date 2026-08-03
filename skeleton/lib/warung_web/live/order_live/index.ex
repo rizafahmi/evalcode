@@ -28,10 +28,16 @@ defmodule WarungWeb.OrderLive.Index do
   end
 
   # Form values arrive as strings and a submission can carry anything at all —
-  # `min="1"` on the input is client-side only. Parsing must not raise.
+  # `min="1"` on the input is client-side only. Neither parsing nor anything
+  # downstream of it may raise, so magnitude is bounded here: Elixir integers
+  # are arbitrary precision, but SQLite's are 64-bit, and handing it a bignum
+  # raises Exqlite.Error from inside the driver where `with` cannot catch it.
+  @max_sqlite_int 9_223_372_036_854_775_807
+
   defp build_attrs(params) do
     with {product_id, ""} <- Integer.parse(params["product_id"] || ""),
-         {quantity, ""} <- Integer.parse(params["quantity"] || "") do
+         {quantity, ""} <- Integer.parse(params["quantity"] || ""),
+         true <- in_range?(product_id) and in_range?(quantity) do
       {:ok,
        %{
          customer_email: params["customer_email"],
@@ -41,6 +47,8 @@ defmodule WarungWeb.OrderLive.Index do
       _ -> :error
     end
   end
+
+  defp in_range?(n), do: n > 0 and n <= @max_sqlite_int
 
   @impl true
   def render(assigns) do
