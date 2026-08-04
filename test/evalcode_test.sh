@@ -67,11 +67,15 @@ assert_eq "no"  "$(evalcode_status yes fail clean no)" "gated task fails on fail
 assert_eq "no"  "$(evalcode_status yes pass clean yes)" "gated task fails when suppressions were added"
 
 echo "format_row"
-assert_eq "| 01-live-orders | opus5 | claude-code | yes | 14m | \$2.10 | clean |  |" \
-  "$(format_row 01-live-orders opus5 claude-code yes 14m 2.10 clean "")" "renders a full row with empty notes"
-assert_eq "| 01-live-orders | opus5 | claude-code | no | 9m | — | clean | tests failed |" \
-  "$(format_row 01-live-orders opus5 claude-code no 9m "" clean "tests failed")" \
+assert_eq "| 2026-08-03-opus5-01 | 01-live-orders | opus5 | claude-code | yes | 35/32 | 14m | \$2.10 | clean |  |" \
+  "$(format_row 2026-08-03-opus5-01 01-live-orders opus5 claude-code yes 35/32 14m 2.10 clean "")" \
+  "renders a full row with empty notes"
+assert_eq "| 2026-08-03-opus5-01 | 01-live-orders | opus5 | claude-code | no | 32/32 | 9m | — | clean | tests failed |" \
+  "$(format_row 2026-08-03-opus5-01 01-live-orders opus5 claude-code no 32/32 9m "" clean "tests failed")" \
   "renders an em dash for missing cost and a reason in notes"
+assert_eq "| 2026-08-03-opus5-01 | 01-live-orders | opus5 | claude-code | no | ?/32 | 9m | \$1.00 | clean | test count unreadable |" \
+  "$(format_row 2026-08-03-opus5-01 01-live-orders opus5 claude-code no "?/32" 9m 1.00 clean "test count unreadable")" \
+  "renders a question mark when the count could not be read"
 
 echo "valid_duration / valid_cost"
 valid_duration 14m;            assert_eq "0" "$?" "accepts 14m"
@@ -180,36 +184,36 @@ cell() { awk -F'|' -v n="$1" '{print $n}' | sed 's/^ *//;s/ *$//'; }
 echo "cmd_grade — outcomes"
 
 fx="$(new_fixture 01-live-orders 0 0 "Compiling 1 file (.ex)")"
-assert_eq "| 01-live-orders | testmodel | testharness | yes | 0m | \$1.23 | clean |  |" \
+assert_eq "| r1 | 01-live-orders | testmodel | testharness | yes | 32/32 | 0m | \$1.23 | clean |  |" \
   "$(grade_fixture "$fx" --cost 1.23 --duration 0m)" "passing run is completed"
 
 fx="$(new_fixture 01-live-orders 1 0 "Compiling 1 file (.ex)")"
-assert_eq "no" "$(grade_fixture "$fx" --duration 0m | cell 5)" "failing tests are not completed"
+assert_eq "no" "$(grade_fixture "$fx" --duration 0m | cell 6)" "failing tests are not completed"
 
 fx="$(new_fixture 01-live-orders 0 1 "warning: something")"
-assert_eq "yes" "$(grade_fixture "$fx" --duration 0m | cell 5)" \
+assert_eq "yes" "$(grade_fixture "$fx" --duration 0m | cell 6)" \
   "a task with requires_clean_compile=no ignores compile warnings"
 
 fx="$(new_fixture 02-type-clean 0 1 "warning: something" 41 41)"
-assert_eq "no" "$(grade_fixture "$fx" --duration 0m | cell 5)" \
+assert_eq "no" "$(grade_fixture "$fx" --duration 0m | cell 6)" \
   "a task with requires_clean_compile=yes needs a clean compile"
 
 # The compile gate used to be keyed on the literal task id `02-type-clean`, so
 # a new task silently got no gate at all. It comes from grading.conf now.
 fx="$(new_fixture 03-future-task 0 1 "warning: something" 32 32 yes)"
-assert_eq "no" "$(grade_fixture "$fx" --duration 0m | cell 5)" \
+assert_eq "no" "$(grade_fixture "$fx" --duration 0m | cell 6)" \
   "the compile gate is not keyed on the task id"
 
 echo "cmd_grade — test-count floor"
 
 fx="$(new_fixture 01-live-orders 0 0 "Compiling 1 file (.ex)" 10 32)"
-assert_eq "no" "$(grade_fixture "$fx" --duration 0m | cell 5)" \
+assert_eq "no" "$(grade_fixture "$fx" --duration 0m | cell 6)" \
   "fewer tests than the floor is not completed"
-assert_eq "only 10 of 32 tests ran" "$(grade_fixture "$fx" --duration 0m --regrade | cell 9)" \
+assert_eq "only 10 of 32 tests ran" "$(grade_fixture "$fx" --duration 0m --regrade | cell 11)" \
   "and the row says how many ran"
 
 fx="$(new_fixture 01-live-orders 0 0 "Compiling 1 file (.ex)" 0 32)"
-assert_eq "no" "$(grade_fixture "$fx" --duration 0m | cell 5)" \
+assert_eq "no" "$(grade_fixture "$fx" --duration 0m | cell 6)" \
   "excluding every test is not completed"
 
 fx="$(new_fixture 01-live-orders 0 0 "Compiling 1 file (.ex)")"
@@ -222,9 +226,9 @@ case "$1" in
 esac
 STUB
 chmod +x "$fx/stub/mix"
-assert_eq "no" "$(grade_fixture "$fx" --duration 0m | cell 5)" \
+assert_eq "no" "$(grade_fixture "$fx" --duration 0m | cell 6)" \
   "an unreadable test count is not completed"
-assert_eq "test count unreadable" "$(grade_fixture "$fx" --duration 0m --regrade | cell 9)" \
+assert_eq "test count unreadable" "$(grade_fixture "$fx" --duration 0m --regrade | cell 11)" \
   "and says so in notes"
 
 # A suite that fails to compile prints no summary line either. That is a plain
@@ -239,7 +243,7 @@ case "$1" in
 esac
 STUB
 chmod +x "$fx/stub/mix"
-assert_eq "tests failed" "$(grade_fixture "$fx" --duration 0m | cell 9)" \
+assert_eq "tests failed" "$(grade_fixture "$fx" --duration 0m | cell 11)" \
   "a suite that never ran reads as a test failure, not an unreadable count"
 
 echo "cmd_grade — grading.conf"
@@ -261,28 +265,28 @@ echo "cmd_grade — compile column"
 
 fx="$(new_fixture 01-live-orders 0 1 "warning: unused variable
 warning: another one")"
-assert_eq "2 warnings" "$(grade_fixture "$fx" --duration 0m | cell 8)" "counts warnings"
+assert_eq "2 warnings" "$(grade_fixture "$fx" --duration 0m | cell 10)" "counts warnings"
 
 fx="$(new_fixture 01-live-orders 0 1 "** (CompileError) lib/a.ex:1: boom")"
-assert_eq "error" "$(grade_fixture "$fx" --duration 0m | cell 8)" \
+assert_eq "error" "$(grade_fixture "$fx" --duration 0m | cell 10)" \
   "a hard failure is an error, not 0 warnings"
 
 fx="$(new_fixture 01-live-orders 0 1 "warning: no route path for Router matches \"/nope\"")"
-assert_eq "1 warnings (routes)" "$(grade_fixture "$fx" --duration 0m | cell 8)" \
+assert_eq "1 warnings (routes)" "$(grade_fixture "$fx" --duration 0m | cell 10)" \
   "flags route warnings as a distinct cause"
 
 echo "cmd_grade — suppression scan"
 
 fx="$(new_fixture 02-type-clean 0 0 "Compiling 1 file (.ex)" 41 41)"
 printf 'defmodule A do\n  @compile {:no_warn_undefined, Foo}\n  def a, do: :ok\nend\n' > "$fx/runs/r1/lib/a.ex"
-assert_eq "no" "$(grade_fixture "$fx" --duration 0m | cell 5)" \
+assert_eq "no" "$(grade_fixture "$fx" --duration 0m | cell 6)" \
   "suppression in an edited file is caught"
-assert_eq "suppressions added" "$(grade_fixture "$fx" --duration 0m --regrade | cell 9)" \
+assert_eq "suppressions added" "$(grade_fixture "$fx" --duration 0m --regrade | cell 11)" \
   "and the reason reaches the results table, not just stderr"
 
 fx="$(new_fixture 02-type-clean 0 0 "Compiling 1 file (.ex)" 41 41)"
 printf 'defmodule B do\n  @dialyzer {:nowarn_function, b: 0}\n  def b, do: :ok\nend\n' > "$fx/runs/r1/lib/b.ex"
-assert_eq "no" "$(grade_fixture "$fx" --duration 0m | cell 5)" \
+assert_eq "no" "$(grade_fixture "$fx" --duration 0m | cell 6)" \
   "suppression in a new file is caught"
 
 fx="$(new_fixture 02-type-clean 0 0 "Compiling 1 file (.ex)" 41 41)"
@@ -293,13 +297,13 @@ assert_eq "0" "$(grep -c 'holdout_test' "$fx/runs/r1.diff.log")" \
 echo "cmd_grade — notes column"
 
 fx="$(new_fixture 01-live-orders 0 0 "Compiling 1 file (.ex)")"
-assert_eq "" "$(grade_fixture "$fx" --duration 0m | cell 9)" "a pass leaves notes empty"
+assert_eq "" "$(grade_fixture "$fx" --duration 0m | cell 11)" "a pass leaves notes empty"
 
 fx="$(new_fixture 01-live-orders 1 0 "Compiling 1 file (.ex)")"
-assert_eq "tests failed" "$(grade_fixture "$fx" --duration 0m | cell 9)" "a failing suite says so"
+assert_eq "tests failed" "$(grade_fixture "$fx" --duration 0m | cell 11)" "a failing suite says so"
 
 fx="$(new_fixture 02-type-clean 0 1 "warning: something" 41 41)"
-assert_eq "compile failed" "$(grade_fixture "$fx" --duration 0m | cell 9)" "a dirty compile says so"
+assert_eq "compile failed" "$(grade_fixture "$fx" --duration 0m | cell 11)" "a dirty compile says so"
 
 echo "cmd_grade — idempotence"
 
@@ -317,7 +321,7 @@ fx="$(new_fixture 01-live-orders 0 0 "Compiling 1 file (.ex)")"
 printf 'defmodule HoldoutTest do\n  @compile {:no_warn_undefined, Foo}\nend\n' \
   > "$fx/tasks/01-live-orders/holdout/holdout_test.exs"
 grade_fixture "$fx" --duration 0m >/dev/null
-assert_eq "yes" "$(grade_fixture "$fx" --duration 0m --regrade | cell 5)" \
+assert_eq "yes" "$(grade_fixture "$fx" --duration 0m --regrade | cell 6)" \
   "a regrade does not attribute held-out files to the model"
 
 echo "cmd_grade — malformed input"

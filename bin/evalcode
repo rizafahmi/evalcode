@@ -10,8 +10,11 @@
 ROOT="$(cd "$(dirname "${BASH_SOURCE[0]}")/.." && pwd)"
 
 # Paths excluded from the base-vs-run diff. Build artefacts and the database
-# change on every run and would drown the suppression scan in noise.
-DIFF_EXCLUDES=(-x deps -x _build -x '.elixir_ls' -x '*.db' -x '*.db-shm' -x '*.db-wal' -x node_modules)
+# change on every run and would drown the suppression scan in noise. `.git` is
+# excluded because `start` now makes each workspace its own repository (see
+# cmd_start); it exists in the run but not in the `.base` snapshot, so without
+# this every object file would read as model-authored.
+DIFF_EXCLUDES=(-x deps -x _build -x '.elixir_ls' -x '*.db' -x '*.db-shm' -x '*.db-wal' -x node_modules -x .git)
 
 # --- pure helpers, unit-tested by test/evalcode_test.sh ----------------------
 
@@ -61,12 +64,25 @@ evalcode_status() {
   echo yes
 }
 
-# format_row <task> <model> <harness> <completed> <duration> <cost> <compile> <notes>
+# format_row <run-id> <task> <model> <harness> <completed> <tests> <duration> <cost> <compile> <notes>
+#
+# The run id leads because it is the row's only link to its evidence. Without
+# it, two runs of the same cell — which `start` deliberately supports, for
+# measuring within-model variance — produce rows that are indistinguishable from
+# each other and untraceable to the logs that would explain why they differ.
+# That made the one experiment the table most needs unreadable.
+#
+# `tests` is `<ran>/<floor>`. The count was already computed for the floor check
+# and written to `<run-id>.graded`, but `runs/` is gitignored and gets discarded,
+# so on a pass the number vanished. It is the only column that distinguishes a
+# model which cleared the floor exactly from one that solved the task and then
+# wrote tests of its own — 35/32 on the first graded round. A `?` in the
+# numerator means the count could not be read, which is always a failure.
 format_row() {
-  local cost="$6"
+  local cost="$8"
   if [ -n "$cost" ]; then cost="\$$cost"; else cost="—"; fi
-  printf '| %s | %s | %s | %s | %s | %s | %s | %s |\n' \
-    "$1" "$2" "$3" "$4" "$5" "$cost" "$7" "${8:-}"
+  printf '| %s | %s | %s | %s | %s | %s | %s | %s | %s | %s |\n' \
+    "$1" "$2" "$3" "$4" "$5" "$6" "$7" "$cost" "$9" "${10:-}"
 }
 
 # valid_duration <string>  -> 0 when it looks like `14m`
@@ -254,6 +270,43 @@ cmd_start() {
   if ! (cd "$run" && mix deps.get && mix ecto.setup) > "$setup_log" 2>&1; then
     echo "start: mix deps.get / mix ecto.setup failed — last lines of $setup_log:" >&2
     tail -n 20 "$setup_log" >&2
+    rm -rf "$run" "$base" "$meta"
+    echo "start: removed the partial run $run_id" >&2
+    exit 1
+  fi
+
+  # Make the workspace its own git repository.
+  #
+  # Runs live at `$ROOT/runs/<id>/`, inside the repository that holds the
+  # held-out tests, and git searches upward for its root. So from inside an
+  # untouched workspace, with no `--add-dir` and no path traversal:
+  #
+  #   git rev-parse --show-toplevel   ->  /path/to/evalcode
+  #   git show HEAD:tasks/01-live-orders/holdout/holdout_order_live_realtime_test.exs
+  #
+  # returns the held-out test verbatim. The README's rule — do not open this
+  # repository in the agent — is an instruction to the operator, and cannot
+  # protect against the agent's own tooling: `git log` and `git diff` are the
+  # first things a coding agent reaches for to orient itself, and this repo's
+  # commit subjects describe the held-out tests by name. A `.git` here stops the
+  # upward walk at the workspace boundary.
+  #
+  # The initial commit is what makes `git diff` inside the workspace show the
+  # agent its own work, which is what it was reaching for anyway. Identity is
+  # passed on the command line so a run neither depends on nor is attributed to
+  # the operator's global git config. `skeleton/.gitignore` already excludes
+  # `_build`, `deps` and `*.db`, so this commits source only.
+  #
+  # Fatal on failure: a workspace without its own `.git` is a leaky workspace,
+  # and continuing would silently reopen the hole this closes.
+  if ! (
+    cd "$run" &&
+    git init --quiet &&
+    git add -A &&
+    git -c user.name=evalcode -c user.email=evalcode@localhost \
+        commit --quiet -m "evalcode start state: $task"
+  ) >> "$setup_log" 2>&1; then
+    echo "start: could not initialise the workspace git repository — see $setup_log" >&2
     rm -rf "$run" "$base" "$meta"
     echo "start: removed the partial run $run_id" >&2
     exit 1
@@ -456,7 +509,8 @@ cmd_grade() {
   fi
 
   local row
-  row="$(format_row "$task" "$model" "$harness" "$completed" "$duration" "$cost" "$compile" "$notes")"
+  row="$(format_row "$run_id" "$task" "$model" "$harness" "$completed" \
+    "${executed:-?}/$min_tests" "$duration" "$cost" "$compile" "$notes")"
   echo "$row" >> "$ROOT/RESULTS.md"
   echo "$row"
 
