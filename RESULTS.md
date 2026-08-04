@@ -6,5 +6,21 @@ of tests actually ran, and no compiler suppressions were added — plus a clean
 compile for tasks whose `grading.conf` sets `requires_clean_compile=yes`.
 `notes` says why a row is not completed, and is empty on a pass.
 
-| task | model | harness | completed | duration | cost | compile | notes |
-|---|---|---|---|---|---|---|---|
+`run` is the row's link to its evidence — `runs/<run>.diff.log` is what the
+model actually wrote, `runs/<run>.test.log` and `.compile.log` are the raw
+output. Those live under `runs/`, which is gitignored and gets cleaned up, so
+the id may outlive the logs; it still identifies which round produced the row.
+Two runs of the same cell are distinguished by a `-2` suffix.
+
+`tests` is `<ran>/<floor>` — how many tests actually ran, against the task's
+`min_tests`. Above the floor means the model wrote tests of its own. A `?`
+numerator means the count could not be read from the log, which never passes.
+
+Measured by the harness: `completed`, `tests`, `compile`, `notes`.
+Typed in by the operator and unverified: `cost` always, `duration` whenever
+`--duration` was passed, and the `model` and `harness` labels.
+
+| run | task | model | harness | completed | tests | duration | cost | compile | notes |
+|---|---|---|---|---|---|---|---|---|---|
+| 2026-08-03-opus5-01 | 01-live-orders | opus5 | claude-code | yes | 35/32 | 5m | $2.83 | clean |  |
+| 2026-08-03-opus5-02 | 02-type-clean | opus5 | claude-code | yes | 52/41 | 2m | $0.88 | clean |  |
