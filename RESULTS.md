@@ -24,3 +24,5 @@ Typed in by the operator and unverified: `cost` always, `duration` whenever
 |---|---|---|---|---|---|---|---|---|---|
 | 2026-08-03-opus5-01 | 01-live-orders | opus5 | claude-code | yes | 35/32 | 5m | $2.83 | clean |  |
 | 2026-08-03-opus5-02 | 02-type-clean | opus5 | claude-code | yes | 52/41 | 2m | $0.88 | clean |  |
+| 2026-08-04-mixed-01 | 01-live-orders | mixed | ampcode | yes | 33/32 | 2m | $0.99 | clean |  |
+| 2026-08-04-gpt-56-02 | 02-type-clean | gpt-56 | ampcode | yes | 51/41 | 3m | $1.03 | clean |  |
