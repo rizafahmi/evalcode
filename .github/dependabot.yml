@@ -15,3 +15,9 @@ updates:
   # start state every model is measured against. Bumping it changes the exam
   # without changing any task, which would make old rows in RESULTS.md
   # incomparable to new ones while still looking like the same benchmark.
+  #
+  # Also deliberately absent: a `docker` entry for the Dockerfile. Its base tag
+  # names Elixir 1.20.2 on purpose, and an automated bump to 1.21 would quietly
+  # dissolve the pin the whole benchmark rests on. Refresh the Debian snapshot
+  # in that tag by hand when you want the OS patches; never let the update move
+  # the Elixir or OTP version. CI's `container` job fails loudly if it does.
