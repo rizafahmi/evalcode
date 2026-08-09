@@ -20,16 +20,18 @@ Kenapa orang perlu punya eval sendiri: leaderboard publik mengukur model di soal
 
 Empat putaran, diukur 3–4 Agustus 2026 — sebelum repo ini publik, saat held-out test masih rahasia.
 
-| run | task | model | harness | completed | tests | duration | cost | compile | notes |
-|---|---|---|---|---|---|---|---|---|---|
-| 2026-08-03-opus5-01 | 01-live-orders | opus5 | claude-code | yes | 35/32 | 5m | $2.83 | clean |  |
-| 2026-08-03-opus5-02 | 02-type-clean | opus5 | claude-code | yes | 52/41 | 2m | $0.88 | clean |  |
-| 2026-08-04-mixed-01 | 01-live-orders | mixed | ampcode | yes | 33/32 | 2m | $0.99 | clean |  |
-| 2026-08-04-gpt-56-02 | 02-type-clean | gpt-56 | ampcode | yes | 51/41 | 3m | $1.03 | clean |  |
+| task | model | harness | completed | tests | duration | cost |
+|---|---|---|:---:|---|---|---|
+| liveview | mixed | ampcode | ✓ | 33/32 | 2m | $0.99 |
+| liveview | opus5 | claude-code | ✓ | 35/32 | 5m | $2.83 |
+| types | opus5 | claude-code | ✓ | 52/41 | 2m | $0.88 |
+| types | gpt-56 | ampcode | ✓ | 51/41 | 3m | $1.03 |
 
-Keempatnya lolos, jadi `notes` kosong; kolom itu baru terisi saat ada yang gagal. Kolom `tests` yang paling informatif: `35/32` artinya model menyelesaikan task lalu menulis 3 test sendiri, `33/32` artinya pas di batas.
+`✓` artinya lolos keempat gate di [Arti `completed`](#arti-completed) — bukan sekadar `mix test` exit 0. Kolom `tests` berformat `<jalan>/<batas minimum>`: `35/32` artinya model menyelesaikan task lalu menulis 3 test sendiri, `33/32` artinya pas di batas. `mixed` bukan nama model — ampcode memilih model sendiri per langkah.
 
-Empat baris jelas bukan sampel untuk menyimpulkan model mana lebih baik — dan memang bukan itu gunanya. Tabel ini contoh **bentuk**: apa yang layak dicatat per putaran, dan mana kolom yang boleh dipercaya. Lihat [cara membacanya](#membaca-resultsmd) dan [`RESULTS.md`](RESULTS.md).
+Satu-satunya perbandingan langsung yang ada di sini: task `liveview` dikerjakan keduanya dan sama-sama lolos, **$0.99 lawan $2.83** — hampir 3× lipat. Perhatikan bahwa `cost` dan `duration` diketik operator dan tidak diverifikasi harness — dan `duration` adalah wall-clock, termasuk waktu operator meninggalkan meja.
+
+Empat baris jelas bukan sampel untuk menyimpulkan model mana lebih baik — dan memang bukan itu gunanya. Tabel ini contoh **bentuk**: apa yang layak dicatat per putaran, dan mana kolom yang boleh dipercaya. Versi lengkapnya — run id, kolom `compile` dan `notes` — ada di [`RESULTS.md`](RESULTS.md), lihat juga [cara membacanya](#membaca-resultsmd).
 
 ### Task 01 dan 02 adalah contoh, bukan alat ukur aktif
 
@@ -261,16 +263,18 @@ Why anyone needs their own eval: public leaderboards measure models on problems 
 
 Four rounds, measured 3–4 August 2026 — before this repo went public, while the held-out tests were still private.
 
-| run | task | model | harness | completed | tests | duration | cost | compile | notes |
-|---|---|---|---|---|---|---|---|---|---|
-| 2026-08-03-opus5-01 | 01-live-orders | opus5 | claude-code | yes | 35/32 | 5m | $2.83 | clean |  |
-| 2026-08-03-opus5-02 | 02-type-clean | opus5 | claude-code | yes | 52/41 | 2m | $0.88 | clean |  |
-| 2026-08-04-mixed-01 | 01-live-orders | mixed | ampcode | yes | 33/32 | 2m | $0.99 | clean |  |
-| 2026-08-04-gpt-56-02 | 02-type-clean | gpt-56 | ampcode | yes | 51/41 | 3m | $1.03 | clean |  |
+| task | model | harness | completed | tests | duration | cost |
+|---|---|---|:---:|---|---|---|
+| liveview | mixed | ampcode | ✓ | 33/32 | 2m | $0.99 |
+| liveview | opus5 | claude-code | ✓ | 35/32 | 5m | $2.83 |
+| types | opus5 | claude-code | ✓ | 52/41 | 2m | $0.88 |
+| types | gpt-56 | ampcode | ✓ | 51/41 | 3m | $1.03 |
 
-All four passed, so `notes` is empty; that column only fills in on a failure. The `tests` column is the interesting one: `35/32` means the model solved the task and then wrote 3 tests of its own, `33/32` means it cleared the floor exactly.
+`✓` means all four gates in [What `completed` means](#what-completed-means) passed — not merely that `mix test` exited 0. The `tests` column is `<ran>/<floor>`: `35/32` means the model solved the task and then wrote 3 tests of its own, `33/32` means it cleared the floor exactly. `mixed` is not a model name — ampcode picks its own model per step.
 
-Four rows is obviously not a sample you can rank models with — that isn't what it's for. The table is here as an example of **shape**: what's worth recording per round, and which columns you are allowed to trust. See [how to read it](#reading-resultsmd) and [`RESULTS.md`](RESULTS.md).
+The only head-to-head here: task `liveview` was run by both and both passed, **$0.99 against $2.83** — nearly 3× the cost. Note that `cost` and `duration` are typed in by the operator and unverified — and `duration` is wall-clock, including time the operator spent away from the desk.
+
+Four rows is obviously not a sample you can rank models with — that isn't what it's for. The table is here as an example of **shape**: what's worth recording per round, and which columns you are allowed to trust. The full version — run ids, the `compile` and `notes` columns — is in [`RESULTS.md`](RESULTS.md); see also [how to read it](#reading-resultsmd).
 
 ### Tasks 01 and 02 are examples, not live instruments
 
