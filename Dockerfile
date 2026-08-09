@@ -36,7 +36,11 @@ RUN apt-get update \
 ENV MIX_HOME=/opt/mix \
     HEX_HOME=/opt/hex \
     LANG=C.UTF-8
-RUN mix local.hex --force \
+# HEX_HOME is created lazily by the first `mix deps.get`, not by local.hex, so
+# it has to be made here — otherwise chmod fails the build on a path that does
+# not exist yet, and a container running as your host uid has nowhere to cache.
+RUN mkdir -p /opt/mix /opt/hex \
+ && mix local.hex --force \
  && mix local.rebar --force \
  && chmod -R a+rwX /opt/mix /opt/hex
 
