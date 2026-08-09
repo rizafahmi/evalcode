@@ -22,7 +22,7 @@ Two runs of the same cell are distinguished by a `-2` suffix.
 `min_tests`. Above the floor means the model wrote tests of its own. A `?`
 numerator means the count could not be read from the log, which never passes.
 
-Measured by the harness: `completed`, `tests`, `compile`, `notes`.
+Measured by `bin/evalcode`: `completed`, `tests`, `compile`, `notes`.
 Typed in by the operator and unverified: `cost` always, `duration` whenever
 `--duration` was passed, and the `model` and `harness` labels.
 

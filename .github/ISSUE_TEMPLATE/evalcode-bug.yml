@@ -1,4 +1,4 @@
-name: Harness bug
+name: Bug in bin/evalcode
 description: bin/evalcode did the wrong thing — especially if it printed a number that looked right
 labels: ["bug"]
 body:

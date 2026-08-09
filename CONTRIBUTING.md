@@ -12,7 +12,7 @@ publik.
 ### Kontribusi yang paling berguna
 
 1. **Task baru** — task yang mengukur sesuatu yang belum diukur task 01 dan 02.
-2. **Bug di harness** — terutama bug yang bisa membuat `grade` mencetak angka yang salah tapi terlihat benar. Itu kelas bug paling parah di repo ini.
+2. **Bug di `bin/evalcode`** — terutama bug yang bisa membuat `grade` mencetak angka yang salah tapi terlihat benar. Itu kelas bug paling parah di repo ini.
 3. **Perbaikan dokumentasi** — kalau ada langkah di README yang tidak jalan di mesin kamu, itu bug.
 
 ### Yang tidak dicari
@@ -58,7 +58,7 @@ is a security hole rather than an ordinary bug, follow
 ### Most useful contributions
 
 1. **New tasks** — ones that measure something tasks 01 and 02 don't.
-2. **Harness bugs** — especially any bug that lets `grade` print a wrong number that looks right. That's the worst bug class in this repo.
+2. **Bugs in `bin/evalcode`** — especially any bug that lets `grade` print a wrong number that looks right. That's the worst bug class in this repo.
 3. **Documentation fixes** — if a step in the README doesn't work on your machine, that's a bug.
 
 ### Not looking for
