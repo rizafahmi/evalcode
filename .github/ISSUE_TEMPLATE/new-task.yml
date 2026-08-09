@@ -1,0 +1,50 @@
+name: New task proposal
+description: Propose a task that measures something tasks 01 and 02 don't
+labels: ["task"]
+body:
+  - type: markdown
+    attributes:
+      value: |
+        Bahasa Indonesia dipersilakan — jawab dalam bahasa mana pun.
+
+        A task nobody validated by hand measures nothing, so this form asks for
+        the validation record up front. The full rules are in
+        [CONTRIBUTING](https://github.com/rizafahmi/evalcode/blob/main/CONTRIBUTING.md#submitting-a-new-task).
+
+  - type: input
+    id: task-id
+    attributes:
+      label: Proposed task id
+      placeholder: 03-live-inventory
+    validations:
+      required: true
+
+  - type: textarea
+    id: measures
+    attributes:
+      label: What it measures
+      description: The capability under test, and why tasks 01 and 02 don't already cover it.
+    validations:
+      required: true
+
+  - type: textarea
+    id: not-measured
+    attributes:
+      label: What the held-out tests deliberately don't catch
+      description: >-
+        Every task has a blind spot. Naming it is what keeps the row honest —
+        a task that claims to catch everything is the one you can't trust.
+    validations:
+      required: true
+
+  - type: checkboxes
+    id: validation
+    attributes:
+      label: Validation record
+      description: Done by hand, not assumed. Unchecked boxes are fine — say so and open it as a draft.
+      options:
+        - label: The held-out tests **fail** on a completely untouched workspace
+        - label: They **pass** once I solve the task myself
+        - label: "`min_tests` matches the number of tests that actually ran"
+        - label: "Held-out modules are namespaced under `Holdout`, filenames prefixed `holdout_`"
+        - label: "Every test module that touches the database is `async: false`"

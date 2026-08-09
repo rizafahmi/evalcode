@@ -1,0 +1,8 @@
+blank_issues_enabled: true
+
+contact_links:
+  - name: Hasil run kamu sendiri / Results from your own runs
+    url: https://github.com/rizafahmi/evalcode/blob/main/CONTRIBUTING.md#not-looking-for
+    about: >-
+      RESULTS.md records measurements taken on the maintainer's machine, not a
+      community leaderboard. Your rows belong in your fork.
