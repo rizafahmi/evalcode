@@ -14,6 +14,23 @@ Ini **contoh lengkap sebuah eval mandiri**, dipublikasikan untuk dibongkar dan d
 
 Kenapa orang perlu punya eval sendiri: leaderboard publik mengukur model di soal yang bukan soal kamu. evalcode mengukur satu hal — **apakah model X, di harness Y, bisa menyelesaikan pekerjaan nyata di stack kamu.** Hasilnya satu baris tabel yang bisa kamu pertahankan kalau ditanya orang.
 
+---
+
+## Hasil
+
+Empat putaran, diukur 3–4 Agustus 2026 — sebelum repo ini publik, saat held-out test masih rahasia.
+
+| run | task | model | harness | completed | tests | duration | cost | compile | notes |
+|---|---|---|---|---|---|---|---|---|---|
+| 2026-08-03-opus5-01 | 01-live-orders | opus5 | claude-code | yes | 35/32 | 5m | $2.83 | clean |  |
+| 2026-08-03-opus5-02 | 02-type-clean | opus5 | claude-code | yes | 52/41 | 2m | $0.88 | clean |  |
+| 2026-08-04-mixed-01 | 01-live-orders | mixed | ampcode | yes | 33/32 | 2m | $0.99 | clean |  |
+| 2026-08-04-gpt-56-02 | 02-type-clean | gpt-56 | ampcode | yes | 51/41 | 3m | $1.03 | clean |  |
+
+Keempatnya lolos, jadi `notes` kosong; kolom itu baru terisi saat ada yang gagal. Kolom `tests` yang paling informatif: `35/32` artinya model menyelesaikan task lalu menulis 3 test sendiri, `33/32` artinya pas di batas.
+
+Empat baris jelas bukan sampel untuk menyimpulkan model mana lebih baik — dan memang bukan itu gunanya. Tabel ini contoh **bentuk**: apa yang layak dicatat per putaran, dan mana kolom yang boleh dipercaya. Lihat [cara membacanya](#membaca-resultsmd) dan [`RESULTS.md`](RESULTS.md).
+
 ### Task 01 dan 02 adalah contoh, bukan alat ukur aktif
 
 Keduanya tervalidasi dan benar-benar jalan — clone repo ini, dan kamu bisa menyelesaikan satu putaran penuh. Tapi keduanya **sudah tidak bisa dipakai mengukur**, dan alasannya justru pelajarannya sendiri.
@@ -29,7 +46,7 @@ diff skeleton/lib/warung_web/order_params.ex \
 
 `skeleton/` adalah titik awal setiap run, jadi tidak mungkin dibuang. **Permukaan bocor selalu lebih luas dari direktori yang kamu tandai rahasia** — history git, artefak build, dan `NOTES.md` juga termasuk.
 
-Kalau kamu butuh angka yang bebas kontaminasi: **fork repo ini, hapus `tasks/`, tulis task dari codebase kamu sendiri, dan simpan repo-nya privat.** Yang dipublikasikan di sini metodenya, bukan soal ujiannya. Angka di [`RESULTS.md`](RESULTS.md) adalah arsip — diukur sebelum repo ini dipublikasikan.
+Kalau kamu butuh angka yang bebas kontaminasi: **fork repo ini, hapus `tasks/`, tulis task dari codebase kamu sendiri, dan simpan repo-nya privat.** Yang dipublikasikan di sini metodenya, bukan soal ujiannya.
 
 ---
 
@@ -238,6 +255,23 @@ This is a **complete worked example of a self-built eval**, published to be take
 
 Why anyone needs their own eval: public leaderboards measure models on problems that aren't yours. evalcode measures one thing — **can model X, in harness Y, finish real work in your stack.** The output is one row in a table you can defend when someone asks.
 
+---
+
+## Results
+
+Four rounds, measured 3–4 August 2026 — before this repo went public, while the held-out tests were still private.
+
+| run | task | model | harness | completed | tests | duration | cost | compile | notes |
+|---|---|---|---|---|---|---|---|---|---|
+| 2026-08-03-opus5-01 | 01-live-orders | opus5 | claude-code | yes | 35/32 | 5m | $2.83 | clean |  |
+| 2026-08-03-opus5-02 | 02-type-clean | opus5 | claude-code | yes | 52/41 | 2m | $0.88 | clean |  |
+| 2026-08-04-mixed-01 | 01-live-orders | mixed | ampcode | yes | 33/32 | 2m | $0.99 | clean |  |
+| 2026-08-04-gpt-56-02 | 02-type-clean | gpt-56 | ampcode | yes | 51/41 | 3m | $1.03 | clean |  |
+
+All four passed, so `notes` is empty; that column only fills in on a failure. The `tests` column is the interesting one: `35/32` means the model solved the task and then wrote 3 tests of its own, `33/32` means it cleared the floor exactly.
+
+Four rows is obviously not a sample you can rank models with — that isn't what it's for. The table is here as an example of **shape**: what's worth recording per round, and which columns you are allowed to trust. See [how to read it](#reading-resultsmd) and [`RESULTS.md`](RESULTS.md).
+
 ### Tasks 01 and 02 are examples, not live instruments
 
 Both are validated and genuinely runnable — clone this repo and you can complete a full round. But neither can be **used for measurement any more**, and the reason is itself the lesson.
@@ -253,7 +287,7 @@ diff skeleton/lib/warung_web/order_params.ex \
 
 `skeleton/` is where every run starts, so it can't be removed. **The leak surface is always wider than the directory you marked secret** — git history, build artifacts, and `NOTES.md` all count.
 
-So if you need uncontaminated numbers: **fork this, delete `tasks/`, write tasks from your own codebase, and keep that repo private.** What's published here is the method, not the exam. The numbers in [`RESULTS.md`](RESULTS.md) are an archive — measured before this repo went public.
+So if you need uncontaminated numbers: **fork this, delete `tasks/`, write tasks from your own codebase, and keep that repo private.** What's published here is the method, not the exam.
 
 ---
 
