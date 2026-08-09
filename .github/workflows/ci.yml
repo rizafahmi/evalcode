@@ -149,3 +149,28 @@ jobs:
             -eval 'io:format("~s~n", [erlang:system_info(otp_release)]), halt().' | tail -n 1)"
           echo "OTP $otp"
           [ "$otp" = 27 ] || { echo "image no longer provides OTP 27: $otp" >&2; exit 1; }
+
+      # Having the right Elixir in the image is not the claim the README makes.
+      # It tells people to run rounds through a bind mount as their own uid, and
+      # that is where a container actually breaks: mix needs somewhere writable
+      # that is not the image's HOME, and files it creates have to stay usable on
+      # the host. So this runs the documented invocation verbatim rather than a
+      # convenient variation of it.
+      - name: A full round works through the documented invocation
+        run: |
+          set -euo pipefail
+          docker run --rm -v "$PWD:/work" -w /work --user "$(id -u):$(id -g)" evalcode bash -c '
+            set -euo pipefail
+            run_id="$(basename "$(bin/evalcode start 01-live-orders ci ci | tail -n 1)")"
+            bin/evalcode grade "$run_id" --cost 0.00
+            row="$(grep -F "| $run_id |" RESULTS.md)"
+            echo "$row"
+            case "$row" in
+              *"| no |"*) ;;
+              *) echo "an untouched workspace graded as completed" >&2; exit 1 ;;
+            esac
+            case "$row" in
+              *"tests failed"*) ;;
+              *) echo "expected the held-out tests to fail on an untouched workspace" >&2; exit 1 ;;
+            esac
+          '
