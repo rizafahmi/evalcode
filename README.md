@@ -56,15 +56,54 @@ Poin pentingnya: **held-out test baru masuk ke workspace saat grading.** Selama 
 
 ## Setup
 
-Butuh [Nix](https://nixos.org/download) (opsional: [direnv](https://direnv.net)).
+`bin/evalcode` cuma menanyakan satu hal ke toolchain: `elixir --version` harus menjawab **1.20.x**, di atas **Erlang/OTP 27**. Bagaimana kamu sampai ke sana bebas — tiga jalur di bawah sama sahnya, dan penolakan versinya identik di ketiganya karena yang diperiksa memang cuma output `elixir --version`.
 
 ```bash
 git clone https://github.com/rizafahmi/evalcode.git
 cd evalcode
+```
+
+### Jalur A — Nix + direnv
+
+```bash
 direnv allow      # atau: nix develop
 ```
 
-Devshell-nya mengunci **Elixir 1.20.x + Erlang/OTP 27**. `start` dan `grade` menolak jalan di luar itu — bukan rewel: seluruh task 02 dinilai berdasarkan kelas warning yang cuma ada di type checker Elixir 1.20. Di Elixir 1.18 kode start state-nya compile bersih dan akan tercatat sebagai "selesai" padahal model belum mengerjakan apa pun.
+Paling reproducible: `flake.lock` mengunci versi persisnya, jadi mesin kamu dan mesin orang lain dapat compiler yang sama.
+
+### Jalur B — container (Docker atau Podman)
+
+[`Dockerfile`](Dockerfile) di root memasang toolchain yang sama (Elixir 1.20.2 / OTP 27):
+
+```bash
+docker build -t evalcode .
+docker run --rm -it -v "$PWD:/work" -w /work --user "$(id -u):$(id -g)" evalcode
+
+podman build -t evalcode .
+podman run  --rm -it -v "$PWD:/work:Z" -w /work evalcode
+```
+
+Bind mount-nya yang penting: `runs/` dan `RESULTS.md` ditulis ke checkout kamu, bukan ikut hilang bersama container. `--user` mencegah docker meninggalkan file milik root di situ; podman rootless sudah memetakan uid kamu sendiri.
+
+### Jalur C — pasang langsung, tanpa alat bantu
+
+Butuh Elixir 1.20.x + Erlang/OTP 27, plus `git`, `rsync`, `diff`, dan C compiler — `exqlite` meng-compile SQLite dari source saat `mix deps.get`.
+
+```bash
+# mise
+mise use erlang@27.3.4 elixir@1.20.2-otp-27
+
+# asdf
+asdf install erlang 27.3.4 && asdf install elixir 1.20.2-otp-27
+
+elixir --version      # harus menyebut 1.20.x dan OTP 27
+```
+
+Paket sistem atau [installer resmi](https://elixir-lang.org/install.html) juga boleh, asal versinya cocok.
+
+### Kenapa versinya dikunci
+
+`start` dan `grade` menolak jalan kalau `elixir --version` bukan 1.20.x — bukan rewel: seluruh task 02 dinilai berdasarkan kelas warning yang cuma ada di type checker Elixir 1.20. Di Elixir 1.18 kode start state-nya compile bersih dan akan tercatat sebagai "selesai" padahal model belum mengerjakan apa pun.
 
 ---
 
@@ -197,6 +236,7 @@ test/evalcode_test.sh   unit test untuk harness-nya
 docs/                   temuan yang membentuk desainnya
 .github/                CI, template issue & PR
 flake.nix               devshell terkunci: Elixir 1.20 / OTP 27
+Dockerfile              toolchain yang sama, untuk docker/podman
 RESULTS.md              tabelnya
 ```
 
@@ -287,15 +327,66 @@ The key property: **held-out tests enter the workspace only at grading time.** W
 
 ## Setup
 
-Requires [Nix](https://nixos.org/download) (optional: [direnv](https://direnv.net)).
+`bin/evalcode` asks the toolchain exactly one question: does `elixir --version`
+say **1.20.x**, on **Erlang/OTP 27**. How you get there is your business — the
+three routes below are equally valid, and the version refusal behaves
+identically in all of them, because all it ever inspects is that output.
 
 ```bash
 git clone https://github.com/rizafahmi/evalcode.git
 cd evalcode
+```
+
+### Route A — Nix + direnv
+
+```bash
 direnv allow      # or: nix develop
 ```
 
-The devshell pins **Elixir 1.20.x + Erlang/OTP 27**. `start` and `grade` refuse to run outside it — not pedantry: task 02 is scored entirely on a warning class that only exists in Elixir 1.20's type checker. Under 1.18 its untouched start state compiles clean and would be recorded as completed work for zero effort.
+The most reproducible option: `flake.lock` pins the exact versions, so your
+machine and someone else's get the same compiler.
+
+### Route B — a container (Docker or Podman)
+
+The [`Dockerfile`](Dockerfile) at the root installs the same toolchain
+(Elixir 1.20.2 / OTP 27):
+
+```bash
+docker build -t evalcode .
+docker run --rm -it -v "$PWD:/work" -w /work --user "$(id -u):$(id -g)" evalcode
+
+podman build -t evalcode .
+podman run  --rm -it -v "$PWD:/work:Z" -w /work evalcode
+```
+
+The bind mount is the point: `runs/` and `RESULTS.md` land in your checkout
+rather than vanishing with the container. `--user` stops docker leaving
+root-owned files behind in it; rootless podman already maps your own uid.
+
+### Route C — install it directly, no extra tooling
+
+You need Elixir 1.20.x + Erlang/OTP 27, plus `git`, `rsync`, `diff`, and a C
+compiler — `exqlite` builds SQLite from source during `mix deps.get`.
+
+```bash
+# mise
+mise use erlang@27.3.4 elixir@1.20.2-otp-27
+
+# asdf
+asdf install erlang 27.3.4 && asdf install elixir 1.20.2-otp-27
+
+elixir --version      # must say 1.20.x and OTP 27
+```
+
+System packages or the [official installer](https://elixir-lang.org/install.html)
+are fine too, as long as the versions match.
+
+### Why the version is pinned
+
+`start` and `grade` refuse to run when `elixir --version` is not 1.20.x — not
+pedantry: task 02 is scored entirely on a warning class that only exists in
+Elixir 1.20's type checker. Under 1.18 its untouched start state compiles clean
+and would be recorded as completed work for zero effort.
 
 ---
 
@@ -428,6 +519,7 @@ test/evalcode_test.sh   unit tests for the harness
 docs/                   findings that shaped the design
 .github/                CI, issue and PR templates
 flake.nix               pinned devshell: Elixir 1.20 / OTP 27
+Dockerfile              the same toolchain, for docker/podman
 RESULTS.md              the table
 ```
 
