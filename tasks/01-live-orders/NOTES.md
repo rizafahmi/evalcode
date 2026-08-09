@@ -1,5 +1,8 @@
 # 01-live-orders — authoring notes
 
+> **Spoiler.** This file spells out the full solution and what the held-out
+> tests catch. Never give it to an agent you are measuring.
+
 Validated by hand on 2026-08-03 against the skeleton at the commit that
 introduced `WarungWeb.OrderLive.Index`.
 

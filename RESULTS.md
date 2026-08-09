@@ -1,5 +1,11 @@
 # Results
 
+> **Archive.** These four rows were measured on 3–4 August 2026, before this repo
+> was published — while the held-out tests were still private. Tasks 01 and 02 are
+> retired examples now, so new rows for them would not be contamination-free. The
+> table stays because it shows what a results table should record, and what it
+> should refuse to claim.
+
 Each row is one model working one task inside one agent harness.
 `completed` means the held-out tests passed, at least the task's minimum number
 of tests actually ran, and no compiler suppressions were added — plus a clean

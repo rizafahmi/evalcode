@@ -432,6 +432,7 @@ cmd_grade() {
   # — survive into grading and fail tests that have nothing to do with the
   # task. That scores a model as failing for work it did correctly, which is
   # worse than a false pass because it looks like a real result.
+  # shellcheck disable=SC2209  # MIX_ENV=test is an env prefix, not an assignment
   (cd "$run" && MIX_ENV=test mix ecto.drop --quiet) >/dev/null 2>&1 || true
 
   local tests compile completed notes=""
@@ -467,6 +468,7 @@ cmd_grade() {
   fi
 
   if [ -z "$duration" ]; then
+    # shellcheck disable=SC2154  # `started` comes from `source "$meta"` above
     duration="$(elapsed_minutes "$started" "$(date -u +%Y-%m-%dT%H:%M:%SZ)")" || {
       echo "grade: cannot compute duration from meta (started='$started')" >&2
       echo "grade: pass --duration explicitly, or repair $meta" >&2
