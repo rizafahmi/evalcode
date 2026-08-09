@@ -15,7 +15,11 @@ workspace, dan bisa membuka koneksi jaringan. Harness ini **tidak** melakukan
 sandboxing.
 
 Kalau kamu mengukur model atau harness yang belum kamu percaya, jalankan seluruh
-putaran di VM atau container sekali pakai.
+putaran di VM atau container sekali pakai. [`Dockerfile`](Dockerfile) di root
+sudah cukup untuk itu — perlu diingat, bind mount `-v "$PWD:/work"` yang
+disarankan README memang membuka checkout kamu ke dalam container, jadi
+mount checkout terpisah kalau isolasinya yang kamu cari, bukan sekadar
+kepraktisan toolchain.
 
 **2. `tasks/<id>/grading.conf` di-source oleh shell.**
 
@@ -55,7 +59,11 @@ privileges: it can read files outside the workspace and open network
 connections. The harness does **no** sandboxing.
 
 If you are measuring a model or agent harness you do not already trust, run the
-whole round inside a disposable VM or container.
+whole round inside a disposable VM or container. The [`Dockerfile`](Dockerfile)
+at the root is enough for that — but note that the `-v "$PWD:/work"` bind mount
+the README suggests does expose your checkout to the container, so mount a
+separate checkout when isolation is what you are after rather than just a
+convenient toolchain.
 
 **2. `tasks/<id>/grading.conf` is shell-sourced.**
 
