@@ -5,15 +5,27 @@ on:
     branches: ["**"]
   pull_request:
 
+# A branch pushed three times in a minute used to queue three full runs, and the
+# badge showed whichever finished last rather than the newest commit. Superseded
+# runs are cancelled instead.
+concurrency:
+  group: ${{ github.workflow }}-${{ github.ref }}
+  cancel-in-progress: true
+
 permissions:
   contents: read
 
+# Actions are pinned to a commit SHA rather than a tag. A tag is mutable: the
+# owner can repoint `v7` at new code after anyone reviewed it, and this workflow
+# runs with a checkout of the repository. The trailing comment carries the
+# human-readable version, and Dependabot keeps both in sync.
 jobs:
   harness:
     name: harness tests + shellcheck
     runs-on: ubuntu-latest
+    timeout-minutes: 10
     steps:
-      - uses: actions/checkout@v4
+      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
 
       # test/evalcode_test.sh stubs `mix` and `elixir` on PATH, so the harness
       # can be tested without installing the BEAM toolchain at all.
@@ -22,3 +34,42 @@ jobs:
 
       - name: shellcheck
         run: shellcheck --severity=warning bin/evalcode test/evalcode_test.sh
+
+  devshell:
+    # The README claims the devshell pins Elixir 1.20 / OTP 27, and the whole of
+    # task 02 is scored on a warning class that exists only in 1.20's type
+    # checker — under 1.18 an untouched start state scores `completed=yes` for
+    # zero work. That claim is load-bearing, so CI checks it rather than trusting
+    # that a nixpkgs bump did not quietly move the toolchain underneath it.
+    name: devshell pins Elixir 1.20 / OTP 27
+    runs-on: ubuntu-latest
+    timeout-minutes: 30
+    steps:
+      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
+
+      - uses: cachix/install-nix-action@630ae543ea3a38a9a4166f03376c02c50f408342 # v31.11.0
+        with:
+          extra_nix_config: |
+            experimental-features = nix-command flakes
+
+      # The shellHook prints an `evalcode shell: ...` banner before the command
+      # runs, so both checks read the last line rather than the whole capture —
+      # otherwise the banner alone could satisfy the match and the assertion
+      # would pass without ever consulting the binary.
+      - name: Elixir is 1.20.x inside the devshell
+        run: |
+          set -euo pipefail
+          version="$(nix develop --command elixir --version | tail -n 1)"
+          echo "$version"
+          case "$version" in
+            "Elixir 1.20."*) ;;
+            *) echo "flake no longer provides Elixir 1.20.x: $version" >&2; exit 1 ;;
+          esac
+
+      - name: Erlang is OTP 27 inside the devshell
+        run: |
+          set -euo pipefail
+          otp="$(nix develop --command erl -noshell \
+            -eval 'io:format("~s~n", [erlang:system_info(otp_release)]), halt().' | tail -n 1)"
+          echo "OTP $otp"
+          [ "$otp" = 27 ] || { echo "flake no longer provides OTP 27: $otp" >&2; exit 1; }

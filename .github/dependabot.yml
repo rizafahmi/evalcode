@@ -1,0 +1,17 @@
+version: 2
+
+updates:
+  # GitHub Actions only. The workflow pins actions to commit SHAs, which are
+  # immutable and therefore never pick up fixes on their own — Dependabot is
+  # what makes that pinning maintainable instead of merely stale.
+  - package-ecosystem: github-actions
+    directory: /
+    schedule:
+      interval: monthly
+    commit-message:
+      prefix: ci
+
+  # Deliberately absent: a `mix` entry for skeleton/. That lockfile defines the
+  # start state every model is measured against. Bumping it changes the exam
+  # without changing any task, which would make old rows in RESULTS.md
+  # incomparable to new ones while still looking like the same benchmark.
