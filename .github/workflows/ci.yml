@@ -73,3 +73,79 @@ jobs:
             -eval 'io:format("~s~n", [erlang:system_info(otp_release)]), halt().' | tail -n 1)"
           echo "OTP $otp"
           [ "$otp" = 27 ] || { echo "flake no longer provides OTP 27: $otp" >&2; exit 1; }
+
+  round:
+    # The README tells a stranger they can clone this and complete a full round.
+    # Nothing checked that, and two things that would break it are invisible
+    # from inside the repo: skeleton/deps is gitignored, so `start` has to fetch
+    # them, and every other job here gets its toolchain from the flake. This one
+    # runs a real round on a plain runner with no Nix anywhere.
+    #
+    # It asserts the untouched workspace is recorded as NOT completed, which is
+    # task 01's first validation rule — the one that proves the task measures
+    # anything at all. It was previously kept true by the author remembering to
+    # re-check it by hand.
+    name: full round without Nix
+    runs-on: ubuntu-latest
+    timeout-minutes: 25
+    steps:
+      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
+
+      - uses: erlef/setup-beam@54075bcc5e249e4758d363f27d099f55d843f124 # v1.24.1
+        with:
+          otp-version: "27"
+          elixir-version: "1.20"
+
+      - name: Install rsync
+        run: sudo apt-get update && sudo apt-get install -y --no-install-recommends rsync
+
+      - name: Start a round
+        run: |
+          set -euo pipefail
+          workspace="$(bin/evalcode start 01-live-orders ci ci | tail -n 1)"
+          echo "RUN_ID=$(basename "$workspace")" >> "$GITHUB_ENV"
+
+      - name: An untouched workspace must not grade as completed
+        run: |
+          set -euo pipefail
+          bin/evalcode grade "$RUN_ID" --cost 0.00
+          row="$(grep -F "| $RUN_ID |" RESULTS.md)"
+          echo "$row"
+          case "$row" in
+            *"| no |"*) ;;
+            *) echo "an untouched workspace graded as completed" >&2; exit 1 ;;
+          esac
+          case "$row" in
+            *"tests failed"*) ;;
+            *) echo "expected the held-out tests to fail on an untouched workspace" >&2; exit 1 ;;
+          esac
+
+  container:
+    # Route B in the README. Same assertion as the devshell job, different way
+    # of getting there — which is the whole claim being made.
+    name: Dockerfile provides Elixir 1.20 / OTP 27
+    runs-on: ubuntu-latest
+    timeout-minutes: 20
+    steps:
+      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
+
+      - name: Build the image
+        run: docker build -t evalcode .
+
+      - name: Elixir is 1.20.x in the image
+        run: |
+          set -euo pipefail
+          version="$(docker run --rm evalcode elixir --version | tail -n 1)"
+          echo "$version"
+          case "$version" in
+            "Elixir 1.20."*) ;;
+            *) echo "image no longer provides Elixir 1.20.x: $version" >&2; exit 1 ;;
+          esac
+
+      - name: Erlang is OTP 27 in the image
+        run: |
+          set -euo pipefail
+          otp="$(docker run --rm evalcode erl -noshell \
+            -eval 'io:format("~s~n", [erlang:system_info(otp_release)]), halt().' | tail -n 1)"
+          echo "OTP $otp"
+          [ "$otp" = 27 ] || { echo "image no longer provides OTP 27: $otp" >&2; exit 1; }
