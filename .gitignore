@@ -11,3 +11,9 @@ skeleton/assets/node_modules/
 skeleton/priv/static/assets/
 erl_crash.dump
 .superpowers/
+
+# Local tooling state
+.hubble/
+
+# Personal learning material — remove this line if you want to publish it
+learn/

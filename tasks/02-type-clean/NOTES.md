@@ -1,5 +1,8 @@
 # 02-type-clean — authoring notes
 
+> **Spoiler.** This file spells out the full solution and what the held-out
+> tests catch. Never give it to an agent you are measuring.
+
 Validated by hand on 2026-08-03 against Elixir 1.20.2 / OTP 27 (the pinned
 `flake.nix` toolchain), inside a throwaway reference run
 (`bin/evalcode start 02-type-clean reference manual`), discarded after
