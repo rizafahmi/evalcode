@@ -22,7 +22,7 @@ Empat putaran, diukur 3–4 Agustus 2026 — sebelum repo ini publik, saat held-
 
 | task | model | harness | completed | tests | duration | cost |
 |---|---|---|:---:|---|---|---|
-| liveview | mixed | ampcode | ✓ | 33/32 | 2m | $0.99 |
+| liveview | gpt-56 & opus5 | ampcode | ✓ | 33/32 | 2m | $0.99 |
 | liveview | opus5 | claude-code | ✓ | 35/32 | 5m | $2.83 |
 | types | opus5 | claude-code | ✓ | 52/41 | 2m | $0.88 |
 | types | gpt-56 | ampcode | ✓ | 51/41 | 3m | $1.03 |
@@ -295,7 +295,7 @@ Four rounds, measured 3–4 August 2026 — before this repo went public, while 
 
 | task | model | harness | completed | tests | duration | cost |
 |---|---|---|:---:|---|---|---|
-| liveview | mixed | ampcode | ✓ | 33/32 | 2m | $0.99 |
+| liveview | gpt-56 & opus5 | ampcode | ✓ | 33/32 | 2m | $0.99 |
 | liveview | opus5 | claude-code | ✓ | 35/32 | 5m | $2.83 |
 | types | opus5 | claude-code | ✓ | 52/41 | 2m | $0.88 |
 | types | gpt-56 | ampcode | ✓ | 51/41 | 3m | $1.03 |
