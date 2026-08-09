@@ -33,23 +33,6 @@ Satu-satunya perbandingan langsung yang ada di sini: task `liveview` dikerjakan 
 
 Empat baris jelas bukan sampel untuk menyimpulkan model mana lebih baik — dan memang bukan itu gunanya. Tabel ini contoh **bentuk**: apa yang layak dicatat per putaran, dan mana kolom yang boleh dipercaya. Versi lengkapnya — run id, kolom `compile` dan `notes` — ada di [`RESULTS.md`](RESULTS.md), lihat juga [cara membacanya](#membaca-resultsmd).
 
-### Task 01 dan 02 adalah contoh, bukan alat ukur aktif
-
-Keduanya tervalidasi dan benar-benar jalan — clone repo ini, dan kamu bisa menyelesaikan satu putaran penuh. Tapi keduanya **sudah tidak bisa dipakai mengukur**, dan alasannya justru pelajarannya sendiri.
-
-Pertama, `tasks/*/holdout/` ikut publik. Test rahasianya bisa diindeks dan masuk data training model berikutnya.
-
-Kedua — dan ini yang lebih penting — solusi task 02 tidak perlu dicari sampai ke `holdout/`. Ia ada di skeleton:
-
-```bash
-diff skeleton/lib/warung_web/order_params.ex \
-     tasks/02-type-clean/overlay/lib/warung_web/order_params.ex
-```
-
-`skeleton/` adalah titik awal setiap run, jadi tidak mungkin dibuang. **Permukaan bocor selalu lebih luas dari direktori yang kamu tandai rahasia** — history git, artefak build, dan `NOTES.md` juga termasuk.
-
-Kalau kamu butuh angka yang bebas kontaminasi: **fork repo ini, hapus `tasks/`, tulis task dari codebase kamu sendiri, dan simpan repo-nya privat.** Yang dipublikasikan di sini metodenya, bukan soal ujiannya.
-
 ---
 
 ## Cara kerjanya
@@ -280,23 +263,6 @@ Four rounds, measured 3–4 August 2026 — before this repo went public, while 
 The only head-to-head here: task `liveview` was run by both and both passed, **$0.99 against $2.83** — nearly 3× the cost. Note that `cost` and `duration` are typed in by the operator and unverified — and `duration` is wall-clock, including time the operator spent away from the desk.
 
 Four rows is obviously not a sample you can rank models with — that isn't what it's for. The table is here as an example of **shape**: what's worth recording per round, and which columns you are allowed to trust. The full version — run ids, the `compile` and `notes` columns — is in [`RESULTS.md`](RESULTS.md); see also [how to read it](#reading-resultsmd).
-
-### Tasks 01 and 02 are examples, not live instruments
-
-Both are validated and genuinely runnable — clone this repo and you can complete a full round. But neither can be **used for measurement any more**, and the reason is itself the lesson.
-
-First, `tasks/*/holdout/` is public along with everything else. The held-out tests are indexable and can end up in the next model's training data.
-
-Second — and this matters more — task 02's solution doesn't even require digging into `holdout/`. It's sitting in the skeleton:
-
-```bash
-diff skeleton/lib/warung_web/order_params.ex \
-     tasks/02-type-clean/overlay/lib/warung_web/order_params.ex
-```
-
-`skeleton/` is where every run starts, so it can't be removed. **The leak surface is always wider than the directory you marked secret** — git history, build artifacts, and `NOTES.md` all count.
-
-So if you need uncontaminated numbers: **fork this, delete `tasks/`, write tasks from your own codebase, and keep that repo private.** What's published here is the method, not the exam.
 
 ---
 
