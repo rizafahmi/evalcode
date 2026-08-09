@@ -4,17 +4,17 @@
 
 ## Bahasa Indonesia
 
-### Dua hal yang perlu kamu tahu sebelum menjalankan harness ini
+### Dua hal yang perlu kamu tahu sebelum menjalankan benchmark ini
 
 **1. `grade` menjalankan kode yang ditulis model, di mesin kamu.**
 
 `bin/evalcode grade` menjalankan `mix test` dan `mix compile` di dalam
 `runs/<id>/` — direktori yang isinya baru saja diedit bebas oleh sebuah coding
 agent. Kode itu jalan dengan hak akses user kamu: bisa membaca file di luar
-workspace, dan bisa membuka koneksi jaringan. Harness ini **tidak** melakukan
+workspace, dan bisa membuka koneksi jaringan. `bin/evalcode` **tidak** melakukan
 sandboxing.
 
-Kalau kamu mengukur model atau harness yang belum kamu percaya, jalankan seluruh
+Kalau kamu mengukur model atau agent harness yang belum kamu percaya, jalankan seluruh
 putaran di VM atau container sekali pakai. [`Dockerfile`](Dockerfile) di root
 sudah cukup untuk itu — perlu diingat, bind mount `-v "$PWD:/work"` yang
 disarankan README memang membuka checkout kamu ke dalam container, jadi
@@ -49,14 +49,14 @@ Hanya `main`. Repo ini tidak punya rilis bernomor.
 
 ## English
 
-### Two things to know before you run this harness
+### Two things to know before you run this benchmark
 
 **1. `grade` executes model-written code on your machine.**
 
 `bin/evalcode grade` runs `mix test` and `mix compile` inside `runs/<id>/` — a
 directory a coding agent just edited freely. That code runs with your user's
 privileges: it can read files outside the workspace and open network
-connections. The harness does **no** sandboxing.
+connections. `bin/evalcode` does **no** sandboxing.
 
 If you are measuring a model or agent harness you do not already trust, run the
 whole round inside a disposable VM or container. The [`Dockerfile`](Dockerfile)
