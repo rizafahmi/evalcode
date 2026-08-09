@@ -33,13 +33,20 @@ RUN apt-get update \
 # still read and write. Installing them into the image also stops the first
 # `mix deps.get` from pausing to ask, which it cannot do when the container has
 # no terminal on stdin.
-ENV MIX_HOME=/opt/mix \
+# HOME matters as much as MIX_HOME here. Run with `--user $(id -u)`, the uid has
+# no passwd entry, so HOME falls back to `/` — and exqlite builds through
+# elixir_make, which caches under $HOME/.cache. That failed the documented
+# invocation with `could not make directory "/.cache/elixir_make": permission
+# denied` before `mix deps.get` had finished.
+ENV HOME=/home/evalcode \
+    MIX_HOME=/opt/mix \
     HEX_HOME=/opt/hex \
     LANG=C.UTF-8
 # HEX_HOME is created lazily by the first `mix deps.get`, not by local.hex, so
 # it has to be made here — otherwise chmod fails the build on a path that does
 # not exist yet, and a container running as your host uid has nowhere to cache.
-RUN mkdir -p /opt/mix /opt/hex \
+RUN mkdir -p /opt/mix /opt/hex /home/evalcode \
+ && chmod -R a+rwX /home/evalcode \
  && mix local.hex --force \
  && mix local.rebar --force \
  && chmod -R a+rwX /opt/mix /opt/hex
