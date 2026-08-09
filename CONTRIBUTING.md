@@ -4,6 +4,11 @@
 
 ## Bahasa Indonesia
 
+Issue dan PR boleh bahasa Indonesia maupun Inggris. Peserta diharapkan
+mengikuti [Code of Conduct](CODE_OF_CONDUCT.md). Kalau temuanmu adalah lubang
+keamanan — bukan bug biasa — ikuti [SECURITY.md](SECURITY.md), jangan buka issue
+publik.
+
 ### Kontribusi yang paling berguna
 
 1. **Task baru** — task yang mengukur sesuatu yang belum diukur task 01 dan 02.
@@ -44,6 +49,11 @@ Judul commit menjelaskan **perubahan perilakunya**, bukan file yang disentuh. Co
 ---
 
 ## English
+
+Issues and pull requests are welcome in Indonesian or English. Participants are
+expected to follow the [Code of Conduct](CODE_OF_CONDUCT.md). If what you found
+is a security hole rather than an ordinary bug, follow
+[SECURITY.md](SECURITY.md) instead of opening a public issue.
 
 ### Most useful contributions
 

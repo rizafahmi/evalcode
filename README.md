@@ -76,7 +76,7 @@ Poin pentingnya: **held-out test baru masuk ke workspace saat grading.** Selama 
 Butuh [Nix](https://nixos.org/download) (opsional: [direnv](https://direnv.net)).
 
 ```bash
-git clone <url-repo-ini>
+git clone https://github.com/rizafahmi/evalcode.git
 cd evalcode
 direnv allow      # atau: nix develop
 ```
@@ -212,6 +212,7 @@ tasks/<id>/             definisi task (lihat di atas)
 runs/                   workspace + log (gitignored, boleh dihapus kapan saja)
 test/evalcode_test.sh   unit test untuk harness-nya
 docs/                   temuan yang membentuk desainnya
+.github/                CI, template issue & PR
 flake.nix               devshell terkunci: Elixir 1.20 / OTP 27
 RESULTS.md              tabelnya
 ```
@@ -237,7 +238,11 @@ Detail lengkap tiap keputusan ada di komentar `bin/evalcode` — komentarnya ada
 
 ## Kontribusi & lisensi
 
-Lihat [CONTRIBUTING.md](CONTRIBUTING.md). Kode harness berlisensi [MIT](LICENSE); `skeleton/` adalah app Phoenix hasil generate dan mengikuti lisensi Phoenix.
+Lihat [CONTRIBUTING.md](CONTRIBUTING.md) — issue dan PR boleh bahasa Indonesia maupun Inggris. Peserta diharapkan mengikuti [Code of Conduct](CODE_OF_CONDUCT.md).
+
+Sebelum menjalankan harness ini di mesin kamu, baca [SECURITY.md](SECURITY.md): `grade` menjalankan kode tulisan model tanpa sandbox, dan `grading.conf` di-source oleh shell.
+
+Kode harness berlisensi [MIT](LICENSE); `skeleton/` adalah app Phoenix hasil generate dan mengikuti lisensi Phoenix.
 
 <br>
 
@@ -319,7 +324,7 @@ The key property: **held-out tests enter the workspace only at grading time.** W
 Requires [Nix](https://nixos.org/download) (optional: [direnv](https://direnv.net)).
 
 ```bash
-git clone <url-of-this-repo>
+git clone https://github.com/rizafahmi/evalcode.git
 cd evalcode
 direnv allow      # or: nix develop
 ```
@@ -455,6 +460,7 @@ tasks/<id>/             task definitions (see above)
 runs/                   workspaces + logs (gitignored, safe to delete)
 test/evalcode_test.sh   unit tests for the harness
 docs/                   findings that shaped the design
+.github/                CI, issue and PR templates
 flake.nix               pinned devshell: Elixir 1.20 / OTP 27
 RESULTS.md              the table
 ```
@@ -480,4 +486,8 @@ The full reasoning behind each decision lives in the comments in `bin/evalcode` 
 
 ## Contributing & license
 
-See [CONTRIBUTING.md](CONTRIBUTING.md). The harness is [MIT](LICENSE) licensed; `skeleton/` is a generated Phoenix app and follows Phoenix's license.
+See [CONTRIBUTING.md](CONTRIBUTING.md) — issues and pull requests are welcome in Indonesian or English. Participants are expected to follow the [Code of Conduct](CODE_OF_CONDUCT.md).
+
+Before running this harness on your machine, read [SECURITY.md](SECURITY.md): `grade` executes model-written code unsandboxed, and `grading.conf` is shell-sourced.
+
+The harness is [MIT](LICENSE) licensed; `skeleton/` is a generated Phoenix app and follows Phoenix's license.

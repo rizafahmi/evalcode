@@ -1,0 +1,56 @@
+name: Harness bug
+description: bin/evalcode did the wrong thing — especially if it printed a number that looked right
+labels: ["bug"]
+body:
+  - type: markdown
+    attributes:
+      value: |
+        Bahasa Indonesia dipersilakan — jawab dalam bahasa mana pun.
+
+        The worst bug class in this repo is a `grade` that prints a
+        **confidently wrong number**. If that's what you found, say so below and
+        it goes to the front of the queue.
+
+  - type: textarea
+    id: what-happened
+    attributes:
+      label: What happened
+      description: The command you ran and what it printed.
+      render: shell
+    validations:
+      required: true
+
+  - type: textarea
+    id: expected
+    attributes:
+      label: What should have happened instead
+    validations:
+      required: true
+
+  - type: textarea
+    id: wrong-number
+    attributes:
+      label: Could this produce a wrong number that looks right?
+      description: >-
+        For example: a row recorded `completed=yes` for work that wasn't done, or
+        a `tests` count that didn't reflect what actually ran. Answer "no" if
+        this is a plain crash — a crash is the safe failure mode.
+    validations:
+      required: true
+
+  - type: input
+    id: elixir
+    attributes:
+      label: Output of `elixir --version`
+      description: Run it inside the pinned devshell (`nix develop`).
+      placeholder: Elixir 1.20.2 (compiled with Erlang/OTP 27)
+    validations:
+      required: true
+
+  - type: input
+    id: os
+    attributes:
+      label: Operating system
+      placeholder: macOS 15.4 (aarch64) — or Ubuntu 24.04 (x86_64)
+    validations:
+      required: true
