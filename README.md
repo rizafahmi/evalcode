@@ -1,6 +1,6 @@
 # evalcode
 
-Harness kecil untuk mengukur model coding di codebase kamu sendiri — Elixir 1.20 / Phoenix 1.8 LiveView, dinilai dengan test yang tidak pernah dilihat model.
+Benchmark kecil untuk mengukur model coding di codebase kamu sendiri — Elixir 1.20 / Phoenix 1.8 LiveView, dinilai dengan test yang tidak pernah dilihat model.
 
 [![CI](../../actions/workflows/ci.yml/badge.svg)](../../actions/workflows/ci.yml)
 
@@ -10,7 +10,7 @@ Harness kecil untuk mengukur model coding di codebase kamu sendiri — Elixir 1.
 
 ## Kenapa repo ini ada
 
-Ini **contoh lengkap sebuah eval mandiri**, dipublikasikan untuk dibongkar dan dicontek. Harness-nya satu file bash ~550 baris — cukup pendek untuk dibaca habis dalam satu duduk — dan hampir tiap komentar di dalamnya mencatat satu bug nyata yang pernah menghasilkan angka salah tapi terlihat meyakinkan. Kalau cuma sempat baca satu bagian, baca [Yang layak dicontek](#yang-layak-dicontek).
+Ini **contoh lengkap sebuah eval mandiri**, dipublikasikan untuk dibongkar dan dicontek. `bin/evalcode` cuma satu file bash ~550 baris — cukup pendek untuk dibaca habis dalam satu duduk — dan hampir tiap komentar di dalamnya mencatat satu bug nyata yang pernah menghasilkan angka salah tapi terlihat meyakinkan. Kalau cuma sempat baca satu bagian, baca [Yang layak dicontek](#yang-layak-dicontek).
 
 Kenapa orang perlu punya eval sendiri: leaderboard publik mengukur model di soal yang bukan soal kamu. evalcode mengukur satu hal — **apakah model X, di harness Y, bisa menyelesaikan pekerjaan nyata di stack kamu.** Hasilnya satu baris tabel yang bisa kamu pertahankan kalau ditanya orang.
 
@@ -29,7 +29,7 @@ Empat putaran, diukur 3–4 Agustus 2026 — sebelum repo ini publik, saat held-
 
 `✓` artinya lolos keempat gate di [Arti `completed`](#arti-completed) — bukan sekadar `mix test` exit 0. Kolom `tests` berformat `<jalan>/<batas minimum>`: `35/32` artinya model menyelesaikan task lalu menulis 3 test sendiri, `33/32` artinya pas di batas. `mixed` bukan nama model — ampcode memilih model sendiri per langkah.
 
-Satu-satunya perbandingan langsung yang ada di sini: task `liveview` dikerjakan keduanya dan sama-sama lolos, **$0.99 lawan $2.83** — hampir 3× lipat. Perhatikan bahwa `cost` dan `duration` diketik operator dan tidak diverifikasi harness — dan `duration` adalah wall-clock, termasuk waktu operator meninggalkan meja.
+Satu-satunya perbandingan langsung yang ada di sini: task `liveview` dikerjakan keduanya dan sama-sama lolos, **$0.99 lawan $2.83** — hampir 3× lipat. Perhatikan bahwa `cost` dan `duration` diketik operator dan tidak diverifikasi `bin/evalcode` — dan `duration` adalah wall-clock, termasuk waktu operator meninggalkan meja.
 
 Empat baris jelas bukan sampel untuk menyimpulkan model mana lebih baik — dan memang bukan itu gunanya. Tabel ini contoh **bentuk**: apa yang layak dicatat per putaran, dan mana kolom yang boleh dipercaya. Versi lengkapnya — run id, kolom `compile` dan `notes` — ada di [`RESULTS.md`](RESULTS.md), lihat juga [cara membacanya](#membaca-resultsmd).
 
@@ -56,15 +56,54 @@ Poin pentingnya: **held-out test baru masuk ke workspace saat grading.** Selama 
 
 ## Setup
 
-Butuh [Nix](https://nixos.org/download) (opsional: [direnv](https://direnv.net)).
+`bin/evalcode` cuma menanyakan satu hal ke toolchain: `elixir --version` harus menjawab **1.20.x**, di atas **Erlang/OTP 27**. Bagaimana kamu sampai ke sana bebas — tiga jalur di bawah sama sahnya, dan penolakan versinya identik di ketiganya karena yang diperiksa memang cuma output `elixir --version`.
 
 ```bash
 git clone https://github.com/rizafahmi/evalcode.git
 cd evalcode
+```
+
+### Jalur A — Nix + direnv
+
+```bash
 direnv allow      # atau: nix develop
 ```
 
-Devshell-nya mengunci **Elixir 1.20.x + Erlang/OTP 27**. `start` dan `grade` menolak jalan di luar itu — bukan rewel: seluruh task 02 dinilai berdasarkan kelas warning yang cuma ada di type checker Elixir 1.20. Di Elixir 1.18 kode start state-nya compile bersih dan akan tercatat sebagai "selesai" padahal model belum mengerjakan apa pun.
+Paling reproducible: `flake.lock` mengunci versi persisnya, jadi mesin kamu dan mesin orang lain dapat compiler yang sama.
+
+### Jalur B — container (Docker atau Podman)
+
+[`Dockerfile`](Dockerfile) di root memasang toolchain yang sama (Elixir 1.20.2 / OTP 27):
+
+```bash
+docker build -t evalcode .
+docker run --rm -it -v "$PWD:/work" -w /work --user "$(id -u):$(id -g)" evalcode
+
+podman build -t evalcode .
+podman run  --rm -it -v "$PWD:/work:Z" -w /work evalcode
+```
+
+Bind mount-nya yang penting: `runs/` dan `RESULTS.md` ditulis ke checkout kamu, bukan ikut hilang bersama container. `--user` mencegah docker meninggalkan file milik root di situ; podman rootless sudah memetakan uid kamu sendiri.
+
+### Jalur C — pasang langsung, tanpa alat bantu
+
+Butuh Elixir 1.20.x + Erlang/OTP 27, plus `git`, `rsync`, `diff`, dan C compiler — `exqlite` meng-compile SQLite dari source saat `mix deps.get`.
+
+```bash
+# mise
+mise use erlang@27.3.4 elixir@1.20.2-otp-27
+
+# asdf
+asdf install erlang 27.3.4 && asdf install elixir 1.20.2-otp-27
+
+elixir --version      # harus menyebut 1.20.x dan OTP 27
+```
+
+Paket sistem atau [installer resmi](https://elixir-lang.org/install.html) juga boleh, asal versinya cocok.
+
+### Kenapa versinya dikunci
+
+`start` dan `grade` menolak jalan kalau `elixir --version` bukan 1.20.x — bukan rewel: seluruh task 02 dinilai berdasarkan kelas warning yang cuma ada di type checker Elixir 1.20. Di Elixir 1.18 kode start state-nya compile bersih dan akan tercatat sebagai "selesai" padahal model belum mengerjakan apa pun.
 
 ---
 
@@ -118,8 +157,10 @@ Kalau gagal, kolom `notes` menyebut alasannya: `suppressions added`, `only 10 of
 
 Tidak semua kolom sama derajatnya, dan tabelnya menyatakan itu terang-terangan:
 
-- **Diukur harness:** `completed`, `tests`, `compile`, `notes`
+- **Diukur `bin/evalcode`:** `completed`, `tests`, `compile`, `notes`
 - **Diketik operator, tidak diverifikasi:** `cost`, `duration` (kalau `--duration` dipakai), serta label `model` dan `harness`
+
+Satu catatan istilah: kolom `harness` berisi **coding agent** yang dipakai (`claude-code`, `ampcode`) — bukan `bin/evalcode` itu sendiri.
 
 Kolom `tests` berformat `<jalan>/<batas>`. `35/32` artinya model menyelesaikan task lalu menulis 3 test tambahan sendiri. `?` di pembilang berarti jumlahnya tidak terbaca dari log — dan itu selalu dihitung gagal.
 
@@ -175,7 +216,7 @@ Kerjakan manual, jangan diasumsikan:
 
 ---
 
-## Test harness-nya sendiri
+## Menguji `bin/evalcode` sendiri
 
 ```bash
 bash test/evalcode_test.sh      # tidak butuh Elixir — mix & elixir di-stub
@@ -189,14 +230,15 @@ Keduanya dijalankan CI di setiap push dan PR.
 ## Struktur repo
 
 ```
-bin/evalcode            harness-nya, satu file bash
+bin/evalcode            skrip pengukurnya, satu file bash
 skeleton/               app Phoenix 1.8 yang jadi titik awal setiap run
 tasks/<id>/             definisi task (lihat di atas)
 runs/                   workspace + log (gitignored, boleh dihapus kapan saja)
-test/evalcode_test.sh   unit test untuk harness-nya
+test/evalcode_test.sh   unit test untuk bin/evalcode
 docs/                   temuan yang membentuk desainnya
 .github/                CI, template issue & PR
 flake.nix               devshell terkunci: Elixir 1.20 / OTP 27
+Dockerfile              toolchain yang sama, untuk docker/podman
 RESULTS.md              tabelnya
 ```
 
@@ -223,9 +265,9 @@ Detail lengkap tiap keputusan ada di komentar `bin/evalcode` — komentarnya ada
 
 Lihat [CONTRIBUTING.md](CONTRIBUTING.md) — issue dan PR boleh bahasa Indonesia maupun Inggris. Peserta diharapkan mengikuti [Code of Conduct](CODE_OF_CONDUCT.md).
 
-Sebelum menjalankan harness ini di mesin kamu, baca [SECURITY.md](SECURITY.md): `grade` menjalankan kode tulisan model tanpa sandbox, dan `grading.conf` di-source oleh shell.
+Sebelum menjalankan benchmark ini di mesin kamu, baca [SECURITY.md](SECURITY.md): `grade` menjalankan kode tulisan model tanpa sandbox, dan `grading.conf` di-source oleh shell.
 
-Kode harness berlisensi [MIT](LICENSE); `skeleton/` adalah app Phoenix hasil generate dan mengikuti lisensi Phoenix.
+Kode benchmark-nya berlisensi [MIT](LICENSE); `skeleton/` adalah app Phoenix hasil generate dan mengikuti lisensi Phoenix.
 
 <br>
 
@@ -233,7 +275,7 @@ Kode harness berlisensi [MIT](LICENSE); `skeleton/` adalah app Phoenix hasil gen
 
 # evalcode (English)
 
-A small harness for measuring coding models against **your** codebase — Elixir 1.20 / Phoenix 1.8 LiveView, graded with tests the model never sees.
+A small benchmark for measuring coding models against **your** codebase — Elixir 1.20 / Phoenix 1.8 LiveView, graded with tests the model never sees.
 
 [🇮🇩 Bahasa Indonesia](#evalcode) · **🇬🇧 English**
 
@@ -241,7 +283,7 @@ A small harness for measuring coding models against **your** codebase — Elixir
 
 ## Why this exists
 
-This is a **complete worked example of a self-built eval**, published to be taken apart and copied. The harness is a single ~550-line bash file — short enough to read in one sitting — and nearly every comment in it records a real bug that once produced a confidently wrong number. If you only read one section, read [What's worth stealing](#whats-worth-stealing).
+This is a **complete worked example of a self-built eval**, published to be taken apart and copied. `bin/evalcode` is a single ~550-line bash file — short enough to read in one sitting — and nearly every comment in it records a real bug that once produced a confidently wrong number. If you only read one section, read [What's worth stealing](#whats-worth-stealing).
 
 Why anyone needs their own eval: public leaderboards measure models on problems that aren't yours. evalcode measures one thing — **can model X, in harness Y, finish real work in your stack.** The output is one row in a table you can defend when someone asks.
 
@@ -287,15 +329,66 @@ The key property: **held-out tests enter the workspace only at grading time.** W
 
 ## Setup
 
-Requires [Nix](https://nixos.org/download) (optional: [direnv](https://direnv.net)).
+`bin/evalcode` asks the toolchain exactly one question: does `elixir --version`
+say **1.20.x**, on **Erlang/OTP 27**. How you get there is your business — the
+three routes below are equally valid, and the version refusal behaves
+identically in all of them, because all it ever inspects is that output.
 
 ```bash
 git clone https://github.com/rizafahmi/evalcode.git
 cd evalcode
+```
+
+### Route A — Nix + direnv
+
+```bash
 direnv allow      # or: nix develop
 ```
 
-The devshell pins **Elixir 1.20.x + Erlang/OTP 27**. `start` and `grade` refuse to run outside it — not pedantry: task 02 is scored entirely on a warning class that only exists in Elixir 1.20's type checker. Under 1.18 its untouched start state compiles clean and would be recorded as completed work for zero effort.
+The most reproducible option: `flake.lock` pins the exact versions, so your
+machine and someone else's get the same compiler.
+
+### Route B — a container (Docker or Podman)
+
+The [`Dockerfile`](Dockerfile) at the root installs the same toolchain
+(Elixir 1.20.2 / OTP 27):
+
+```bash
+docker build -t evalcode .
+docker run --rm -it -v "$PWD:/work" -w /work --user "$(id -u):$(id -g)" evalcode
+
+podman build -t evalcode .
+podman run  --rm -it -v "$PWD:/work:Z" -w /work evalcode
+```
+
+The bind mount is the point: `runs/` and `RESULTS.md` land in your checkout
+rather than vanishing with the container. `--user` stops docker leaving
+root-owned files behind in it; rootless podman already maps your own uid.
+
+### Route C — install it directly, no extra tooling
+
+You need Elixir 1.20.x + Erlang/OTP 27, plus `git`, `rsync`, `diff`, and a C
+compiler — `exqlite` builds SQLite from source during `mix deps.get`.
+
+```bash
+# mise
+mise use erlang@27.3.4 elixir@1.20.2-otp-27
+
+# asdf
+asdf install erlang 27.3.4 && asdf install elixir 1.20.2-otp-27
+
+elixir --version      # must say 1.20.x and OTP 27
+```
+
+System packages or the [official installer](https://elixir-lang.org/install.html)
+are fine too, as long as the versions match.
+
+### Why the version is pinned
+
+`start` and `grade` refuse to run when `elixir --version` is not 1.20.x — not
+pedantry: task 02 is scored entirely on a warning class that only exists in
+Elixir 1.20's type checker. Under 1.18 its untouched start state compiles clean
+and would be recorded as completed work for zero effort.
 
 ---
 
@@ -349,8 +442,10 @@ On a failure, the `notes` column carries the reason: `suppressions added`, `only
 
 Not all columns carry equal weight, and the table says so out loud:
 
-- **Measured by the harness:** `completed`, `tests`, `compile`, `notes`
+- **Measured by `bin/evalcode`:** `completed`, `tests`, `compile`, `notes`
 - **Typed in by the operator, unverified:** `cost`, `duration` (whenever `--duration` was passed), and the `model` / `harness` labels
+
+One note on wording: the `harness` column names the **coding agent** that was used (`claude-code`, `ampcode`) — not `bin/evalcode` itself.
 
 The `tests` column is `<ran>/<floor>`. `35/32` means the model solved the task and then wrote 3 tests of its own. A `?` numerator means the count couldn't be read from the log — which never passes.
 
@@ -406,7 +501,7 @@ Do this by hand, don't assume:
 
 ---
 
-## Testing the harness itself
+## Testing `bin/evalcode` itself
 
 ```bash
 bash test/evalcode_test.sh      # no Elixir needed — mix and elixir are stubbed
@@ -420,14 +515,15 @@ Both run in CI on every push and PR.
 ## Repo layout
 
 ```
-bin/evalcode            the harness, one bash file
+bin/evalcode            the measuring script, one bash file
 skeleton/               the Phoenix 1.8 app every run starts from
 tasks/<id>/             task definitions (see above)
 runs/                   workspaces + logs (gitignored, safe to delete)
-test/evalcode_test.sh   unit tests for the harness
+test/evalcode_test.sh   unit tests for bin/evalcode
 docs/                   findings that shaped the design
 .github/                CI, issue and PR templates
 flake.nix               pinned devshell: Elixir 1.20 / OTP 27
+Dockerfile              the same toolchain, for docker/podman
 RESULTS.md              the table
 ```
 
@@ -454,6 +550,6 @@ The full reasoning behind each decision lives in the comments in `bin/evalcode` 
 
 See [CONTRIBUTING.md](CONTRIBUTING.md) — issues and pull requests are welcome in Indonesian or English. Participants are expected to follow the [Code of Conduct](CODE_OF_CONDUCT.md).
 
-Before running this harness on your machine, read [SECURITY.md](SECURITY.md): `grade` executes model-written code unsandboxed, and `grading.conf` is shell-sourced.
+Before running this benchmark on your machine, read [SECURITY.md](SECURITY.md): `grade` executes model-written code unsandboxed, and `grading.conf` is shell-sourced.
 
-The harness is [MIT](LICENSE) licensed; `skeleton/` is a generated Phoenix app and follows Phoenix's license.
+The benchmark code is [MIT](LICENSE) licensed; `skeleton/` is a generated Phoenix app and follows Phoenix's license.
