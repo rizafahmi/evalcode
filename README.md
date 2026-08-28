@@ -23,6 +23,7 @@ Kenapa orang perlu punya eval sendiri: leaderboard publik mengukur model di soal
 | date       | model                          | harness     | completed | tests | duration | cost  |
 | ---------- | ------------------------------ | ----------- | :-------: | ----- | -------- | ----- |
 | 2026-08-28 | spark 1.2 contributor (medium) | muse code   |     ✓     | 32/32 | 03m05s   | $0.01 |
+| 2026-08-28 | gemini-3.7-flash (high)        | antigravity |     ✓     | 34/32 | 2m       | N/A   |
 | 2026-08-04 | mixed                          | ampcode     |     ✓     | 33/32 | 02m      | $0.99 |
 | 2026-08-03 | opus 5                         | claude-code |     ✓     | 35/32 | 05m      | $2.83 |
 
@@ -31,6 +32,7 @@ Kenapa orang perlu punya eval sendiri: leaderboard publik mengukur model di soal
 | date       | model                          | harness     | completed | tests | duration | cost  |
 | ---------- | ------------------------------ | ----------- | :-------: | ----- | -------- | ----- |
 | 2026-08-28 | spark-1.2-contributor (medium) | muse-code   |     ✓     | 41/41 | 3m       | $0.01 |
+| 2026-08-28 | gemini-3.7-flash (high)        | antigravity |     ✓     | 53/41 | 2m       | N/A   |
 | 2026-08-04 | gpt-5.6                        | ampcode     |     ✓     | 51/41 | 03m      | $1.03 |
 | 2026-08-03 | opus 5                         | claude-code |     ✓     | 52/41 | 02m      | $0.88 |
 
@@ -303,6 +305,7 @@ Why anyone needs their own eval: public leaderboards measure models on problems 
 | date       | model                          | harness     | completed | tests | duration | cost  |
 | ---------- | ------------------------------ | ----------- | :-------: | ----- | -------- | ----- |
 | 2026-08-28 | spark 1.2 contributor (medium) | muse code   |     ✓     | 32/32 | 03m05s   | $0.01 |
+| 2026-08-28 | gemini-3.7-flash (high)        | antigravity |     ✓     | 34/32 | 2m       | N/A   |
 | 2026-08-04 | mixed                          | ampcode     |     ✓     | 33/32 | 02m      | $0.99 |
 | 2026-08-03 | opus 5                         | claude-code |     ✓     | 35/32 | 05m      | $2.83 |
 
@@ -311,6 +314,7 @@ Why anyone needs their own eval: public leaderboards measure models on problems 
 | date       | model                          | harness     | completed | tests | duration | cost  |
 | ---------- | ------------------------------ | ----------- | :-------: | ----- | -------- | ----- |
 | 2026-08-28 | spark-1.2-contributor (medium) | muse-code   |     ✓     | 41/41 | 3m       | $0.01 |
+| 2026-08-28 | gemini-3.7-flash (high)        | antigravity |     ✓     | 53/41 | 2m       | N/A   |
 | 2026-08-04 | gpt-5.6                        | ampcode     |     ✓     | 51/41 | 03m      | $1.03 |
 | 2026-08-03 | opus 5                         | claude-code |     ✓     | 52/41 | 02m      | $0.88 |
 
