@@ -22,7 +22,7 @@ Kenapa orang perlu punya eval sendiri: leaderboard publik mengukur model di soal
 
 | date       | model                          | harness          | completed | tests | duration | cost  |
 |------------|--------------------------------|------------------|:---------:|-------|----------|-------|
-| 2026-08-28 | spark 1.2 contributor (medium) | muse code        |     ✓     | 32/32 | 03m05s   | $0.01 |
+| 2026-08-28 | spark-1.2-contributor (medium) | muse-code        |     ✓     | 32/32 | 03m05s   | $0.01 |
 | 2026-08-28 | deepseek-v4-flash (high)       | deepseek-harness |     ✗     | 33/32 | 2m       | $0.01 |
 | 2026-08-28 | gemini-3.7-flash (high)        | antigravity      |     ✓     | 34/32 | 2m       | N/A   |
 | 2026-08-04 | mixed                          | ampcode          |     ✓     | 33/32 | 02m      | $0.99 |
@@ -306,7 +306,7 @@ Why anyone needs their own eval: public leaderboards measure models on problems 
 
 | date       | model                          | harness          | completed | tests | duration | cost  |
 |------------|--------------------------------|------------------|:---------:|-------|----------|-------|
-| 2026-08-28 | spark-1.2-contributor (medium) | muse code        |     ✓     | 32/32 | 3m       | $0.01 |
+| 2026-08-28 | spark-1.2-contributor (medium) | muse=code        |     ✓     | 32/32 | 3m       | $0.01 |
 | 2026-08-28 | deepseek-v4-flash (high)       | deepseek-harness |     ✗     | 33/32 | 2m       | $0.01 |
 | 2026-08-28 | gemini-3.7-flash (high)        | antigravity      |     ✓     | 34/32 | 2m       | N/A   |
 | 2026-08-04 | mixed                          | ampcode          |     ✓     | 33/32 | 02m      | $0.99 |
