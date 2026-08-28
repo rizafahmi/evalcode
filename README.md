@@ -144,12 +144,12 @@ Satu baris ditambahkan ke `RESULTS.md`. Run yang sudah dinilai ditandai file `ru
 
 `completed=yes` cuma kalau **semua** ini benar:
 
-| Gate | Kenapa ada |
-|---|---|
-| `mix test` lolos dengan held-out test disalin masuk | Ini ujian sebenarnya |
-| Minimal `min_tests` test benar-benar **berjalan** | Exit code 0 tidak bilang apa-apa soal berapa test yang jalan. `ExUnit.configure(exclude: [:test])` exit 0. Menghapus file test yang merah juga exit 0. Dua-duanya pernah tercatat lolos. |
-| Tidak ada atribut `@compile` / `@dialyzer` yang ditambahkan | Membungkam compiler bukan perbaikan |
-| `mix compile --force --warnings-as-errors` exit 0 | Hanya untuk task yang `grading.conf`-nya menyetel `requires_clean_compile=yes` |
+| Gate                                                        | Kenapa ada                                                                                                                                                                               |
+| ----------------------------------------------------------- | ---------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| `mix test` lolos dengan held-out test disalin masuk         | Ini ujian sebenarnya                                                                                                                                                                     |
+| Minimal `min_tests` test benar-benar **berjalan**           | Exit code 0 tidak bilang apa-apa soal berapa test yang jalan. `ExUnit.configure(exclude: [:test])` exit 0. Menghapus file test yang merah juga exit 0. Dua-duanya pernah tercatat lolos. |
+| Tidak ada atribut `@compile` / `@dialyzer` yang ditambahkan | Membungkam compiler bukan perbaikan                                                                                                                                                      |
+| `mix compile --force --warnings-as-errors` exit 0           | Hanya untuk task yang `grading.conf`-nya menyetel `requires_clean_compile=yes`                                                                                                           |
 
 Kalau gagal, kolom `notes` menyebut alasannya: `suppressions added`, `only 10 of 32 tests ran`, `tests failed`, `compile failed`. Kolom ini kosong kalau lolos. Tanpa itu, tabel tidak bisa membedakan model yang **mencoba lalu gagal** dari model yang **membungkam checker**.
 
@@ -170,10 +170,10 @@ Kolom `run` adalah satu-satunya jembatan baris itu ke buktinya: `runs/<run>.diff
 
 ## Task yang tersedia
 
-| id | yang diukur |
-|---|---|
+| id               | yang diukur                                                                                                        |
+| ---------------- | ------------------------------------------------------------------------------------------------------------------ |
 | `01-live-orders` | Phoenix LiveView, PubSub, streams — dan apakah broadcast-nya ditaruh di layer yang benar (context, bukan LiveView) |
-| `02-type-clean` | Type inference Elixir 1.20 — dan apakah perbaikannya nyata atau cuma dibungkam |
+| `02-type-clean`  | Type inference Elixir 1.20 — dan apakah perbaikannya nyata atau cuma dibungkam                                     |
 
 ---
 
@@ -429,12 +429,12 @@ One row is appended to `RESULTS.md`. A graded run is marked with `runs/<id>.grad
 
 `completed=yes` only when **all** of these hold:
 
-| Gate | Why it exists |
-|---|---|
-| `mix test` passes with held-out tests copied in | The actual exam |
-| At least `min_tests` tests actually **ran** | Exit code 0 says nothing about how many tests ran. `ExUnit.configure(exclude: [:test])` exits 0. Deleting the test files that won't go green exits 0. Both once scored as passes. |
-| No `@compile` / `@dialyzer` attributes were added | Silencing the compiler is not a fix |
-| `mix compile --force --warnings-as-errors` exits 0 | Only for tasks whose `grading.conf` sets `requires_clean_compile=yes` |
+| Gate                                               | Why it exists                                                                                                                                                                     |
+| -------------------------------------------------- | --------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| `mix test` passes with held-out tests copied in    | The actual exam                                                                                                                                                                   |
+| At least `min_tests` tests actually **ran**        | Exit code 0 says nothing about how many tests ran. `ExUnit.configure(exclude: [:test])` exit 0. Deleting the test files that won't go green exits 0. Both once scored as passes. |
+| No `@compile` / `@dialyzer` attributes were added  | Silencing the compiler is not a fix                                                                                                                                               |
+| `mix compile --force --warnings-as-errors` exits 0 | Only for tasks whose `grading.conf` sets `requires_clean_compile=yes`                                                                                                             |
 
 On a failure, the `notes` column carries the reason: `suppressions added`, `only 10 of 32 tests ran`, `tests failed`, `compile failed`. It's empty on a pass. Without it the table can't tell a model that **tried and failed** from one that **silenced the checker**.
 
@@ -455,10 +455,10 @@ The `run` column is the row's only link to its evidence: `runs/<run>.diff.log` i
 
 ## Available tasks
 
-| id | what it measures |
-|---|---|
+| id               | what it measures                                                                                                        |
+| ---------------- | ----------------------------------------------------------------------------------------------------------------------- |
 | `01-live-orders` | Phoenix LiveView, PubSub, streams — and whether the broadcast is put in the right layer (the context, not the LiveView) |
-| `02-type-clean` | Elixir 1.20 type inference — and whether the fix is real or a suppression |
+| `02-type-clean`  | Elixir 1.20 type inference — and whether the fix is real or a suppression                                               |
 
 ---
 
