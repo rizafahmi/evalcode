@@ -36,3 +36,5 @@ Typed in by the operator and unverified: `cost` always, `duration` whenever
 | 2026-08-28-spark-1.2-contributor-medium-02 | 02-type-clean | spark-1.2-contributor-medium | muse-code | yes | 41/41 | 3m | $0.01 | clean |  |
 | 2026-08-28-gemini-3.7-flash-high-01 | 01-live-orders | gemini-3.7-flash-high | antigravity | yes | 34/32 | 2m | N/A | clean |  |
 | 2026-08-28-gemini-3.7-flash-high-02 | 02-type-clean | gemini-3.7-flash-high | antigravity | yes | 53/41 | 2m | N/A | clean |  |
+| 2026-08-28-deepseek-01 | 01-live-orders | deepseek-v4-flash-high | deepseek-harness | no | 33/32 | 2m | $0.01 | clean | tests failed |
+| 2026-08-28-deepseek-v4-flash-high-02 | 02-type-clean | deepseek-v4-flash-high | deepseek-harness | yes | 41/41 | 3m | $0.01 | clean |  |
