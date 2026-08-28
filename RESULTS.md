@@ -32,3 +32,5 @@ Typed in by the operator and unverified: `cost` always, `duration` whenever
 | 2026-08-03-opus5-02 | 02-type-clean | opus5 | claude-code | yes | 52/41 | 2m | $0.88 | clean |  |
 | 2026-08-04-mixed-01 | 01-live-orders | mixed | ampcode | yes | 33/32 | 2m | $0.99 | clean |  |
 | 2026-08-04-gpt-56-02 | 02-type-clean | gpt-56 | ampcode | yes | 51/41 | 3m | $1.03 | clean |  |
+| 2026-08-28-muse-spark-1.2-contributor-medium-01 | 01-live-orders | muse-spark-1.2-contributor-medium | muse-code | yes | 32/32 | 3m | $0.01 | clean |  |
+| 2026-08-28-spark-1.2-contributor-medium-02 | 02-type-clean | spark-1.2-contributor-medium | muse-code | yes | 41/41 | 3m | $0.01 | clean |  |
