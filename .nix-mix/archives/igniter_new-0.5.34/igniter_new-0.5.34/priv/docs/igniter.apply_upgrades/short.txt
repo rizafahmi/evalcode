@@ -1,1 +1,0 @@
-Applies the upgrade scripts for the list of package version changes provided.

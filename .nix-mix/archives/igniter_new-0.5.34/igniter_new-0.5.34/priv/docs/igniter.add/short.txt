@@ -1,1 +1,0 @@
-Adds the provided deps to `mix.exs`
