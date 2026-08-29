@@ -159,10 +159,11 @@ Satu baris ditambahkan ke `RESULTS.md`. Run yang sudah dinilai ditandai file `ru
 | ----------------------------------------------------------- | ---------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
 | `mix test` lolos dengan held-out test disalin masuk         | Ini ujian sebenarnya                                                                                                                                                                     |
 | Minimal `min_tests` test benar-benar **berjalan**           | Exit code 0 tidak bilang apa-apa soal berapa test yang jalan. `ExUnit.configure(exclude: [:test])` exit 0. Menghapus file test yang merah juga exit 0. Dua-duanya pernah tercatat lolos. |
+| Held-out file dijalankan by path, ≥1 test                   | `min_tests` cuma menghitung jumlah. Mempersempit `test_paths` plus test tambahan dari model lolos floor tanpa ujian.                                                                       |
 | Tidak ada atribut `@compile` / `@dialyzer` yang ditambahkan | Membungkam compiler bukan perbaikan                                                                                                                                                      |
 | `mix compile --force --warnings-as-errors` exit 0           | Hanya untuk task yang `grading.conf`-nya menyetel `requires_clean_compile=yes`                                                                                                           |
 
-Kalau gagal, kolom `notes` menyebut alasannya: `suppressions added`, `only 10 of 32 tests ran`, `tests failed`, `compile failed`. Kolom ini kosong kalau lolos. Tanpa itu, tabel tidak bisa membedakan model yang **mencoba lalu gagal** dari model yang **membungkam checker**.
+Kalau gagal, kolom `notes` menyebut alasannya: `suppressions added`, `holdout tests did not run`, `only 10 of 32 tests ran`, `tests failed`, `compile failed`. Kolom ini kosong kalau lolos. Tanpa itu, tabel tidak bisa membedakan model yang **mencoba lalu gagal** dari model yang **membungkam checker**.
 
 ## Membaca `RESULTS.md`
 
@@ -260,7 +261,7 @@ RESULTS.md              tabelnya
 Kalau kamu bikin benchmark sendiri, delapan hal ini yang paling mahal dipelajari — semuanya berasal dari bug nyata di repo ini yang menghasilkan angka salah tapi meyakinkan:
 
 1. **Kunci toolchain-nya, dan tolak jalan di luar itu.** Elixir 1.18 membuat task 02 mencetak "selesai" untuk nol pekerjaan.
-2. **Exit code 0 bukan kelulusan.** Hitung berapa test yang benar-benar berjalan, dan bandingkan dengan batas minimum.
+2. **Exit code 0 bukan kelulusan.** Hitung berapa test yang benar-benar berjalan, bandingkan dengan batas minimum, dan jalankan file holdout by path — jumlah tidak bisa membedakan ujian dari test tambahan yang ditulis model.
 3. **Anggap agent bisa menemukan kunci jawaban.** Workspace dijadikan repo git sendiri karena `git log` di repo induk menampilkan nama held-out test di judul commit-nya. Instruksi "jangan buka repo induk" tidak melindungi apa pun dari tooling agent.
 4. **Jangan menyalin artefak hasil compile ke start state.** `_build/test/.../OrderParams.beam` bisa didekompilasi dan mengembalikan solusi referensi apa adanya.
 5. **Deteksi pembungkaman, jangan cuma percaya hasil hijau.** Diff base-vs-run mencari `@compile`/`@dialyzer` yang baru ditambahkan — dan pemeriksanya sendiri harus diuji, karena versi pertamanya tidak pernah bisa menyala sama sekali (`diff` exit 1 mengalahkan `grep` di bawah `pipefail`).
@@ -455,10 +456,11 @@ One row is appended to `RESULTS.md`. A graded run is marked with `runs/<id>.grad
 | -------------------------------------------------- | --------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
 | `mix test` passes with held-out tests copied in    | The actual exam                                                                                                                                                                   |
 | At least `min_tests` tests actually **ran**        | Exit code 0 says nothing about how many tests ran. `ExUnit.configure(exclude: [:test])` exit 0. Deleting the test files that won't go green exits 0. Both once scored as passes. |
+| Holdout files run by path, ≥1 test                 | `min_tests` is a count. Narrowing `test_paths` plus extra model-written tests cleared the floor without the exam.                                                                  |
 | No `@compile` / `@dialyzer` attributes were added  | Silencing the compiler is not a fix                                                                                                                                               |
 | `mix compile --force --warnings-as-errors` exits 0 | Only for tasks whose `grading.conf` sets `requires_clean_compile=yes`                                                                                                             |
 
-On a failure, the `notes` column carries the reason: `suppressions added`, `only 10 of 32 tests ran`, `tests failed`, `compile failed`. It's empty on a pass. Without it the table can't tell a model that **tried and failed** from one that **silenced the checker**.
+On a failure, the `notes` column carries the reason: `suppressions added`, `holdout tests did not run`, `only 10 of 32 tests ran`, `tests failed`, `compile failed`. It's empty on a pass. Without it the table can't tell a model that **tried and failed** from one that **silenced the checker**.
 
 ## Reading `RESULTS.md`
 
@@ -556,7 +558,7 @@ RESULTS.md              the table
 If you're building your own benchmark, these eight are the expensive lessons — every one came from a real bug in this repo that produced a confidently wrong number:
 
 1. **Pin the toolchain, and refuse to run outside it.** Elixir 1.18 made task 02 report "completed" for zero work.
-2. **Exit code 0 is not a pass.** Count how many tests actually ran and compare against a floor.
+2. **Exit code 0 is not a pass.** Count how many tests actually ran against a floor, and run the holdout files by path — a count cannot tell the exam from extra tests the model wrote.
 3. **Assume the agent can find the answer key.** Workspaces are made into their own git repos because `git log` in the parent repo names the held-out tests in its commit subjects. "Don't open the parent repo" is an instruction to the operator and protects nothing from the agent's own tooling.
 4. **Never copy compiled artifacts into the start state.** `_build/test/.../OrderParams.beam` decompiles back to the reference solution verbatim.
 5. **Detect silencing; don't just trust green.** A base-vs-run diff looks for newly added `@compile`/`@dialyzer` — and the detector itself needs tests, because the first version could never fire at all (`diff` exits 1, which beats `grep`'s 0 under `pipefail`).

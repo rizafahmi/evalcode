@@ -466,6 +466,28 @@ cmd_grade() {
     floor_note="only $executed of $min_tests tests ran"
   fi
 
+  # The floor is a count. It cannot tell "the holdout ran" from "the model
+  # wrote enough of its own tests and pointed `test_paths` away from
+  # test/holdout_*.exs". Running those files by path is the identity check.
+  # Zero tests in that log means the exam was skipped, whatever the suite
+  # reported. Only applied when the suite already looks like a pass — a
+  # failing or unreadable suite has a more specific note.
+  local holdout_ok=yes holdout_note="" holdout_args=() holdout_count held
+  if [ "$tests" = pass ] && [ "$floor_ok" = yes ]; then
+    for held in "$ROOT/tasks/$task/holdout/"*; do
+      [ -f "$held" ] || continue
+      holdout_args+=("test/$(basename "$held")")
+    done
+    if (cd "$run" && mix test "${holdout_args[@]}") > "$run.holdout.log" 2>&1; then
+      if ! holdout_count="$(test_count_from "$run.holdout.log")" || [ "$holdout_count" -eq 0 ]; then
+        holdout_ok=no
+        holdout_note="holdout tests did not run"
+      fi
+    else
+      tests=fail
+    fi
+  fi
+
   # Three states, not two. A hard CompileError — the `~p` route failure Task 2
   # documented, for one — contains no `warning:` lines at all, so counting them
   # would label a build that never compiled as "0 warnings", which reads as
@@ -498,6 +520,7 @@ cmd_grade() {
 
   # A floor violation is never a pass, whatever the exit codes said.
   [ "$floor_ok" = yes ] || completed=no
+  [ "$holdout_ok" = yes ] || completed=no
 
   # RESULTS.md could not tell a model that tried and failed from one that
   # silenced the checker: the suppression note went to stderr only and the
@@ -513,6 +536,8 @@ cmd_grade() {
   if [ "$completed" = no ]; then
     if [ "$suppressions" = yes ]; then
       notes="suppressions added"
+    elif [ -n "$holdout_note" ]; then
+      notes="$holdout_note"
     elif [ -n "$floor_note" ]; then
       notes="$floor_note"
     elif [ "$tests" = fail ]; then
@@ -544,6 +569,9 @@ cmd_grade() {
     echo "note: $floor_note — recorded as not completed" >&2
   elif [ "$floor_ok" = no ]; then
     echo "note: could not read a test count from $run.test.log — recorded as not completed" >&2
+  fi
+  if [ -n "$holdout_note" ]; then
+    echo "note: $holdout_note — recorded as not completed" >&2
   fi
   echo "logs: $run.test.log  $run.compile.log  $run.diff.log" >&2
 }

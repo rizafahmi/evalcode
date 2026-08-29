@@ -246,6 +246,63 @@ chmod +x "$fx/stub/mix"
 assert_eq "tests failed" "$(grade_fixture "$fx" --duration 0m | cell 11)" \
   "a suite that never ran reads as a test failure, not an unreadable count"
 
+echo "cmd_grade — holdout identity"
+
+# min_tests only counts how many tests ran. A mix.exs that narrows
+# test_paths, or a mix test alias that skips test/holdout_*.exs, plus enough
+# model-written tests to clear the floor, used to score completed=yes without
+# the exam. Grade must run the holdout files by path; this stub lets the
+# bare `mix test` pass and makes the file-argument invocation report zero tests.
+fx="$(new_fixture 01-live-orders 0 0 "Compiling 1 file (.ex)")"
+cat > "$fx/stub/mix" <<'STUB'
+#!/usr/bin/env bash
+case "$1" in
+  test)
+    shift
+    if [ $# -eq 0 ]; then
+      printf 'Result: 32 passed\n'
+      exit 0
+    fi
+    printf 'Result: 0 tests, 32 excluded\n'
+    exit 0
+    ;;
+  compile) printf 'Compiling 1 file (.ex)\n'; exit 0 ;;
+  *)       exit 0 ;;
+esac
+STUB
+chmod +x "$fx/stub/mix"
+row="$(grade_fixture "$fx" --duration 0m)"
+assert_eq "no" "$(printf '%s\n' "$row" | cell 6)" \
+  "clearing the floor without running holdout files is not completed"
+assert_eq "holdout tests did not run" "$(printf '%s\n' "$row" | cell 11)" \
+  "and the row says the exam was skipped"
+
+# The exam ran by path and failed. The count is not zero, so a count-only
+# identity check would still pass. The holdout run must itself pass.
+fx="$(new_fixture 01-live-orders 0 0 "Compiling 1 file (.ex)")"
+cat > "$fx/stub/mix" <<'STUB'
+#!/usr/bin/env bash
+case "$1" in
+  test)
+    shift
+    if [ $# -eq 0 ]; then
+      printf 'Result: 32 passed\n'
+      exit 0
+    fi
+    printf 'Result: 2/5 passed\n'
+    exit 1
+    ;;
+  compile) printf 'Compiling 1 file (.ex)\n'; exit 0 ;;
+  *)       exit 0 ;;
+esac
+STUB
+chmod +x "$fx/stub/mix"
+row="$(grade_fixture "$fx" --duration 0m)"
+assert_eq "no" "$(printf '%s\n' "$row" | cell 6)" \
+  "a failing holdout run is not completed even when the suite passed"
+assert_eq "tests failed" "$(printf '%s\n' "$row" | cell 11)" \
+  "and reads as a test failure, not a skipped exam"
+
 echo "cmd_grade — meta is data"
 
 # `.meta` sits next to the workspace (`../<id>.meta` from inside it). `source`
