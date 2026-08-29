@@ -105,6 +105,19 @@ assert_eq "14m" "$(elapsed_minutes 2026-08-03T09:00:00Z 2026-08-03T09:14:30Z)" "
 assert_eq "0m"  "$(elapsed_minutes 2026-08-03T09:00:00Z 2026-08-03T09:00:20Z)" "handles sub-minute runs"
 assert_eq "95m" "$(elapsed_minutes 2026-08-03T09:00:00Z 2026-08-03T10:35:00Z)" "handles runs over an hour"
 
+echo "skeleton/AGENTS.md"
+
+# Generated phx.new teaches prepend as at: -1. In LiveView that is append.
+# Task 01 scores "a new order appears first", which is at: 0. Following the
+# fixture's own instructions must not fail the exam.
+prepend="$(grep -F 'prepend to stream' "$ROOT/skeleton/AGENTS.md")"
+case "$prepend" in
+  *'at: -1'*) prepend_at=append ;;
+  *'at: 0'*)  prepend_at=prepend ;;
+  *)          prepend_at=missing ;;
+esac
+assert_eq "prepend" "$prepend_at" "prepend uses at: 0, not at: -1"
+
 # --- cmd_grade fixtures ------------------------------------------------------
 #
 # ROOT comes from BASH_SOURCE, so a copy of bin/evalcode inside a temp dir

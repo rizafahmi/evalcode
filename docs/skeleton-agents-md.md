@@ -11,7 +11,7 @@ claim in it is a defect in the benchmark, not a cosmetic issue — a model that
 follows the fixture's own written instructions and is then marked down for it
 produces a wrong number with a plausible explanation attached.
 
-Three things in the generated file were false here. All three are fixed. If the
+Four things in the generated file were false here. All four are fixed. If the
 skeleton is ever regenerated from `mix phx.new`, **the originals will come
 back** and have to be re-fixed.
 
@@ -81,9 +81,22 @@ Re-verified after the change, since it alters rendered markup:
   reference solution, fail on the untouched start state
 - task 02's held-out tests: unaffected (they do not render)
 
+## 4. Prepend was documented as `at: -1`
+
+Generated `AGENTS.md`:
+
+> prepend to stream - `stream(socket, :messages, [new_msg], at: -1)`
+
+In LiveView, `at: -1` is append (the default). Prepend is `at: 0`. Task 01's
+remaining discriminator is "a new order appears first", which is
+`stream_insert(..., at: 0)`. A model that implemented PubSub correctly and
+followed this line would fail that held-out test for doing as told.
+
+Fixed to `at: 0`.
+
 ## What was *not* changed
 
 Everything else in the generated file. The Elixir/Phoenix/Ecto/HEEx/LiveView
 guideline blocks are left verbatim, including the `usage-rules` markers, so a
-future regeneration diffs cleanly against this version and the three fixes
+future regeneration diffs cleanly against this version and the four fixes
 above are the only deltas to re-apply.
