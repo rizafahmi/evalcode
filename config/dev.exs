@@ -22,7 +22,7 @@ config :sorak, SorakWeb.Endpoint,
   debug_errors: true,
   secret_key_base: "4DJ9MC8XiowO6/iJTRpnXgeBTSKWDa2WR0+BumukFkOp3uHZnS6e5hcUKzUkxtdk",
   watchers: [
-    esbuild: {Esbuild, :install_and_run, [:sorak, ~w(--sourcemap=inline --watch)]},
+    npm: ["run", "dev", cd: Path.expand("../assets", __DIR__)],
     tailwind: {Tailwind, :install_and_run, [:sorak, ~w(--watch)]}
   ]
 

@@ -20,6 +20,21 @@ defmodule SorakWeb.Router do
     get "/", PageController, :home
   end
 
+  pipeline :dashboard do
+    plug :accepts, ["html"]
+    plug :fetch_session
+    plug :protect_from_forgery
+    plug :put_secure_browser_headers
+    plug :put_root_layout, html: {SorakWeb.Layouts, :root_dashboard}
+  end
+
+  scope "/app", SorakWeb do
+    pipe_through :dashboard
+
+    get "/", DashboardController, :index
+    get "/*path", DashboardController, :index
+  end
+
   # Other scopes may use custom stacks.
   # scope "/api", SorakWeb do
   #   pipe_through :api
