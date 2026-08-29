@@ -118,6 +118,14 @@ case "$prepend" in
 esac
 assert_eq "prepend" "$prepend_at" "prepend uses at: 0, not at: -1"
 
+echo "skeleton/mix.exs"
+
+# Generated phx.new pins elixir: "~> 1.15". The harness refuses anything
+# below 1.20. A Mix-level requirement that still admits 1.18 would let
+# `mix` start a project the grader will not score.
+grep -F 'elixir: "~> 1.20"' "$ROOT/skeleton/mix.exs" >/dev/null
+assert_eq "0" "$?" "elixir requirement matches the 1.20 gate"
+
 echo "README landing tables"
 
 # The landing tables are a projection of RESULTS.md. A typo in one language
