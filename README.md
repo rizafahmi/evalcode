@@ -2,7 +2,7 @@
 
 Benchmark kecil untuk mengukur model coding di codebase kamu sendiri — Elixir 1.20 / Phoenix 1.8 LiveView, dinilai dengan test yang tidak pernah dilihat model.
 
-[![CI](../../actions/workflows/ci.yml/badge.svg)](../../actions/workflows/ci.yml)
+[![CI](https://github.com/rizafahmi/evalcode/actions/workflows/ci.yml/badge.svg)](https://github.com/rizafahmi/evalcode/actions/workflows/ci.yml)
 
 **🇮🇩 Bahasa Indonesia** · [🇬🇧 English](#evalcode-english)
 

@@ -128,6 +128,13 @@ assert_eq "1" "$?" "harness is muse-code, not muse=code"
 grep -F '03m05s' "$ROOT/README.md" >/dev/null
 assert_eq "1" "$?" "spark liveview duration is 3m, not 03m05s"
 
+echo "README CI badge"
+
+# GitHub renders README from github.com/owner/repo, not from a nested
+# blob path. A relative ../../actions/... image never hits the workflow badge.
+grep -F 'https://github.com/rizafahmi/evalcode/actions/workflows/ci.yml/badge.svg' "$ROOT/README.md" >/dev/null
+assert_eq "0" "$?" "CI badge is a GitHub actions badge URL"
+
 # --- cmd_grade fixtures ------------------------------------------------------
 #
 # ROOT comes from BASH_SOURCE, so a copy of bin/evalcode inside a temp dir
