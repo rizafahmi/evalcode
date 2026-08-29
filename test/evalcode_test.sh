@@ -135,6 +135,14 @@ echo "README CI badge"
 grep -F 'https://github.com/rizafahmi/evalcode/actions/workflows/ci.yml/badge.svg' "$ROOT/README.md" >/dev/null
 assert_eq "0" "$?" "CI badge is a GitHub actions badge URL"
 
+echo "task 02 overlay"
+
+# The overlay is the model's start state. Comments that name the planted
+# type-checker mechanisms tell it the exam before mix compile does.
+overlay="$ROOT/tasks/02-type-clean/overlay/lib/warung_web/order_params.ex"
+grep -E 'cross-clause narrowing|guard narrowing|not_set\(\)|tuple arity' "$overlay" >/dev/null
+assert_eq "1" "$?" "overlay comments do not name the planted bugs"
+
 # --- cmd_grade fixtures ------------------------------------------------------
 #
 # ROOT comes from BASH_SOURCE, so a copy of bin/evalcode inside a temp dir

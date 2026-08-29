@@ -152,7 +152,7 @@ jobs:
             echo "holdout files were present in the workspace at start" >&2
             exit 1
           fi
-          grep -q 'cross-clause narrowing' "$workspace/lib/warung_web/order_params.ex" \
+          grep -q 'if is_nil(s)' "$workspace/lib/warung_web/order_params.ex" \
             || { echo "task 02 overlay was not applied" >&2; exit 1; }
           if (cd "$workspace" && mix compile --force --warnings-as-errors); then
             echo "task 02 overlay compiled clean — the 1.20 type gate is gone" >&2

@@ -474,18 +474,18 @@ mechanisms, not five:**
 | 4 | `third_field/1` | tuple arity → `elem/2` bounds | yes — the only example of this mechanism |
 | 5 | `currency_from/1` | guard narrowing (`is_list/1` in a `case`) | shared with #2 |
 
-Headings above and the overlay's own code comments now say "guard
-narrowing" for #2 and #5. #4's heading is renamed from "tuple size bounds"
-to "tuple arity → `elem/2` bounds" for the same reason discussed in section
-4: the shipped guard is exact-arity (`== 2`), not an inequality bound —
-"bounds" alone overstated what 1.20.2 actually tracks here. No runtime
-behavior changed anywhere in this correction; it is a labeling fix only,
-and it matters because five warnings firing is necessary but is not the
-same claim as five distinct capabilities being exercised. Overstating the
-count would understate how narrow this benchmark's actual coverage of
-1.20's type system is — the thing worth knowing if this task is
-re-validated against a future Elixir release and only some mechanisms still
-warn.
+Headings above now say "guard narrowing" for #2 and #5. The overlay itself
+has no comments that name those mechanisms — they would be in the model's
+start state. #4's heading is renamed from "tuple size bounds" to "tuple
+arity → `elem/2` bounds" for the same reason discussed in section 4: the
+shipped guard is exact-arity (`== 2`), not an inequality bound — "bounds"
+alone overstated what 1.20.2 actually tracks here. No runtime behavior
+changed anywhere in this correction; it is a labeling fix only, and it
+matters because five warnings firing is necessary but is not the same claim
+as five distinct capabilities being exercised. Overstating the count would
+understate how narrow this benchmark's actual coverage of 1.20's type
+system is — the thing worth knowing if this task is re-validated against a
+future Elixir release and only some mechanisms still warn.
 
 ### Held-out coverage gaps closed
 
