@@ -149,9 +149,9 @@ new_fixture() {
   cat > "$fx/stub/mix" <<STUB
 #!/usr/bin/env bash
 case "\$1" in
-  test)    printf 'Result: %s passed\n' "$tests_run"; exit $test_exit ;;
-  compile) printf '%s\n' "$compile_out";              exit $compile_exit ;;
-  *)       exit 0 ;;
+  test|eval) printf 'Result: %s passed\n' "$tests_run"; exit $test_exit ;;
+  compile)   printf '%s\n' "$compile_out";              exit $compile_exit ;;
+  *)         exit 0 ;;
 esac
 STUB
   chmod +x "$fx/stub/mix"
@@ -257,15 +257,8 @@ fx="$(new_fixture 01-live-orders 0 0 "Compiling 1 file (.ex)")"
 cat > "$fx/stub/mix" <<'STUB'
 #!/usr/bin/env bash
 case "$1" in
-  test)
-    shift
-    if [ $# -eq 0 ]; then
-      printf 'Result: 32 passed\n'
-      exit 0
-    fi
-    printf 'Result: 0 tests, 32 excluded\n'
-    exit 0
-    ;;
+  test)    printf 'Result: 32 passed\n'; exit 0 ;;
+  eval)    printf 'Result: 0 tests, 32 excluded\n'; exit 0 ;;
   compile) printf 'Compiling 1 file (.ex)\n'; exit 0 ;;
   *)       exit 0 ;;
 esac
@@ -283,15 +276,8 @@ fx="$(new_fixture 01-live-orders 0 0 "Compiling 1 file (.ex)")"
 cat > "$fx/stub/mix" <<'STUB'
 #!/usr/bin/env bash
 case "$1" in
-  test)
-    shift
-    if [ $# -eq 0 ]; then
-      printf 'Result: 32 passed\n'
-      exit 0
-    fi
-    printf 'Result: 2/5 passed\n'
-    exit 1
-    ;;
+  test)    printf 'Result: 32 passed\n'; exit 0 ;;
+  eval)    printf 'Result: 2/5 passed\n'; exit 1 ;;
   compile) printf 'Compiling 1 file (.ex)\n'; exit 0 ;;
   *)       exit 0 ;;
 esac
@@ -302,6 +288,25 @@ assert_eq "no" "$(printf '%s\n' "$row" | cell 6)" \
   "a failing holdout run is not completed even when the suite passed"
 assert_eq "tests failed" "$(printf '%s\n' "$row" | cell 11)" \
   "and reads as a test failure, not a skipped exam"
+
+# A mix test alias that swallows extra arguments. Both our invocations go
+# through `mix test`, so the padded suite is what ran. Grade must not use
+# that alias for the exam.
+fx="$(new_fixture 01-live-orders 0 0 "Compiling 1 file (.ex)")"
+cat > "$fx/stub/mix" <<'STUB'
+#!/usr/bin/env bash
+case "$1" in
+  test)    printf 'Result: 32 passed\n'; exit 0 ;;
+  compile) printf 'Compiling 1 file (.ex)\n'; exit 0 ;;
+  *)       exit 0 ;;
+esac
+STUB
+chmod +x "$fx/stub/mix"
+row="$(grade_fixture "$fx" --duration 0m)"
+assert_eq "no" "$(printf '%s\n' "$row" | cell 6)" \
+  "a mix test alias that ignores holdout paths is not completed"
+assert_eq "holdout tests did not run" "$(printf '%s\n' "$row" | cell 11)" \
+  "and the row says the exam was skipped"
 
 echo "cmd_grade — meta is data"
 

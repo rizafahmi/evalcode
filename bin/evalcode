@@ -478,7 +478,11 @@ cmd_grade() {
       [ -f "$held" ] || continue
       holdout_args+=("test/$(basename "$held")")
     done
-    if (cd "$run" && mix test "${holdout_args[@]}") > "$run.holdout.log" 2>&1; then
+    # `mix test FILE` still hits the project's `test` alias. A model that
+    # rewrites that alias to ignore extra arguments makes this invocation
+    # another padded suite. Mix.Task.run goes to Mix.Tasks.Test directly.
+    # shellcheck disable=SC2209  # MIX_ENV=test is an env prefix, not an assignment
+    if (cd "$run" && MIX_ENV=test mix eval 'Mix.Task.run("test", System.argv())' -- "${holdout_args[@]}") > "$run.holdout.log" 2>&1; then
       if ! holdout_count="$(test_count_from "$run.holdout.log")" || [ "$holdout_count" -eq 0 ]; then
         holdout_ok=no
         holdout_note="holdout tests did not run"
