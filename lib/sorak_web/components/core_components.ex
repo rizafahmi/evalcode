@@ -56,7 +56,7 @@ defmodule SorakWeb.CoreComponents do
       id={@id}
       phx-click={JS.push("lv:clear-flash", value: %{key: @kind}) |> hide("##{@id}")}
       role="alert"
-      class="toast toast-top toast-end z-50"
+      class="fixed top-4 right-4 z-50"
       {@rest}
     >
       <div class={[
@@ -94,11 +94,17 @@ defmodule SorakWeb.CoreComponents do
   slot :inner_block, required: true
 
   def button(%{rest: rest} = assigns) do
-    variants = %{"primary" => "btn-primary", nil => "btn-primary btn-soft"}
+    variants = %{
+      "primary" => "bg-cyan-500 text-zinc-950 hover:bg-cyan-400",
+      nil => "border border-zinc-700 bg-zinc-800 text-zinc-100 hover:bg-zinc-700"
+    }
 
     assigns =
       assign_new(assigns, :class, fn ->
-        ["btn", Map.fetch!(variants, assigns[:variant])]
+        [
+          "inline-flex items-center justify-center rounded-md px-4 py-2 text-sm font-medium",
+          Map.fetch!(variants, assigns[:variant])
+        ]
       end)
 
     if rest[:href] || rest[:navigate] || rest[:patch] do
@@ -185,10 +191,10 @@ defmodule SorakWeb.CoreComponents do
       end)
 
     ~H"""
-    <div class="fieldset mb-2">
+    <div class="mb-2">
       <label>
         <input type="hidden" name={@name} value="false" disabled={@rest[:disabled]} />
-        <span class="label">
+        <span class="block text-sm font-medium text-zinc-300">
           <input
             type="checkbox"
             id={@id}
@@ -272,7 +278,7 @@ defmodule SorakWeb.CoreComponents do
   # Helper used by inputs to generate form errors
   defp error(assigns) do
     ~H"""
-    <p class="mt-1.5 flex gap-2 items-center text-sm text-error">
+    <p class="mt-1.5 flex gap-2 items-center text-sm text-red-400">
       <.icon name="hero-exclamation-circle" class="size-5" />
       {render_slot(@inner_block)}
     </p>
@@ -293,7 +299,7 @@ defmodule SorakWeb.CoreComponents do
         <h1 class="text-lg font-semibold leading-8">
           {render_slot(@inner_block)}
         </h1>
-        <p :if={@subtitle != []} class="text-sm text-base-content/70">
+        <p :if={@subtitle != []} class="text-sm text-zinc-400">
           {render_slot(@subtitle)}
         </p>
       </div>
@@ -334,9 +340,9 @@ defmodule SorakWeb.CoreComponents do
       end
 
     ~H"""
-    <table class="table table-zebra">
+    <table class="w-full text-left text-sm">
       <thead>
-        <tr>
+        <tr class="odd:bg-zinc-900 even:bg-zinc-800">
           <th :for={col <- @col}>{col[:label]}</th>
           <th :if={@action != []}>
             <span class="sr-only">Actions</span>
@@ -381,9 +387,9 @@ defmodule SorakWeb.CoreComponents do
 
   def list(assigns) do
     ~H"""
-    <ul class="list">
-      <li :for={item <- @item} class="list-row">
-        <div class="list-col-grow">
+    <ul class="divide-y divide-zinc-800">
+      <li :for={item <- @item} class="py-3">
+        <div class="">
           <div class="font-bold">{item.title}</div>
           <div>{render_slot(item)}</div>
         </div>
