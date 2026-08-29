@@ -507,6 +507,15 @@ grade_fixture "$fx" --duration 0m >/dev/null
 assert_eq "yes" "$(grade_fixture "$fx" --duration 0m --regrade | cell 6)" \
   "a regrade does not attribute held-out files to the model"
 
+# basename-only rm leaves holdout/nested/foo.exs in test/nested/foo.exs.
+fx="$(new_fixture 01-live-orders 0 0 "Compiling 1 file (.ex)")"
+mkdir -p "$fx/tasks/01-live-orders/holdout/nested"
+printf 'defmodule NestedHoldoutTest do\n  @compile {:no_warn_undefined, Foo}\nend\n' \
+  > "$fx/tasks/01-live-orders/holdout/nested/holdout_nested.exs"
+grade_fixture "$fx" --duration 0m >/dev/null
+assert_eq "yes" "$(grade_fixture "$fx" --duration 0m --regrade | cell 6)" \
+  "a regrade does not attribute nested held-out files to the model"
+
 echo "cmd_grade — malformed input"
 
 fx="$(new_fixture 01-live-orders 0 0 "Compiling 1 file (.ex)")"

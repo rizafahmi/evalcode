@@ -419,12 +419,13 @@ cmd_grade() {
   # On a regrade the run already holds the held-out tests this tool copied in
   # last time. Left in place they would show up in the base-vs-run diff below
   # as model-authored. Remove them, scan, then copy pristine ones back.
+  #
+  # Recurse. `holdout/nested/foo.exs` is copied to `test/nested/foo.exs`.
+  # `rm -f test/$(basename)` left that tree in place — and `rm -f` on the
+  # `nested` directory itself is a non-zero exit, which aborted the regrade.
   if [ "$regrade" = yes ]; then
-    local held
-    for held in "$ROOT/tasks/$task/holdout/"*; do
-      [ -e "$held" ] || continue
-      rm -f "$run/test/$(basename "$held")"
-    done
+    local holdout_dir="$ROOT/tasks/$task/holdout"
+    (cd "$holdout_dir" && find . -mindepth 1 -exec rm -rf "$run/test/{}" \;)
   fi
 
   # Scan for suppression attributes BEFORE the held-out tests are copied in,
