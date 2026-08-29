@@ -1,0 +1,1 @@
+Fetch and upgrade dependencies. A drop in replacement for `mix deps.update` that also runs upgrade tasks.
