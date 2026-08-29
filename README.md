@@ -201,7 +201,7 @@ tasks/03-punya-kamu/
 └── NOTES.md         # catatan validasi
 ```
 
-`grading.conf` di-source oleh shell, jadi formatnya `key=value` tanpa spasi:
+`grading.conf` dibaca sebagai `key=value` (bukan di-`source`), tanpa spasi di sekitar `=`:
 
 ```sh
 min_tests=32               # test skeleton + test held-out, dihitung dari log
@@ -276,7 +276,7 @@ Detail lengkap tiap keputusan ada di komentar `bin/evalcode` — komentarnya ada
 
 Lihat [CONTRIBUTING.md](CONTRIBUTING.md) — issue dan PR boleh bahasa Indonesia maupun Inggris. Peserta diharapkan mengikuti [Code of Conduct](CODE_OF_CONDUCT.md).
 
-Sebelum menjalankan benchmark ini di mesin kamu, baca [SECURITY.md](SECURITY.md): `grade` menjalankan kode tulisan model tanpa sandbox, dan `grading.conf` di-source oleh shell.
+Sebelum menjalankan benchmark ini di mesin kamu, baca [SECURITY.md](SECURITY.md): `grade` menjalankan kode tulisan model tanpa sandbox.
 
 Kode benchmark-nya berlisensi [MIT](LICENSE); `skeleton/` adalah app Phoenix hasil generate dan mengikuti lisensi Phoenix.
 
@@ -497,7 +497,7 @@ tasks/03-your-task/
 └── NOTES.md         # validation record
 ```
 
-`grading.conf` is shell-sourced, so it's `key=value` with no spaces:
+`grading.conf` is parsed as `key=value` (not sourced as a script), no spaces around `=`:
 
 ```sh
 min_tests=32               # skeleton tests + held-out tests, counted by running
@@ -572,6 +572,6 @@ The full reasoning behind each decision lives in the comments in `bin/evalcode` 
 
 See [CONTRIBUTING.md](CONTRIBUTING.md) — issues and pull requests are welcome in Indonesian or English. Participants are expected to follow the [Code of Conduct](CODE_OF_CONDUCT.md).
 
-Before running this benchmark on your machine, read [SECURITY.md](SECURITY.md): `grade` executes model-written code unsandboxed, and `grading.conf` is shell-sourced.
+Before running this benchmark on your machine, read [SECURITY.md](SECURITY.md): `grade` executes model-written code unsandboxed.
 
 The benchmark code is [MIT](LICENSE) licensed; `skeleton/` is a generated Phoenix app and follows Phoenix's license.

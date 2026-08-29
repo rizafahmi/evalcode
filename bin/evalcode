@@ -64,6 +64,22 @@ evalcode_status() {
   echo yes
 }
 
+# kv_get <file> <key>
+#
+# Reads one `key=value` from a data file. Not `source`: `.meta` and
+# `grading.conf` sit where a model that walked out of the workspace can
+# rewrite them, and sourcing would let that rewrite redefine helpers such as
+# `evalcode_status`. Unknown lines are ignored. Last matching key wins.
+kv_get() {
+  local file="$1" key="$2" line value=""
+  while IFS= read -r line || [ -n "$line" ]; do
+    case "$line" in
+      "$key"=*) value="${line#"$key"=}" ;;
+    esac
+  done < "$file"
+  printf '%s\n' "$value"
+}
+
 # format_row <run-id> <task> <model> <harness> <completed> <tests> <duration> <cost> <compile> <notes>
 #
 # The run id leads because it is the row's only link to its evidence. Without
@@ -360,8 +376,11 @@ cmd_grade() {
     exit 1
   fi
 
-  # shellcheck disable=SC1090
-  source "$meta"   # provides: task, model, harness, started
+  local task model harness started
+  task="$(kv_get "$meta" task)"
+  model="$(kv_get "$meta" model)"
+  harness="$(kv_get "$meta" harness)"
+  started="$(kv_get "$meta" started)"
 
   # Per-task grading settings. A task without this file is refused rather than
   # graded with no floor and no compile gate.
@@ -372,9 +391,9 @@ cmd_grade() {
     exit 1
   }
 
-  local min_tests="" requires_clean_compile=""
-  # shellcheck disable=SC1090
-  source "$conf"
+  local min_tests requires_clean_compile
+  min_tests="$(kv_get "$conf" min_tests)"
+  requires_clean_compile="$(kv_get "$conf" requires_clean_compile)"
 
   case "$min_tests" in
     ''|*[!0-9]*)
@@ -468,7 +487,6 @@ cmd_grade() {
   fi
 
   if [ -z "$duration" ]; then
-    # shellcheck disable=SC2154  # `started` comes from `source "$meta"` above
     duration="$(elapsed_minutes "$started" "$(date -u +%Y-%m-%dT%H:%M:%SZ)")" || {
       echo "grade: cannot compute duration from meta (started='$started')" >&2
       echo "grade: pass --duration explicitly, or repair $meta" >&2

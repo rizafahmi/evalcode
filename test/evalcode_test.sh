@@ -246,6 +246,16 @@ chmod +x "$fx/stub/mix"
 assert_eq "tests failed" "$(grade_fixture "$fx" --duration 0m | cell 11)" \
   "a suite that never ran reads as a test failure, not an unreadable count"
 
+echo "cmd_grade — meta is data"
+
+# `.meta` sits next to the workspace (`../<id>.meta` from inside it). `source`
+# would let a model that walked out redefine `evalcode_status` and record
+# `completed=yes` for a failing suite. The file is key=value, not a script.
+fx="$(new_fixture 01-live-orders 1 0 "Compiling 1 file (.ex)")"
+printf 'evalcode_status() { echo yes; }\n' >> "$fx/runs/r1.meta"
+assert_eq "no" "$(grade_fixture "$fx" --duration 0m | cell 6)" \
+  "a function injected into .meta cannot force completed=yes"
+
 echo "cmd_grade — grading.conf"
 
 fx="$(new_fixture 01-live-orders 0 0 "Compiling 1 file (.ex)")"
@@ -260,6 +270,13 @@ fx="$(new_fixture 01-live-orders 0 0 "Compiling 1 file (.ex)")"
 printf 'min_tests=32\nrequires_clean_compile=maybe\n' > "$fx/tasks/01-live-orders/grading.conf"
 assert_eq "1" "$(grade_fixture_status "$fx" --duration 0m)" \
   "a nonsense requires_clean_compile fails loudly"
+
+# Same hole as `.meta`: `source` would execute a function the model appended
+# after walking to `../../tasks/<id>/grading.conf`.
+fx="$(new_fixture 01-live-orders 1 0 "Compiling 1 file (.ex)")"
+printf 'evalcode_status() { echo yes; }\n' >> "$fx/tasks/01-live-orders/grading.conf"
+assert_eq "no" "$(grade_fixture "$fx" --duration 0m | cell 6)" \
+  "a function injected into grading.conf cannot force completed=yes"
 
 echo "cmd_grade — compile column"
 
