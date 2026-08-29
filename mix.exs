@@ -12,6 +12,7 @@ defmodule Sorak.MixProject do
       deps: deps(),
       compilers: [:phoenix_live_view] ++ Mix.compilers(),
       listeners: [Phoenix.CodeReloader],
+      dialyzer: [plt_add_apps: [:ex_unit]],
       usage_rules: usage_rules()
     ]
   end
@@ -41,6 +42,9 @@ defmodule Sorak.MixProject do
   # Type `mix help deps` for examples and options.
   defp deps do
     [
+      {:vibe_kit, "~> 0.1"},
+      {:ex_dna, "~> 1.5", only: [:dev, :test], runtime: false},
+      {:reach, "~> 2.6", only: [:dev, :test], runtime: false},
       {:usage_rules, "~> 1.0", only: [:dev]},
       {:dialyxir, "~> 1.0", runtime: false},
       {:credo, "~> 1.0", only: [:dev, :test], runtime: false},
@@ -92,7 +96,16 @@ defmodule Sorak.MixProject do
         "esbuild sorak --minify",
         "phx.digest"
       ],
-      precommit: ["compile --warning-as-errors", "deps.unlock --unused", "format", "test"]
+      precommit: [
+        "compile --warning-as-errors",
+        "format --check-formatted",
+        "deps.unlock --unused",
+        "test",
+        "credo --strict",
+        "dialyzer",
+        "ex_dna --max-clones 0",
+        "reach.check --arch --smells"
+      ]
     ]
   end
 
