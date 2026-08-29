@@ -22,11 +22,11 @@ Kenapa orang perlu punya eval sendiri: leaderboard publik mengukur model di soal
 
 | date       | model                          | harness          | completed | tests | duration | cost  |
 |------------|--------------------------------|------------------|:---------:|-------|----------|-------|
-| 2026-08-28 | spark-1.2-contributor (medium) | muse-code        |     ✓     | 32/32 | 03m05s   | $0.01 |
+| 2026-08-28 | spark-1.2-contributor (medium) | muse-code        |     ✓     | 32/32 | 3m       | $0.01 |
 | 2026-08-28 | deepseek-v4-flash (high)       | deepseek-harness |     ✗     | 33/32 | 2m       | $0.01 |
 | 2026-08-28 | gemini-3.7-flash (high)        | antigravity      |     ✓     | 34/32 | 2m       | N/A   |
-| 2026-08-04 | mixed                          | ampcode          |     ✓     | 33/32 | 02m      | $0.99 |
-| 2026-08-03 | opus 5                         | claude-code      |     ✓     | 35/32 | 05m      | $2.83 |
+| 2026-08-04 | mixed                          | ampcode          |     ✓     | 33/32 | 2m       | $0.99 |
+| 2026-08-03 | opus 5                         | claude-code      |     ✓     | 35/32 | 5m       | $2.83 |
 
 ### Evaluasi 2: Elixir 1.20 Types
 
@@ -35,8 +35,8 @@ Kenapa orang perlu punya eval sendiri: leaderboard publik mengukur model di soal
 | 2026-08-28 | spark-1.2-contributor (medium) | muse-code        |     ✓     | 41/41 | 3m       | $0.01 |
 | 2026-08-28 | deepseek-v4-flash (high)       | deepseek-harness |     ✓     | 41/41 | 3m       | $0.01 |
 | 2026-08-28 | gemini-3.7-flash (high)        | antigravity      |     ✓     | 53/41 | 2m       | N/A   |
-| 2026-08-04 | gpt-5.6                        | ampcode          |     ✓     | 51/41 | 03m      | $1.03 |
-| 2026-08-03 | opus 5                         | claude-code      |     ✓     | 52/41 | 02m      | $0.88 |
+| 2026-08-04 | gpt-5.6                        | ampcode          |     ✓     | 51/41 | 3m       | $1.03 |
+| 2026-08-03 | opus 5                         | claude-code      |     ✓     | 52/41 | 2m       | $0.88 |
 
 `✓` artinya lolos keempat gate di [Arti `completed`](#arti-completed) — bukan sekadar `mix test` exit 0. Kolom `tests` berformat `<jalan>/<batas minimum>`: `35/32` artinya model menyelesaikan task lalu menulis 3 test sendiri, `33/32` artinya pas di batas. `mixed` bukan nama model — ampcode memilih model sendiri per langkah.
 
@@ -307,11 +307,11 @@ Why anyone needs their own eval: public leaderboards measure models on problems 
 
 | date       | model                          | harness          | completed | tests | duration | cost  |
 |------------|--------------------------------|------------------|:---------:|-------|----------|-------|
-| 2026-08-28 | spark-1.2-contributor (medium) | muse=code        |     ✓     | 32/32 | 3m       | $0.01 |
+| 2026-08-28 | spark-1.2-contributor (medium) | muse-code        |     ✓     | 32/32 | 3m       | $0.01 |
 | 2026-08-28 | deepseek-v4-flash (high)       | deepseek-harness |     ✗     | 33/32 | 2m       | $0.01 |
 | 2026-08-28 | gemini-3.7-flash (high)        | antigravity      |     ✓     | 34/32 | 2m       | N/A   |
-| 2026-08-04 | mixed                          | ampcode          |     ✓     | 33/32 | 02m      | $0.99 |
-| 2026-08-03 | opus 5                         | claude-code      |     ✓     | 35/32 | 05m      | $2.83 |
+| 2026-08-04 | mixed                          | ampcode          |     ✓     | 33/32 | 2m       | $0.99 |
+| 2026-08-03 | opus 5                         | claude-code      |     ✓     | 35/32 | 5m       | $2.83 |
 
 ### Evaluate 2: Elixir 1.20 Types
 
@@ -320,8 +320,8 @@ Why anyone needs their own eval: public leaderboards measure models on problems 
 | 2026-08-28 | spark-1.2-contributor (medium) | muse-code        |     ✓     | 41/41 | 3m       | $0.01 |
 | 2026-08-28 | deepseek-v4-flash (high)       | deepseek-harness |     ✓     | 41/41 | 3m       | $0.01 |
 | 2026-08-28 | gemini-3.7-flash (high)        | antigravity      |     ✓     | 53/41 | 2m       | N/A   |
-| 2026-08-04 | gpt-5.6                        | ampcode          |     ✓     | 51/41 | 03m      | $1.03 |
-| 2026-08-03 | opus 5                         | claude-code      |     ✓     | 52/41 | 02m      | $0.88 |
+| 2026-08-04 | gpt-5.6                        | ampcode          |     ✓     | 51/41 | 3m       | $1.03 |
+| 2026-08-03 | opus 5                         | claude-code      |     ✓     | 52/41 | 2m       | $0.88 |
 
 `✓` means all four gates in [What `completed` means](#what-completed-means) passed — not merely that `mix test` exited 0. The `tests` column is `<ran>/<floor>`: `35/32` means the model solved the task and then wrote 3 tests of its own, `33/32` means it cleared the floor exactly. `mixed` is not a model name — ampcode picks its own model per step.
 

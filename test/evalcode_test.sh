@@ -118,6 +118,16 @@ case "$prepend" in
 esac
 assert_eq "prepend" "$prepend_at" "prepend uses at: 0, not at: -1"
 
+echo "README landing tables"
+
+# The landing tables are a projection of RESULTS.md. A typo in one language
+# and a duration `valid_duration` would reject made them disagree with each
+# other and with the table they claim to summarise.
+grep -F 'muse=code' "$ROOT/README.md" >/dev/null
+assert_eq "1" "$?" "harness is muse-code, not muse=code"
+grep -F '03m05s' "$ROOT/README.md" >/dev/null
+assert_eq "1" "$?" "spark liveview duration is 3m, not 03m05s"
+
 # --- cmd_grade fixtures ------------------------------------------------------
 #
 # ROOT comes from BASH_SOURCE, so a copy of bin/evalcode inside a temp dir
