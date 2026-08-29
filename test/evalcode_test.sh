@@ -143,6 +143,13 @@ overlay="$ROOT/tasks/02-type-clean/overlay/lib/warung_web/order_params.ex"
 grep -E 'cross-clause narrowing|guard narrowing|not_set\(\)|tuple arity' "$overlay" >/dev/null
 assert_eq "1" "$?" "overlay comments do not name the planted bugs"
 
+echo "Dockerfile"
+
+# Route B is the flake's toolchain, including Node 22 so a container used as
+# a place to work the LiveView has esbuild/tailwind. Grade does not need it.
+grep -E 'node:22' "$ROOT/Dockerfile" >/dev/null
+assert_eq "0" "$?" "Dockerfile installs Node 22"
+
 # --- cmd_grade fixtures ------------------------------------------------------
 #
 # ROOT comes from BASH_SOURCE, so a copy of bin/evalcode inside a temp dir

@@ -1,5 +1,5 @@
-# The same toolchain the Nix devshell pins — Elixir 1.20.2 on Erlang/OTP 27 —
-# for anyone who would rather not install Nix to run a benchmark.
+# The same toolchain the Nix devshell pins — Elixir 1.20.2 on Erlang/OTP 27,
+# Node 22 — for anyone who would rather not install Nix to run a benchmark.
 #
 # `bin/evalcode` only ever asks the toolchain one question: does
 # `elixir --version` say 1.20.x. Nix, this image, and a plain mise install are
@@ -19,6 +19,12 @@
 # instead of disappearing with the container. `--user` keeps docker from
 # leaving root-owned files behind in it; rootless podman already maps your uid,
 # which is why its line does not need the flag.
+#
+# Node 22 is copied from the official image. Debian Trixie ships Node 20;
+# the flake pins nodejs_22. Grade does not need it. A container used as a
+# place to work the LiveView does (esbuild/tailwind).
+FROM node:22-bookworm-slim AS node
+
 FROM hexpm/elixir:1.20.2-erlang-27.3.4.16-debian-trixie-20260713-slim
 
 # build-essential   exqlite compiles SQLite from source during `mix deps.get`
@@ -28,6 +34,12 @@ RUN apt-get update \
  && apt-get install -y --no-install-recommends \
       build-essential ca-certificates diffutils git rsync \
  && rm -rf /var/lib/apt/lists/*
+
+# Copied rather than apt-installed: Trixie's nodejs package is 20.x.
+COPY --from=node /usr/local/bin/node /usr/local/bin/node
+COPY --from=node /usr/local/lib/node_modules /usr/local/lib/node_modules
+RUN ln -sf /usr/local/lib/node_modules/npm/bin/npm-cli.js /usr/local/bin/npm \
+ && ln -sf /usr/local/lib/node_modules/npm/bin/npx-cli.js /usr/local/bin/npx
 
 # Set before installing, so hex and rebar land somewhere a non-root uid can
 # still read and write. Installing them into the image also stops the first

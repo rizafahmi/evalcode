@@ -173,7 +173,7 @@ jobs:
   container:
     # Route B in the README. Same assertion as the devshell job, different way
     # of getting there — which is the whole claim being made.
-    name: Dockerfile provides Elixir 1.20 / OTP 27
+    name: Dockerfile provides Elixir 1.20 / OTP 27 / Node 22
     runs-on: ubuntu-latest
     timeout-minutes: 20
     steps:
@@ -199,6 +199,16 @@ jobs:
             -eval 'io:format("~s~n", [erlang:system_info(otp_release)]), halt().' | tail -n 1)"
           echo "OTP $otp"
           [ "$otp" = 27 ] || { echo "image no longer provides OTP 27: $otp" >&2; exit 1; }
+
+      - name: Node is 22.x in the image
+        run: |
+          set -euo pipefail
+          version="$(docker run --rm evalcode node --version)"
+          echo "$version"
+          case "$version" in
+            v22.*) ;;
+            *) echo "image no longer provides Node 22: $version" >&2; exit 1 ;;
+          esac
 
       # Having the right Elixir in the image is not the claim the README makes.
       # It tells people to run rounds through a bind mount as their own uid, and

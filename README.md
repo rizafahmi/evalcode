@@ -84,7 +84,7 @@ Paling reproducible: `flake.lock` mengunci versi persisnya, jadi mesin kamu dan 
 
 ### Jalur B — container (Docker atau Podman)
 
-[`Dockerfile`](Dockerfile) di root memasang toolchain yang sama (Elixir 1.20.2 / OTP 27):
+[`Dockerfile`](Dockerfile) di root memasang toolchain yang sama (Elixir 1.20.2 / OTP 27 / Node 22):
 
 ```bash
 docker build -t evalcode .
@@ -374,7 +374,7 @@ machine and someone else's get the same compiler.
 ### Route B — a container (Docker or Podman)
 
 The [`Dockerfile`](Dockerfile) at the root installs the same toolchain
-(Elixir 1.20.2 / OTP 27):
+(Elixir 1.20.2 / OTP 27 / Node 22):
 
 ```bash
 docker build -t evalcode .
