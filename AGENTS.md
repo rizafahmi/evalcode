@@ -4,6 +4,15 @@ This is a web application written using the Phoenix web framework.
 
 - Use `mix precommit` alias when you are done with all changes and fix any pending issues
 - Use the already included and available `:req` (`Req`) library for HTTP requests, **avoid** `:httpoison`, `:tesla`, and `:httpc`. Req is included by default and is the preferred HTTP client for Phoenix apps
+
+## Elixir 1.20 type checker
+
+- This app runs Elixir 1.20 / OTP 27. The compiler infers types and reports verified bugs as `mix compile` warnings. There is no new type-annotation syntax. Do not invent one. Do not add decorative `@spec` as a substitute.
+
+- Write for inference: structs over unshaped maps, pattern matching and guards over `if`, tagged `{:ok, _}` / `{:error, _}` tuples.
+
+- Type warnings are bugs. Fix the code. Never silence them. `mix compile --warnings-as-errors` is the type check (already in `mix precommit`). Dialyzer is a different tool; do not confuse the two.
+
 ### Phoenix v1.8 guidelines
     
 - **Always** begin your LiveView templates with `<Layouts.app flash={@flash} ...>` which wraps all inner content
