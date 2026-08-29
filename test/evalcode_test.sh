@@ -128,6 +128,15 @@ assert_eq "1" "$?" "harness is muse-code, not muse=code"
 grep -F '03m05s' "$ROOT/README.md" >/dev/null
 assert_eq "1" "$?" "spark liveview duration is 3m, not 03m05s"
 
+echo "README duration column"
+
+# Duration is computed unless --duration is passed. Lumping it with cost
+# as always typed-in contradicts RESULTS.md.
+grep -F '`cost` and `duration` are typed in by the operator' "$ROOT/README.md" >/dev/null
+assert_eq "1" "$?" "landing does not lump duration as always typed-in"
+grep -F '`cost` dan `duration` diketik operator' "$ROOT/README.md" >/dev/null
+assert_eq "1" "$?" "ID landing does not lump duration as always typed-in"
+
 echo "README CI badge"
 
 # GitHub renders README from github.com/owner/repo, not from a nested

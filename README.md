@@ -40,7 +40,7 @@ Kenapa orang perlu punya eval sendiri: leaderboard publik mengukur model di soal
 
 `✓` artinya lolos keempat gate di [Arti `completed`](#arti-completed) — bukan sekadar `mix test` exit 0. Kolom `tests` berformat `<jalan>/<batas minimum>`: `35/32` artinya model menyelesaikan task lalu menulis 3 test sendiri, `33/32` artinya pas di batas. `mixed` bukan nama model — ampcode memilih model sendiri per langkah.
 
-Satu-satunya perbandingan langsung yang ada di sini: task `liveview` dikerjakan keduanya dan sama-sama lolos, **$0.99 lawan $2.83** — hampir 3× lipat. Perhatikan bahwa `cost` dan `duration` diketik operator dan tidak diverifikasi `bin/evalcode` — dan `duration` adalah wall-clock, termasuk waktu operator meninggalkan meja.
+Satu-satunya perbandingan langsung yang ada di sini: task `liveview` dikerjakan keduanya dan sama-sama lolos, **$0.99 lawan $2.83** — hampir 3× lipat. Perhatikan bahwa `cost` diketik operator dan tidak diverifikasi. `duration` dihitung wall-clock dari `start` sampai `grade` — termasuk waktu operator meninggalkan meja — kecuali `--duration` dipakai.
 
 Empat baris jelas bukan sampel untuk menyimpulkan model mana lebih baik — dan memang bukan itu gunanya. Tabel ini contoh **bentuk**: apa yang layak dicatat per putaran, dan mana kolom yang boleh dipercaya. Versi lengkapnya — run id, kolom `compile` dan `notes` — ada di [`RESULTS.md`](RESULTS.md), lihat juga [cara membacanya](#membaca-resultsmd).
 
@@ -265,7 +265,7 @@ Kalau kamu bikin benchmark sendiri, delapan hal ini yang paling mahal dipelajari
 3. **Anggap agent bisa menemukan kunci jawaban.** Workspace dijadikan repo git sendiri karena `git log` di repo induk menampilkan nama held-out test di judul commit-nya. Instruksi "jangan buka repo induk" tidak melindungi apa pun dari tooling agent.
 4. **Jangan menyalin artefak hasil compile ke start state.** `_build/test/.../OrderParams.beam` bisa didekompilasi dan mengembalikan solusi referensi apa adanya.
 5. **Deteksi pembungkaman, jangan cuma percaya hasil hijau.** Diff base-vs-run mencari `@compile`/`@dialyzer` yang baru ditambahkan — dan pemeriksanya sendiri harus diuji, karena versi pertamanya tidak pernah bisa menyala sama sekali (`diff` exit 1 mengalahkan `grep` di bawah `pipefail`).
-6. **Pisahkan kolom yang diukur dari kolom yang diketik tangan.** `cost` dan `duration` adalah klaim operator, bukan pengukuran, dan tabelnya bilang begitu.
+6. **Pisahkan kolom yang diukur dari kolom yang diketik tangan.** `cost` selalu klaim operator. `duration` dihitung, kecuali `--duration` dipakai — dan tabelnya bilang begitu.
 7. **Setiap baris gagal harus menyebut alasannya.** Tanpa kolom `notes`, "gagal" mencampur model yang mencoba dengan model yang curang.
 8. **Lebih baik menolak daripada mencetak angka yang salah.** Timestamp yang tidak terbaca pernah menghasilkan durasi `29762072m` dan exit 0. Sekarang itu error.
 
@@ -325,7 +325,7 @@ Why anyone needs their own eval: public leaderboards measure models on problems 
 
 `✓` means all four gates in [What `completed` means](#what-completed-means) passed — not merely that `mix test` exited 0. The `tests` column is `<ran>/<floor>`: `35/32` means the model solved the task and then wrote 3 tests of its own, `33/32` means it cleared the floor exactly. `mixed` is not a model name — ampcode picks its own model per step.
 
-The only head-to-head here: task `liveview` was run by both and both passed, **$0.99 against $2.83** — nearly 3× the cost. Note that `cost` and `duration` are typed in by the operator and unverified — and `duration` is wall-clock, including time the operator spent away from the desk.
+The only head-to-head here: task `liveview` was run by both and both passed, **$0.99 against $2.83** — nearly 3× the cost. Note that `cost` is typed in by the operator and unverified. `duration` is wall-clock from `start` to `grade` — including time the operator spent away from the desk — unless `--duration` was passed.
 
 Four rows is obviously not a sample you can rank models with — that isn't what it's for. The table is here as an example of **shape**: what's worth recording per round, and which columns you are allowed to trust. The full version — run ids, the `compile` and `notes` columns — is in [`RESULTS.md`](RESULTS.md); see also [how to read it](#reading-resultsmd).
 
@@ -562,7 +562,7 @@ If you're building your own benchmark, these eight are the expensive lessons —
 3. **Assume the agent can find the answer key.** Workspaces are made into their own git repos because `git log` in the parent repo names the held-out tests in its commit subjects. "Don't open the parent repo" is an instruction to the operator and protects nothing from the agent's own tooling.
 4. **Never copy compiled artifacts into the start state.** `_build/test/.../OrderParams.beam` decompiles back to the reference solution verbatim.
 5. **Detect silencing; don't just trust green.** A base-vs-run diff looks for newly added `@compile`/`@dialyzer` — and the detector itself needs tests, because the first version could never fire at all (`diff` exits 1, which beats `grep`'s 0 under `pipefail`).
-6. **Separate measured columns from hand-typed ones.** `cost` and `duration` are operator claims, not measurements, and the table says so.
+6. **Separate measured columns from hand-typed ones.** `cost` is always an operator claim. `duration` is computed unless `--duration` was passed, and the table says so.
 7. **Every failing row must say why.** Without a `notes` column, "failed" lumps the model that tried in with the model that cheated.
 8. **Refuse rather than print a wrong number.** An unparseable timestamp once produced a duration of `29762072m` and exited 0. Now it's an error.
 
