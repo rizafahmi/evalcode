@@ -41,9 +41,9 @@ defmodule Sorak.MixProject do
   defp deps do
     [
       {:usage_rules, "~> 1.0"},
-      {:dialyxir, "~> 1.0"},
-      {:credo, "~> 1.0"},
-      {:phoenix_test, "~> 0.12"},
+      {:dialyxir, "~> 1.0", runtime: false},
+      {:credo, "~> 1.0", only: [:dev, :test], runtime: false},
+      {:phoenix_test, "~> 0.12", only: :test, runtime: false},
       {:phoenix, "~> 1.8.0"},
       {:phoenix_ecto, "~> 4.5"},
       {:ecto_sql, "~> 3.13"},
