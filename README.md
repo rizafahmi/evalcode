@@ -61,7 +61,7 @@ runs/<id>/  ──────────────────────�
 + tasks/<id>/holdout   (baru disalin di sini)  + runs/<id>.{test,compile,diff}.log
 ```
 
-Poin pentingnya: **held-out test baru masuk ke workspace saat grading.** Selama agent bekerja, test itu tidak ada di disk mana pun yang bisa dia jangkau.
+Poin pentingnya: **held-out test baru masuk ke workspace saat grading.**
 
 ---
 
@@ -345,7 +345,7 @@ runs/<id>/  ──────────────────────�
 + tasks/<id>/holdout   (copied in only now)   + runs/<id>.{test,compile,diff}.log
 ```
 
-The key property: **held-out tests enter the workspace only at grading time.** While the agent works, they exist on no disk it can reach.
+The key property: **held-out tests enter the workspace only at grading time.**
 
 ---
 
