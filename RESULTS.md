@@ -8,8 +8,9 @@
 
 Each row is one model working one task inside one agent harness.
 `completed` means the held-out tests passed, at least the task's minimum number
-of tests actually ran, and no compiler suppressions were added — plus a clean
-compile for tasks whose `grading.conf` sets `requires_clean_compile=yes`.
+of tests actually ran, those held-out files were run by path, and no compiler
+suppressions were added — plus a clean compile for tasks whose `grading.conf`
+sets `requires_clean_compile=yes`.
 `notes` says why a row is not completed, and is empty on a pass.
 
 `run` is the row's link to its evidence — `runs/<run>.diff.log` is what the

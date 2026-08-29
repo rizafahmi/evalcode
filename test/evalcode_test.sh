@@ -105,6 +105,68 @@ assert_eq "14m" "$(elapsed_minutes 2026-08-03T09:00:00Z 2026-08-03T09:14:30Z)" "
 assert_eq "0m"  "$(elapsed_minutes 2026-08-03T09:00:00Z 2026-08-03T09:00:20Z)" "handles sub-minute runs"
 assert_eq "95m" "$(elapsed_minutes 2026-08-03T09:00:00Z 2026-08-03T10:35:00Z)" "handles runs over an hour"
 
+echo "skeleton/AGENTS.md"
+
+# Generated phx.new teaches prepend as at: -1. In LiveView that is append.
+# Task 01 scores "a new order appears first", which is at: 0. Following the
+# fixture's own instructions must not fail the exam.
+prepend="$(grep -F 'prepend to stream' "$ROOT/skeleton/AGENTS.md")"
+case "$prepend" in
+  *'at: -1'*) prepend_at=append ;;
+  *'at: 0'*)  prepend_at=prepend ;;
+  *)          prepend_at=missing ;;
+esac
+assert_eq "prepend" "$prepend_at" "prepend uses at: 0, not at: -1"
+
+echo "skeleton/mix.exs"
+
+# Generated phx.new pins elixir: "~> 1.15". The harness refuses anything
+# below 1.20. A Mix-level requirement that still admits 1.18 would let
+# `mix` start a project the grader will not score.
+grep -F 'elixir: "~> 1.20"' "$ROOT/skeleton/mix.exs" >/dev/null
+assert_eq "0" "$?" "elixir requirement matches the 1.20 gate"
+
+echo "README landing tables"
+
+# The landing tables are a projection of RESULTS.md. A typo in one language
+# and a duration `valid_duration` would reject made them disagree with each
+# other and with the table they claim to summarise.
+grep -F 'muse=code' "$ROOT/README.md" >/dev/null
+assert_eq "1" "$?" "harness is muse-code, not muse=code"
+grep -F '03m05s' "$ROOT/README.md" >/dev/null
+assert_eq "1" "$?" "spark liveview duration is 3m, not 03m05s"
+
+echo "README duration column"
+
+# Duration is computed unless --duration is passed. Lumping it with cost
+# as always typed-in contradicts RESULTS.md.
+grep -F '`cost` and `duration` are typed in by the operator' "$ROOT/README.md" >/dev/null
+assert_eq "1" "$?" "landing does not lump duration as always typed-in"
+grep -F '`cost` dan `duration` diketik operator' "$ROOT/README.md" >/dev/null
+assert_eq "1" "$?" "ID landing does not lump duration as always typed-in"
+
+echo "README CI badge"
+
+# GitHub renders README from github.com/owner/repo, not from a nested
+# blob path. A relative ../../actions/... image never hits the workflow badge.
+grep -F 'https://github.com/rizafahmi/evalcode/actions/workflows/ci.yml/badge.svg' "$ROOT/README.md" >/dev/null
+assert_eq "0" "$?" "CI badge is a GitHub actions badge URL"
+
+echo "task 02 overlay"
+
+# The overlay is the model's start state. Comments that name the planted
+# type-checker mechanisms tell it the exam before mix compile does.
+overlay="$ROOT/tasks/02-type-clean/overlay/lib/warung_web/order_params.ex"
+grep -E 'cross-clause narrowing|guard narrowing|not_set\(\)|tuple arity' "$overlay" >/dev/null
+assert_eq "1" "$?" "overlay comments do not name the planted bugs"
+
+echo "Dockerfile"
+
+# Route B is the flake's toolchain, including Node 22 so a container used as
+# a place to work the LiveView has esbuild/tailwind. Grade does not need it.
+grep -E 'node:22' "$ROOT/Dockerfile" >/dev/null
+assert_eq "0" "$?" "Dockerfile installs Node 22"
+
 # --- cmd_grade fixtures ------------------------------------------------------
 #
 # ROOT comes from BASH_SOURCE, so a copy of bin/evalcode inside a temp dir
@@ -149,9 +211,9 @@ new_fixture() {
   cat > "$fx/stub/mix" <<STUB
 #!/usr/bin/env bash
 case "\$1" in
-  test)    printf 'Result: %s passed\n' "$tests_run"; exit $test_exit ;;
-  compile) printf '%s\n' "$compile_out";              exit $compile_exit ;;
-  *)       exit 0 ;;
+  test|eval) printf 'Result: %s passed\n' "$tests_run"; exit $test_exit ;;
+  compile)   printf '%s\n' "$compile_out";              exit $compile_exit ;;
+  *)         exit 0 ;;
 esac
 STUB
   chmod +x "$fx/stub/mix"
@@ -180,6 +242,65 @@ grade_fixture_status() {
 
 # cell <field-number> — pulls one column out of a rendered row
 cell() { awk -F'|' -v n="$1" '{print $n}' | sed 's/^ *//;s/ *$//'; }
+
+# new_start_fixture <task-id> — a project root `start` can copy from.
+# Overlay is applied only for 02-type-clean.
+new_start_fixture() {
+  local task="$1" fx
+  fx="$(mktemp -d "$FIXTURE_ROOT/fx.XXXXXX")"
+
+  mkdir -p "$fx/bin" "$fx/stub" \
+           "$fx/skeleton/lib/warung_web" \
+           "$fx/tasks/$task/holdout"
+
+  cp "$ROOT/bin/evalcode" "$fx/bin/evalcode"
+  chmod +x "$fx/bin/evalcode"
+
+  printf 'clean skeleton\n' > "$fx/skeleton/lib/warung_web/order_params.ex"
+  printf 'holdout secret\n' > "$fx/tasks/$task/holdout/holdout_test.exs"
+  printf 'do the task\n' > "$fx/tasks/$task/task.md"
+  printf 'min_tests=1\nrequires_clean_compile=yes\n' > "$fx/tasks/$task/grading.conf"
+
+  if [ "$task" = 02-type-clean ]; then
+    mkdir -p "$fx/tasks/$task/overlay/lib/warung_web"
+    printf 'dirty overlay\n' > "$fx/tasks/$task/overlay/lib/warung_web/order_params.ex"
+  fi
+
+  cat > "$fx/stub/mix" <<'STUB'
+#!/usr/bin/env bash
+exit 0
+STUB
+  chmod +x "$fx/stub/mix"
+
+  cat > "$fx/stub/elixir" <<'STUB'
+#!/usr/bin/env bash
+printf 'Erlang/OTP 27 [erts-15.2.7.9] [source] [64-bit]\n\nElixir 1.20.2 (compiled with Erlang/OTP 27)\n'
+STUB
+  chmod +x "$fx/stub/elixir"
+
+  echo "$fx"
+}
+
+start_fixture() {
+  local fx="$1"; shift
+  PATH="$fx/stub:$PATH" "$fx/bin/evalcode" start "$@" 2>/dev/null
+}
+
+echo "cmd_start"
+
+fx="$(new_start_fixture 01-live-orders)"
+ws="$(start_fixture "$fx" 01-live-orders m h | tail -n 1)"
+assert_eq "0" "$(find "$ws" -name 'holdout_*' | wc -l | tr -d ' ')" \
+  "start does not copy holdout files into the workspace"
+assert_eq "$(cd "$ws" && pwd -P)" "$(git -C "$ws" rev-parse --show-toplevel)" \
+  "workspace git toplevel is the workspace, not the parent repo"
+
+fx="$(new_start_fixture 02-type-clean)"
+ws="$(start_fixture "$fx" 02-type-clean m h | tail -n 1)"
+assert_eq "dirty overlay" "$(cat "$ws/lib/warung_web/order_params.ex")" \
+  "overlay replaces the skeleton file"
+assert_eq "0" "$(find "$ws" -name 'holdout_*' | wc -l | tr -d ' ')" \
+  "start does not copy holdout files for an overlay task"
 
 echo "cmd_grade — outcomes"
 
@@ -246,6 +367,78 @@ chmod +x "$fx/stub/mix"
 assert_eq "tests failed" "$(grade_fixture "$fx" --duration 0m | cell 11)" \
   "a suite that never ran reads as a test failure, not an unreadable count"
 
+echo "cmd_grade — holdout identity"
+
+# min_tests only counts how many tests ran. A mix.exs that narrows
+# test_paths, or a mix test alias that skips test/holdout_*.exs, plus enough
+# model-written tests to clear the floor, used to score completed=yes without
+# the exam. Grade must run the holdout files by path; this stub lets the
+# bare `mix test` pass and makes the file-argument invocation report zero tests.
+fx="$(new_fixture 01-live-orders 0 0 "Compiling 1 file (.ex)")"
+cat > "$fx/stub/mix" <<'STUB'
+#!/usr/bin/env bash
+case "$1" in
+  test)    printf 'Result: 32 passed\n'; exit 0 ;;
+  eval)    printf 'Result: 0 tests, 32 excluded\n'; exit 0 ;;
+  compile) printf 'Compiling 1 file (.ex)\n'; exit 0 ;;
+  *)       exit 0 ;;
+esac
+STUB
+chmod +x "$fx/stub/mix"
+row="$(grade_fixture "$fx" --duration 0m)"
+assert_eq "no" "$(printf '%s\n' "$row" | cell 6)" \
+  "clearing the floor without running holdout files is not completed"
+assert_eq "holdout tests did not run" "$(printf '%s\n' "$row" | cell 11)" \
+  "and the row says the exam was skipped"
+
+# The exam ran by path and failed. The count is not zero, so a count-only
+# identity check would still pass. The holdout run must itself pass.
+fx="$(new_fixture 01-live-orders 0 0 "Compiling 1 file (.ex)")"
+cat > "$fx/stub/mix" <<'STUB'
+#!/usr/bin/env bash
+case "$1" in
+  test)    printf 'Result: 32 passed\n'; exit 0 ;;
+  eval)    printf 'Result: 2/5 passed\n'; exit 1 ;;
+  compile) printf 'Compiling 1 file (.ex)\n'; exit 0 ;;
+  *)       exit 0 ;;
+esac
+STUB
+chmod +x "$fx/stub/mix"
+row="$(grade_fixture "$fx" --duration 0m)"
+assert_eq "no" "$(printf '%s\n' "$row" | cell 6)" \
+  "a failing holdout run is not completed even when the suite passed"
+assert_eq "tests failed" "$(printf '%s\n' "$row" | cell 11)" \
+  "and reads as a test failure, not a skipped exam"
+
+# A mix test alias that swallows extra arguments. Both our invocations go
+# through `mix test`, so the padded suite is what ran. Grade must not use
+# that alias for the exam.
+fx="$(new_fixture 01-live-orders 0 0 "Compiling 1 file (.ex)")"
+cat > "$fx/stub/mix" <<'STUB'
+#!/usr/bin/env bash
+case "$1" in
+  test)    printf 'Result: 32 passed\n'; exit 0 ;;
+  compile) printf 'Compiling 1 file (.ex)\n'; exit 0 ;;
+  *)       exit 0 ;;
+esac
+STUB
+chmod +x "$fx/stub/mix"
+row="$(grade_fixture "$fx" --duration 0m)"
+assert_eq "no" "$(printf '%s\n' "$row" | cell 6)" \
+  "a mix test alias that ignores holdout paths is not completed"
+assert_eq "holdout tests did not run" "$(printf '%s\n' "$row" | cell 11)" \
+  "and the row says the exam was skipped"
+
+echo "cmd_grade — meta is data"
+
+# `.meta` sits next to the workspace (`../<id>.meta` from inside it). `source`
+# would let a model that walked out redefine `evalcode_status` and record
+# `completed=yes` for a failing suite. The file is key=value, not a script.
+fx="$(new_fixture 01-live-orders 1 0 "Compiling 1 file (.ex)")"
+printf 'evalcode_status() { echo yes; }\n' >> "$fx/runs/r1.meta"
+assert_eq "no" "$(grade_fixture "$fx" --duration 0m | cell 6)" \
+  "a function injected into .meta cannot force completed=yes"
+
 echo "cmd_grade — grading.conf"
 
 fx="$(new_fixture 01-live-orders 0 0 "Compiling 1 file (.ex)")"
@@ -260,6 +453,13 @@ fx="$(new_fixture 01-live-orders 0 0 "Compiling 1 file (.ex)")"
 printf 'min_tests=32\nrequires_clean_compile=maybe\n' > "$fx/tasks/01-live-orders/grading.conf"
 assert_eq "1" "$(grade_fixture_status "$fx" --duration 0m)" \
   "a nonsense requires_clean_compile fails loudly"
+
+# Same hole as `.meta`: `source` would execute a function the model appended
+# after walking to `../../tasks/<id>/grading.conf`.
+fx="$(new_fixture 01-live-orders 1 0 "Compiling 1 file (.ex)")"
+printf 'evalcode_status() { echo yes; }\n' >> "$fx/tasks/01-live-orders/grading.conf"
+assert_eq "no" "$(grade_fixture "$fx" --duration 0m | cell 6)" \
+  "a function injected into grading.conf cannot force completed=yes"
 
 echo "cmd_grade — compile column"
 
@@ -323,6 +523,15 @@ printf 'defmodule HoldoutTest do\n  @compile {:no_warn_undefined, Foo}\nend\n' \
 grade_fixture "$fx" --duration 0m >/dev/null
 assert_eq "yes" "$(grade_fixture "$fx" --duration 0m --regrade | cell 6)" \
   "a regrade does not attribute held-out files to the model"
+
+# basename-only rm leaves holdout/nested/foo.exs in test/nested/foo.exs.
+fx="$(new_fixture 01-live-orders 0 0 "Compiling 1 file (.ex)")"
+mkdir -p "$fx/tasks/01-live-orders/holdout/nested"
+printf 'defmodule NestedHoldoutTest do\n  @compile {:no_warn_undefined, Foo}\nend\n' \
+  > "$fx/tasks/01-live-orders/holdout/nested/holdout_nested.exs"
+grade_fixture "$fx" --duration 0m >/dev/null
+assert_eq "yes" "$(grade_fixture "$fx" --duration 0m --regrade | cell 6)" \
+  "a regrade does not attribute nested held-out files to the model"
 
 echo "cmd_grade — malformed input"
 

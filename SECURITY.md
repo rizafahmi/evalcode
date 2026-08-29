@@ -21,15 +21,15 @@ disarankan README memang membuka checkout kamu ke dalam container, jadi
 mount checkout terpisah kalau isolasinya yang kamu cari, bukan sekadar
 kepraktisan toolchain.
 
-**2. `tasks/<id>/grading.conf` di-source oleh shell.**
+**2. `grading.conf` mengatur gate, bukan di-eksekusi.**
 
-`grade` memanggil `source` pada `grading.conf` untuk membaca `min_tests` dan
-`requires_clean_compile`. File itu bukan data — apa pun di dalamnya dieksekusi
-sebagai perintah shell dengan hak akses kamu.
+`grade` membaca `min_tests` dan `requires_clean_compile` sebagai data
+`key=value` — bukan `source`. Fungsi shell yang diselipkan ke file itu
+diabaikan.
 
-Artinya: **baca isi `tasks/*/grading.conf` sebelum menjalankan task dari fork
-atau PR orang lain.** Ini konsekuensi yang disengaja dari format `key=value`
-sederhana, dan disebut di sini supaya tidak jadi kejutan.
+Angkanya tetap menentukan kelulusan: `min_tests=1` membuat floor tidak
+berarti. **Baca `tasks/*/grading.conf` sebelum menjalankan task dari fork
+atau PR orang lain.**
 
 ### Melaporkan kerentanan
 
@@ -65,15 +65,14 @@ the README suggests does expose your checkout to the container, so mount a
 separate checkout when isolation is what you are after rather than just a
 convenient toolchain.
 
-**2. `tasks/<id>/grading.conf` is shell-sourced.**
+**2. `grading.conf` sets the gates; it is not executed.**
 
-`grade` calls `source` on `grading.conf` to read `min_tests` and
-`requires_clean_compile`. That file is not data — anything in it executes as a
-shell command with your privileges.
+`grade` reads `min_tests` and `requires_clean_compile` as `key=value` data —
+not via `source`. A shell function slipped into the file is ignored.
 
-So: **read `tasks/*/grading.conf` before running a task from someone else's fork
-or pull request.** This is a deliberate consequence of the simple `key=value`
-format, written down here so it is not a surprise.
+The numbers still decide the score: `min_tests=1` makes the floor meaningless.
+**Read `tasks/*/grading.conf` before running a task from someone else's fork
+or pull request.**
 
 ### Reporting a vulnerability
 

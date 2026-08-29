@@ -64,6 +64,22 @@ evalcode_status() {
   echo yes
 }
 
+# kv_get <file> <key>
+#
+# Reads one `key=value` from a data file. Not `source`: `.meta` and
+# `grading.conf` sit where a model that walked out of the workspace can
+# rewrite them, and sourcing would let that rewrite redefine helpers such as
+# `evalcode_status`. Unknown lines are ignored. Last matching key wins.
+kv_get() {
+  local file="$1" key="$2" line value=""
+  while IFS= read -r line || [ -n "$line" ]; do
+    case "$line" in
+      "$key"=*) value="${line#"$key"=}" ;;
+    esac
+  done < "$file"
+  printf '%s\n' "$value"
+}
+
 # format_row <run-id> <task> <model> <harness> <completed> <tests> <duration> <cost> <compile> <notes>
 #
 # The run id leads because it is the row's only link to its evidence. Without
@@ -294,7 +310,9 @@ cmd_start() {
   # The initial commit is what makes `git diff` inside the workspace show the
   # agent its own work, which is what it was reaching for anyway. Identity is
   # passed on the command line so a run neither depends on nor is attributed to
-  # the operator's global git config. `skeleton/.gitignore` already excludes
+  # the operator's global git config — including `commit.gpgsign`, which would
+  # block unattended `start` on a machine that signs by default.
+  # `skeleton/.gitignore` already excludes
   # `_build`, `deps` and `*.db`, so this commits source only.
   #
   # Fatal on failure: a workspace without its own `.git` is a leaky workspace,
@@ -304,6 +322,7 @@ cmd_start() {
     git init --quiet &&
     git add -A &&
     git -c user.name=evalcode -c user.email=evalcode@localhost \
+        -c commit.gpgsign=false \
         commit --quiet -m "evalcode start state: $task"
   ) >> "$setup_log" 2>&1; then
     echo "start: could not initialise the workspace git repository — see $setup_log" >&2
@@ -360,8 +379,11 @@ cmd_grade() {
     exit 1
   fi
 
-  # shellcheck disable=SC1090
-  source "$meta"   # provides: task, model, harness, started
+  local task model harness started
+  task="$(kv_get "$meta" task)"
+  model="$(kv_get "$meta" model)"
+  harness="$(kv_get "$meta" harness)"
+  started="$(kv_get "$meta" started)"
 
   # Per-task grading settings. A task without this file is refused rather than
   # graded with no floor and no compile gate.
@@ -372,9 +394,9 @@ cmd_grade() {
     exit 1
   }
 
-  local min_tests="" requires_clean_compile=""
-  # shellcheck disable=SC1090
-  source "$conf"
+  local min_tests requires_clean_compile
+  min_tests="$(kv_get "$conf" min_tests)"
+  requires_clean_compile="$(kv_get "$conf" requires_clean_compile)"
 
   case "$min_tests" in
     ''|*[!0-9]*)
@@ -397,12 +419,13 @@ cmd_grade() {
   # On a regrade the run already holds the held-out tests this tool copied in
   # last time. Left in place they would show up in the base-vs-run diff below
   # as model-authored. Remove them, scan, then copy pristine ones back.
+  #
+  # Recurse. `holdout/nested/foo.exs` is copied to `test/nested/foo.exs`.
+  # `rm -f test/$(basename)` left that tree in place — and `rm -f` on the
+  # `nested` directory itself is a non-zero exit, which aborted the regrade.
   if [ "$regrade" = yes ]; then
-    local held
-    for held in "$ROOT/tasks/$task/holdout/"*; do
-      [ -e "$held" ] || continue
-      rm -f "$run/test/$(basename "$held")"
-    done
+    local holdout_dir="$ROOT/tasks/$task/holdout"
+    (cd "$holdout_dir" && find . -mindepth 1 -exec rm -rf "$run/test/{}" \;)
   fi
 
   # Scan for suppression attributes BEFORE the held-out tests are copied in,
@@ -447,6 +470,32 @@ cmd_grade() {
     floor_note="only $executed of $min_tests tests ran"
   fi
 
+  # The floor is a count. It cannot tell "the holdout ran" from "the model
+  # wrote enough of its own tests and pointed `test_paths` away from
+  # test/holdout_*.exs". Running those files by path is the identity check.
+  # Zero tests in that log means the exam was skipped, whatever the suite
+  # reported. Only applied when the suite already looks like a pass — a
+  # failing or unreadable suite has a more specific note.
+  local holdout_ok=yes holdout_note="" holdout_args=() holdout_count held
+  if [ "$tests" = pass ] && [ "$floor_ok" = yes ]; then
+    for held in "$ROOT/tasks/$task/holdout/"*; do
+      [ -f "$held" ] || continue
+      holdout_args+=("test/$(basename "$held")")
+    done
+    # `mix test FILE` still hits the project's `test` alias. A model that
+    # rewrites that alias to ignore extra arguments makes this invocation
+    # another padded suite. Mix.Task.run goes to Mix.Tasks.Test directly.
+    # shellcheck disable=SC2209  # MIX_ENV=test is an env prefix, not an assignment
+    if (cd "$run" && MIX_ENV=test mix eval 'Mix.Task.run("test", System.argv())' -- "${holdout_args[@]}") > "$run.holdout.log" 2>&1; then
+      if ! holdout_count="$(test_count_from "$run.holdout.log")" || [ "$holdout_count" -eq 0 ]; then
+        holdout_ok=no
+        holdout_note="holdout tests did not run"
+      fi
+    else
+      tests=fail
+    fi
+  fi
+
   # Three states, not two. A hard CompileError — the `~p` route failure Task 2
   # documented, for one — contains no `warning:` lines at all, so counting them
   # would label a build that never compiled as "0 warnings", which reads as
@@ -468,7 +517,6 @@ cmd_grade() {
   fi
 
   if [ -z "$duration" ]; then
-    # shellcheck disable=SC2154  # `started` comes from `source "$meta"` above
     duration="$(elapsed_minutes "$started" "$(date -u +%Y-%m-%dT%H:%M:%SZ)")" || {
       echo "grade: cannot compute duration from meta (started='$started')" >&2
       echo "grade: pass --duration explicitly, or repair $meta" >&2
@@ -480,6 +528,7 @@ cmd_grade() {
 
   # A floor violation is never a pass, whatever the exit codes said.
   [ "$floor_ok" = yes ] || completed=no
+  [ "$holdout_ok" = yes ] || completed=no
 
   # RESULTS.md could not tell a model that tried and failed from one that
   # silenced the checker: the suppression note went to stderr only and the
@@ -495,6 +544,8 @@ cmd_grade() {
   if [ "$completed" = no ]; then
     if [ "$suppressions" = yes ]; then
       notes="suppressions added"
+    elif [ -n "$holdout_note" ]; then
+      notes="$holdout_note"
     elif [ -n "$floor_note" ]; then
       notes="$floor_note"
     elif [ "$tests" = fail ]; then
@@ -526,6 +577,9 @@ cmd_grade() {
     echo "note: $floor_note — recorded as not completed" >&2
   elif [ "$floor_ok" = no ]; then
     echo "note: could not read a test count from $run.test.log — recorded as not completed" >&2
+  fi
+  if [ -n "$holdout_note" ]; then
+    echo "note: $holdout_note — recorded as not completed" >&2
   fi
   echo "logs: $run.test.log  $run.compile.log  $run.diff.log" >&2
 }
