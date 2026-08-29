@@ -4,6 +4,14 @@ Source: `PRD.md`
 
 These tasks are atomic vertical slices. Each task delivers one observable behavior and includes its own tests. All tasks are AFK and may be implemented without further product decisions.
 
+A task is not complete until `mix precommit` is green.
+
+Each task ships tests at the cheapest layer that can fail the behavior:
+
+- Domain, webhooks, and LiveView auth: ExUnit through public interfaces (PhoenixTest for LiveView).
+- Vue formatting and presentation: Vitest.
+- Real-browser Playwright is TASK-47 only.
+
 ## TASK-01 — Register a creator and enter the workspace
 
 **Type:** AFK  
@@ -19,7 +27,7 @@ Let a new creator register through the Bahasa Indonesia LiveView flow and arrive
 - [ ] Successful registration creates an authenticated creator session.
 - [ ] The creator lands in an empty localized dashboard.
 - [ ] Invalid or duplicate credentials show safe validation errors.
-- [ ] LiveView, database, and browser tests cover the complete journey.
+- [ ] LiveView and database tests cover the complete journey.
 
 ### Blocked by
 
@@ -39,7 +47,7 @@ Let an existing creator authenticate through LiveView and return to the Vue work
 - [ ] Valid credentials create a creator session and open the dashboard.
 - [ ] Invalid credentials disclose no account-sensitive information.
 - [ ] An unauthenticated dashboard request redirects to login.
-- [ ] LiveView and browser tests cover success and failure.
+- [ ] LiveView tests cover success and failure.
 
 ### Blocked by
 
@@ -59,7 +67,7 @@ Let an authenticated creator terminate their session from the workspace.
 - [ ] Logout invalidates the active session.
 - [ ] The creator returns to the login screen.
 - [ ] The former session cannot access authenticated JSON or dashboard routes.
-- [ ] Browser coverage verifies the complete logout journey.
+- [ ] LiveView tests cover the complete logout journey.
 
 ### Blocked by
 
