@@ -310,7 +310,9 @@ cmd_start() {
   # The initial commit is what makes `git diff` inside the workspace show the
   # agent its own work, which is what it was reaching for anyway. Identity is
   # passed on the command line so a run neither depends on nor is attributed to
-  # the operator's global git config. `skeleton/.gitignore` already excludes
+  # the operator's global git config — including `commit.gpgsign`, which would
+  # block unattended `start` on a machine that signs by default.
+  # `skeleton/.gitignore` already excludes
   # `_build`, `deps` and `*.db`, so this commits source only.
   #
   # Fatal on failure: a workspace without its own `.git` is a leaky workspace,
@@ -320,6 +322,7 @@ cmd_start() {
     git init --quiet &&
     git add -A &&
     git -c user.name=evalcode -c user.email=evalcode@localhost \
+        -c commit.gpgsign=false \
         commit --quiet -m "evalcode start state: $task"
   ) >> "$setup_log" 2>&1; then
     echo "start: could not initialise the workspace git repository — see $setup_log" >&2

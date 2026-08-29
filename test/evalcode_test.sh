@@ -194,6 +194,65 @@ grade_fixture_status() {
 # cell <field-number> — pulls one column out of a rendered row
 cell() { awk -F'|' -v n="$1" '{print $n}' | sed 's/^ *//;s/ *$//'; }
 
+# new_start_fixture <task-id> — a project root `start` can copy from.
+# Overlay is applied only for 02-type-clean.
+new_start_fixture() {
+  local task="$1" fx
+  fx="$(mktemp -d "$FIXTURE_ROOT/fx.XXXXXX")"
+
+  mkdir -p "$fx/bin" "$fx/stub" \
+           "$fx/skeleton/lib/warung_web" \
+           "$fx/tasks/$task/holdout"
+
+  cp "$ROOT/bin/evalcode" "$fx/bin/evalcode"
+  chmod +x "$fx/bin/evalcode"
+
+  printf 'clean skeleton\n' > "$fx/skeleton/lib/warung_web/order_params.ex"
+  printf 'holdout secret\n' > "$fx/tasks/$task/holdout/holdout_test.exs"
+  printf 'do the task\n' > "$fx/tasks/$task/task.md"
+  printf 'min_tests=1\nrequires_clean_compile=yes\n' > "$fx/tasks/$task/grading.conf"
+
+  if [ "$task" = 02-type-clean ]; then
+    mkdir -p "$fx/tasks/$task/overlay/lib/warung_web"
+    printf 'dirty overlay\n' > "$fx/tasks/$task/overlay/lib/warung_web/order_params.ex"
+  fi
+
+  cat > "$fx/stub/mix" <<'STUB'
+#!/usr/bin/env bash
+exit 0
+STUB
+  chmod +x "$fx/stub/mix"
+
+  cat > "$fx/stub/elixir" <<'STUB'
+#!/usr/bin/env bash
+printf 'Erlang/OTP 27 [erts-15.2.7.9] [source] [64-bit]\n\nElixir 1.20.2 (compiled with Erlang/OTP 27)\n'
+STUB
+  chmod +x "$fx/stub/elixir"
+
+  echo "$fx"
+}
+
+start_fixture() {
+  local fx="$1"; shift
+  PATH="$fx/stub:$PATH" "$fx/bin/evalcode" start "$@" 2>/dev/null
+}
+
+echo "cmd_start"
+
+fx="$(new_start_fixture 01-live-orders)"
+ws="$(start_fixture "$fx" 01-live-orders m h | tail -n 1)"
+assert_eq "0" "$(find "$ws" -name 'holdout_*' | wc -l | tr -d ' ')" \
+  "start does not copy holdout files into the workspace"
+assert_eq "$(cd "$ws" && pwd -P)" "$(git -C "$ws" rev-parse --show-toplevel)" \
+  "workspace git toplevel is the workspace, not the parent repo"
+
+fx="$(new_start_fixture 02-type-clean)"
+ws="$(start_fixture "$fx" 02-type-clean m h | tail -n 1)"
+assert_eq "dirty overlay" "$(cat "$ws/lib/warung_web/order_params.ex")" \
+  "overlay replaces the skeleton file"
+assert_eq "0" "$(find "$ws" -name 'holdout_*' | wc -l | tr -d ' ')" \
+  "start does not copy holdout files for an overlay task"
+
 echo "cmd_grade — outcomes"
 
 fx="$(new_fixture 01-live-orders 0 0 "Compiling 1 file (.ex)")"
