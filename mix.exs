@@ -11,7 +11,8 @@ defmodule Sorak.MixProject do
       aliases: aliases(),
       deps: deps(),
       compilers: [:phoenix_live_view] ++ Mix.compilers(),
-      listeners: [Phoenix.CodeReloader]
+      listeners: [Phoenix.CodeReloader],
+      usage_rules: usage_rules()
     ]
   end
 
@@ -40,7 +41,7 @@ defmodule Sorak.MixProject do
   # Type `mix help deps` for examples and options.
   defp deps do
     [
-      {:usage_rules, "~> 1.0"},
+      {:usage_rules, "~> 1.0", only: [:dev]},
       {:dialyxir, "~> 1.0", runtime: false},
       {:credo, "~> 1.0", only: [:dev, :test], runtime: false},
       {:phoenix_test, "~> 0.12", only: :test, runtime: false},
@@ -92,6 +93,26 @@ defmodule Sorak.MixProject do
         "phx.digest"
       ],
       precommit: ["compile --warning-as-errors", "deps.unlock --unused", "format", "test"]
+    ]
+  end
+
+  defp usage_rules do
+    [
+      file: "AGENTS.md",
+      usage_rules: [
+        :usage_rules,
+        {~r/^phoenix/, link: :markdown}
+      ],
+      skills: [
+        location: ".agents/skills",
+        build: [
+          "phoenix-framework": [
+            description:
+              "Use this skill working with Phoenix Framework. Consult this when working with the web layer, controllers, views, liveviews etc.",
+            usage_rules: [:phoenix, ~r/^phoenix_/]
+          ]
+        ]
+      ]
     ]
   end
 end
