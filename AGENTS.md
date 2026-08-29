@@ -5,7 +5,7 @@ This is a web application written using the Phoenix web framework.
 - Use `mix precommit` alias when you are done with all changes and fix any pending issues
 - Use the already included and available `:req` (`Req`) library for HTTP requests, **avoid** `:httpoison`, `:tesla`, and `:httpc`. Req is included by default and is the preferred HTTP client for Phoenix apps
 ### Phoenix v1.8 guidelines
-
+    
 - **Always** begin your LiveView templates with `<Layouts.app flash={@flash} ...>` which wraps all inner content
 - The `MyAppWeb.Layouts` module is aliased in the `my_app_web.ex` file, so you can use it without needing to alias it again
 - Anytime you run into errors with no `current_scope` assign:
@@ -19,6 +19,10 @@ custom classes must fully style the input
 
 <!-- usage-rules-start -->
 <!-- phoenix:elixir-start -->
+### Phoenix Test guidelines
+- Prioritize PhoenixTest for integration and end-to-end testing
+- Check @docs/phoenix-test.md for more info
+
 ## Elixir guidelines
 
 - Elixir lists **do not support index based access via the access syntax**

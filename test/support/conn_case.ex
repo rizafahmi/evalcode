@@ -28,6 +28,7 @@ defmodule SorakWeb.ConnCase do
       import Plug.Conn
       import Phoenix.ConnTest
       import SorakWeb.ConnCase
+      import PhoenixTest
     end
   end
 
