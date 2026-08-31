@@ -96,7 +96,7 @@ defmodule Sorak.MixProject do
         "phx.digest"
       ],
       precommit: [
-        "compile --warning-as-errors",
+        "compile --warnings-as-errors",
         "format --check-formatted",
         "deps.unlock --unused",
         "cmd --cd assets npm run typecheck",
