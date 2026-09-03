@@ -52,6 +52,7 @@
             git
             gnumake
             nodejs_22
+            pnpm
             openssl
             pkg-config
             rsync
