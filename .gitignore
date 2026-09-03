@@ -42,3 +42,5 @@ npm-debug.log
 # Per-project Mix/Hex homes from flake.nix (local caches, not sources).
 .nix-mix/
 .nix-hex/
+.direnv/
+
