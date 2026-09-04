@@ -7,7 +7,7 @@ Product scope lives in `prd.html`. This file removes forks so autonomous workers
 - OTP app name: `alur`
 - Elixir module prefix: `Alur`
 - Stack: Phoenix + LiveView + SQLite
-- Generate **into this repo root** (do not create a nested project). Keep existing `flake.nix`, `_build_plan/`, `AGENTS.md`, `.credo.exs`, `.editorconfig`, `.reach.exs`, `docs/`.
+- Generate **into this repo root** (do not create a nested project). Keep existing `flake.nix`, `AGENTS.md`, `.credo.exs`, `.editorconfig`, `.reach.exs`, `docs/`.
 
 ## Auth
 
