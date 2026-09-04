@@ -28,6 +28,8 @@ defmodule AlurWeb.ConnCase do
       import Plug.Conn
       import Phoenix.ConnTest
       import AlurWeb.ConnCase
+
+      import PhoenixTest
     end
   end
 
