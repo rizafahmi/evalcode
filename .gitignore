@@ -23,7 +23,7 @@ erl_crash.dump
 /tmp/
 
 # Ignore package tarball (built via "mix hex.build").
-sorak-*.tar
+alur-*.tar
 
 # Ignore assets that are produced by build tools.
 /priv/static/assets/
@@ -31,17 +31,14 @@ sorak-*.tar
 # Ignore digested assets cache.
 /priv/static/cache_manifest.json
 
-# In case you use Node.js/npm/pnpm, you want to ignore these.
+# In case you use Node.js/npm, you want to ignore these.
 npm-debug.log
-pnpm-debug.log*
 /assets/node_modules/
 
 # Database files
 *.db
 *.db-*
 
-# Per-project Mix/Hex homes from flake.nix (local caches, not sources).
-.nix-mix/
-.nix-hex/
 .direnv/
-
+.nix-hex/
+.nix-mix/
