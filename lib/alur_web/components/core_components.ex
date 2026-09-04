@@ -57,20 +57,32 @@ defmodule AlurWeb.CoreComponents do
       {@rest}
     >
       <div class={[
-        "flex gap-3 rounded-lg p-4 shadow-lg ring-1 text-sm text-wrap",
+        "flex gap-3 rounded-md p-4 shadow-subtle border text-sm text-wrap font-text tracking-[0.025em]",
         @kind == :info &&
-          "bg-emerald-50 text-emerald-800 ring-emerald-500/20 dark:bg-emerald-950 dark:text-emerald-200 dark:ring-emerald-800",
+          "bg-forest-wash text-signal-green border-moss-border",
         @kind == :error &&
-          "bg-rose-50 text-rose-800 ring-rose-500/20 dark:bg-rose-950 dark:text-rose-200 dark:ring-rose-800"
+          "bg-plum-edge text-ash border-iris-border"
       ]}>
-        <.icon :if={@kind == :info} name="hero-information-circle" class="size-5 shrink-0" />
-        <.icon :if={@kind == :error} name="hero-exclamation-circle" class="size-5 shrink-0" />
+        <.icon
+          :if={@kind == :info}
+          name="hero-information-circle"
+          class="size-5 shrink-0 text-signal-green"
+        />
+        <.icon
+          :if={@kind == :error}
+          name="hero-exclamation-circle"
+          class="size-5 shrink-0 text-lilac-accent"
+        />
         <div class="flex-1">
-          <p :if={@title} class="font-semibold">{@title}</p>
+          <p :if={@title} class="font-semibold text-chalk">{@title}</p>
           <p>{msg}</p>
         </div>
-        <button type="button" class="group self-start cursor-pointer" aria-label="close">
-          <.icon name="hero-x-mark" class="size-5 opacity-40 group-hover:opacity-70" />
+        <button
+          type="button"
+          class="group self-start cursor-pointer text-fog hover:text-ash"
+          aria-label="close"
+        >
+          <.icon name="hero-x-mark" class="size-5 opacity-60 group-hover:opacity-100" />
         </button>
       </div>
     </div>
@@ -94,15 +106,14 @@ defmodule AlurWeb.CoreComponents do
   def button(%{rest: rest} = assigns) do
     variants = %{
       "primary" =>
-        "bg-zinc-900 hover:bg-zinc-700 text-white dark:bg-zinc-100 dark:hover:bg-zinc-300 dark:text-zinc-900",
-      nil =>
-        "bg-zinc-100 hover:bg-zinc-200 text-zinc-900 dark:bg-zinc-800 dark:hover:bg-zinc-700 dark:text-zinc-100"
+        "bg-signal-green hover:brightness-105 active:brightness-95 text-carbon border border-led-green",
+      nil => "bg-transparent hover:border-pewter hover:text-chalk text-ash border border-basalt"
     }
 
     assigns =
       assign_new(assigns, :class, fn ->
         [
-          "inline-flex items-center justify-center gap-2 rounded-lg px-3 py-2 text-sm font-semibold transition-colors duration-150 cursor-pointer disabled:opacity-50 disabled:cursor-not-allowed",
+          "inline-flex items-center justify-center gap-2 rounded-md px-4 py-2 text-sm font-medium font-text tracking-[0.025em] shadow-subtle transition-colors duration-150 cursor-pointer disabled:opacity-50 disabled:cursor-not-allowed",
           Map.fetch!(variants, assigns[:variant])
         ]
       end)
@@ -192,7 +203,7 @@ defmodule AlurWeb.CoreComponents do
 
     ~H"""
     <div class="mb-2">
-      <label class="flex items-center gap-2 text-sm leading-6 text-zinc-800 dark:text-zinc-200 cursor-pointer">
+      <label class="flex items-center gap-2 text-sm leading-6 text-ash font-text tracking-[0.025em] cursor-pointer">
         <input type="hidden" name={@name} value="false" disabled={@rest[:disabled]} />
         <input
           type="checkbox"
@@ -202,7 +213,7 @@ defmodule AlurWeb.CoreComponents do
           checked={@checked}
           class={
             @class ||
-              "rounded border-zinc-300 text-zinc-900 focus:ring-zinc-900 dark:border-zinc-700 dark:bg-zinc-800 dark:checked:bg-zinc-100 dark:checked:border-zinc-100"
+              "rounded-xs border-basalt bg-obsidian text-signal-green focus:ring-moss-border checked:bg-signal-green checked:border-led-green"
           }
           {@rest}
         />
@@ -216,16 +227,16 @@ defmodule AlurWeb.CoreComponents do
   def input(%{type: "select"} = assigns) do
     ~H"""
     <div class="mb-2">
-      <label class="block text-sm font-semibold leading-6 text-zinc-800 dark:text-zinc-200">
+      <label class="block text-sm font-medium leading-6 text-ash font-text tracking-[0.025em]">
         <span :if={@label} class="block mb-1">{@label}</span>
         <select
           id={@id}
           name={@name}
           class={[
             @class ||
-              "block w-full rounded-lg border border-zinc-300 bg-white py-2 px-3 text-zinc-900 shadow-sm focus:border-zinc-400 focus:outline-none focus:ring-2 focus:ring-zinc-800/10 sm:text-sm dark:border-zinc-700 dark:bg-zinc-800 dark:text-zinc-100",
+              "block w-full rounded-md border border-basalt bg-obsidian py-2 px-3 text-ash placeholder:text-fog focus:border-moss-border focus:outline-none focus:ring-1 focus:ring-moss-border sm:text-sm font-text tracking-[0.025em] shadow-subtle",
             @errors != [] &&
-              (@error_class || "border-rose-400 focus:border-rose-400 focus:ring-rose-400/10")
+              (@error_class || "border-rose-500 focus:border-rose-500 focus:ring-rose-500/20")
           ]}
           multiple={@multiple}
           {@rest}
@@ -242,16 +253,16 @@ defmodule AlurWeb.CoreComponents do
   def input(%{type: "textarea"} = assigns) do
     ~H"""
     <div class="mb-2">
-      <label class="block text-sm font-semibold leading-6 text-zinc-800 dark:text-zinc-200">
+      <label class="block text-sm font-medium leading-6 text-ash font-text tracking-[0.025em]">
         <span :if={@label} class="block mb-1">{@label}</span>
         <textarea
           id={@id}
           name={@name}
           class={[
             @class ||
-              "block w-full rounded-lg border border-zinc-300 bg-white py-2 px-3 text-zinc-900 shadow-sm focus:border-zinc-400 focus:outline-none focus:ring-2 focus:ring-zinc-800/10 sm:text-sm dark:border-zinc-700 dark:bg-zinc-800 dark:text-zinc-100",
+              "block w-full rounded-md border border-basalt bg-obsidian py-2 px-3 text-ash placeholder:text-fog focus:border-moss-border focus:outline-none focus:ring-1 focus:ring-moss-border sm:text-sm font-text tracking-[0.025em] shadow-subtle",
             @errors != [] &&
-              (@error_class || "border-rose-400 focus:border-rose-400 focus:ring-rose-400/10")
+              (@error_class || "border-rose-500 focus:border-rose-500 focus:ring-rose-500/20")
           ]}
           {@rest}
         >{Form.normalize_value("textarea", @value)}</textarea>
@@ -265,7 +276,7 @@ defmodule AlurWeb.CoreComponents do
   def input(assigns) do
     ~H"""
     <div class="mb-2">
-      <label class="block text-sm font-semibold leading-6 text-zinc-800 dark:text-zinc-200">
+      <label class="block text-sm font-medium leading-6 text-ash font-text tracking-[0.025em]">
         <span :if={@label} class="block mb-1">{@label}</span>
         <input
           type={@type}
@@ -274,9 +285,9 @@ defmodule AlurWeb.CoreComponents do
           value={Form.normalize_value(@type, @value)}
           class={[
             @class ||
-              "block w-full rounded-lg border border-zinc-300 bg-white py-2 px-3 text-zinc-900 shadow-sm focus:border-zinc-400 focus:outline-none focus:ring-2 focus:ring-zinc-800/10 sm:text-sm dark:border-zinc-700 dark:bg-zinc-800 dark:text-zinc-100",
+              "block w-full rounded-md border border-basalt bg-obsidian py-2 px-3 text-ash placeholder:text-fog focus:border-moss-border focus:outline-none focus:ring-1 focus:ring-moss-border sm:text-sm font-text tracking-[0.025em] shadow-subtle",
             @errors != [] &&
-              (@error_class || "border-rose-400 focus:border-rose-400 focus:ring-rose-400/10")
+              (@error_class || "border-rose-500 focus:border-rose-500 focus:ring-rose-500/20")
           ]}
           {@rest}
         />
@@ -307,10 +318,10 @@ defmodule AlurWeb.CoreComponents do
     ~H"""
     <header class={[@actions != [] && "flex items-center justify-between gap-6", "pb-4"]}>
       <div>
-        <h1 class="text-lg font-semibold leading-8 text-zinc-900 dark:text-zinc-100">
+        <h1 class="text-xl font-semibold leading-8 text-chalk font-display tracking-[-0.015em]">
           {render_slot(@inner_block)}
         </h1>
-        <p :if={@subtitle != []} class="text-sm text-zinc-600 dark:text-zinc-400">
+        <p :if={@subtitle != []} class="text-sm text-fog font-text tracking-[0.025em]">
           {render_slot(@subtitle)}
         </p>
       </div>
@@ -352,8 +363,8 @@ defmodule AlurWeb.CoreComponents do
 
     ~H"""
     <div class="overflow-y-auto px-4 sm:overflow-visible sm:px-0">
-      <table class="w-full text-left text-sm text-zinc-600 dark:text-zinc-300">
-        <thead class="border-b border-zinc-200 text-xs uppercase text-zinc-700 dark:border-zinc-700 dark:text-zinc-300">
+      <table class="w-full text-left text-sm text-silver font-text tracking-[0.025em]">
+        <thead class="border-b border-basalt text-xs uppercase text-fog font-medium tracking-[0.025em]">
           <tr>
             <th :for={col <- @col} class="py-3 px-4 font-medium">{col[:label]}</th>
             <th :if={@action != []} class="py-3 px-4">
@@ -364,17 +375,17 @@ defmodule AlurWeb.CoreComponents do
         <tbody
           id={@id}
           phx-update={is_struct(@rows, Phoenix.LiveView.LiveStream) && "stream"}
-          class="divide-y divide-zinc-200 dark:divide-zinc-700"
+          class="divide-y divide-basalt"
         >
           <tr
             :for={row <- @rows}
             id={@row_id && @row_id.(row)}
-            class="even:bg-zinc-50 hover:bg-zinc-100 dark:even:bg-zinc-800/50 dark:hover:bg-zinc-800"
+            class="even:bg-graphite/40 hover:bg-graphite transition-colors"
           >
             <td
               :for={col <- @col}
               phx-click={@row_click && @row_click.(row)}
-              class={["py-3 px-4", @row_click && "hover:cursor-pointer"]}
+              class={["py-3 px-4 text-ash", @row_click && "hover:cursor-pointer"]}
             >
               {render_slot(col, @row_item.(row))}
             </td>
@@ -408,11 +419,11 @@ defmodule AlurWeb.CoreComponents do
 
   def list(assigns) do
     ~H"""
-    <ul class="divide-y divide-zinc-200 border-y border-zinc-200 dark:divide-zinc-700 dark:border-zinc-700">
+    <ul class="divide-y divide-basalt border-y border-basalt">
       <li :for={item <- @item} class="flex items-center justify-between py-3">
         <div>
-          <div class="font-bold text-zinc-900 dark:text-zinc-100">{item.title}</div>
-          <div class="text-sm text-zinc-600 dark:text-zinc-400">{render_slot(item)}</div>
+          <div class="font-medium text-chalk font-text tracking-[0.025em]">{item.title}</div>
+          <div class="text-sm text-silver font-text tracking-[0.025em]">{render_slot(item)}</div>
         </div>
       </li>
     </ul>

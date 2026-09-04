@@ -35,21 +35,23 @@ defmodule AlurWeb.Layouts do
 
   def app(assigns) do
     ~H"""
-    <header class="flex items-center justify-between border-b border-zinc-200 dark:border-zinc-800 px-4 py-3 sm:px-6 lg:px-8">
+    <header class="flex items-center justify-between border-b border-basalt bg-graphite/80 backdrop-blur px-4 py-3 sm:px-6 lg:px-8">
       <div class="flex-1">
-        <a href="/" class="flex w-fit items-center gap-2">
-          <img src={~p"/images/logo.svg"} width="36" />
-          <span class="text-sm font-semibold text-zinc-900 dark:text-zinc-100">
+        <a href="/" class="flex w-fit items-center gap-3">
+          <span class="font-display text-sm font-semibold tracking-[-0.025em] text-chalk">
+            Depot
+          </span>
+          <span class="rounded-xs bg-fern-ground border border-moss-border px-1.5 py-0.5 font-mono text-xs uppercase text-signal-green">
             v{Application.spec(:phoenix, :vsn)}
           </span>
         </a>
       </div>
       <div class="flex-none">
-        <ul class="flex items-center space-x-4">
+        <ul class="flex items-center space-x-3">
           <li>
             <a
               href="https://phoenixframework.org/"
-              class="inline-flex items-center rounded-lg px-3 py-2 text-sm font-semibold text-zinc-700 hover:bg-zinc-100 dark:text-zinc-300 dark:hover:bg-zinc-800"
+              class="inline-flex items-center rounded-xs px-3 py-1.5 text-sm font-medium font-text tracking-[0.025em] text-fog hover:text-ash transition-colors"
             >
               Website
             </a>
@@ -57,7 +59,7 @@ defmodule AlurWeb.Layouts do
           <li>
             <a
               href="https://github.com/phoenixframework/phoenix"
-              class="inline-flex items-center rounded-lg px-3 py-2 text-sm font-semibold text-zinc-700 hover:bg-zinc-100 dark:text-zinc-300 dark:hover:bg-zinc-800"
+              class="inline-flex items-center rounded-xs px-3 py-1.5 text-sm font-medium font-text tracking-[0.025em] text-fog hover:text-ash transition-colors"
             >
               GitHub
             </a>
@@ -68,7 +70,7 @@ defmodule AlurWeb.Layouts do
           <li>
             <a
               href="https://hexdocs.pm/phoenix/overview.html"
-              class="inline-flex items-center rounded-lg bg-zinc-900 px-3 py-2 text-sm font-semibold text-white hover:bg-zinc-700 dark:bg-zinc-100 dark:text-zinc-900 dark:hover:bg-zinc-300"
+              class="inline-flex items-center rounded-md bg-signal-green px-3.5 py-1.5 text-sm font-medium font-text tracking-[0.025em] text-carbon border border-led-green hover:brightness-105 transition-all shadow-subtle"
             >
               Get Started <span aria-hidden="true">&rarr;</span>
             </a>
@@ -77,8 +79,8 @@ defmodule AlurWeb.Layouts do
       </div>
     </header>
 
-    <main class="px-4 py-20 sm:px-6 lg:px-8">
-      <div class="mx-auto max-w-2xl space-y-4">
+    <main class="px-4 py-16 sm:px-6 lg:px-8">
+      <div class="mx-auto max-w-6xl space-y-4">
         {render_slot(@inner_block)}
       </div>
     </main>
@@ -137,31 +139,34 @@ defmodule AlurWeb.Layouts do
   """
   def theme_toggle(assigns) do
     ~H"""
-    <div class="relative flex flex-row items-center rounded-full border border-zinc-200 bg-zinc-100 p-0.5 dark:border-zinc-700 dark:bg-zinc-800">
-      <div class="absolute h-full w-1/3 rounded-full bg-white shadow-sm transition-[left] left-0 [[data-theme=light]_&]:left-1/3 [[data-theme=dark]_&]:left-2/3 dark:bg-zinc-700" />
+    <div class="relative flex flex-row items-center rounded-md border border-basalt bg-obsidian p-0.5 shadow-subtle">
+      <div class="absolute h-full w-1/3 rounded-xs bg-slate shadow-subtle transition-[left] left-0 [[data-theme=light]_&]:left-1/3 [[data-theme=dark]_&]:left-2/3" />
 
       <button
-        class="relative z-10 flex w-1/3 cursor-pointer items-center justify-center p-2 text-zinc-600 hover:text-zinc-900 dark:text-zinc-300 dark:hover:text-white"
+        class="relative z-10 flex w-1/3 cursor-pointer items-center justify-center p-1.5 text-fog hover:text-ash"
         phx-click={JS.dispatch("phx:set-theme")}
         data-phx-theme="system"
+        aria-label="System theme"
       >
-        <.icon name="hero-computer-desktop-micro" class="size-4 opacity-75 hover:opacity-100" />
+        <.icon name="hero-computer-desktop-micro" class="size-4" />
       </button>
 
       <button
-        class="relative z-10 flex w-1/3 cursor-pointer items-center justify-center p-2 text-zinc-600 hover:text-zinc-900 dark:text-zinc-300 dark:hover:text-white"
+        class="relative z-10 flex w-1/3 cursor-pointer items-center justify-center p-1.5 text-fog hover:text-ash"
         phx-click={JS.dispatch("phx:set-theme")}
         data-phx-theme="light"
+        aria-label="Light theme"
       >
-        <.icon name="hero-sun-micro" class="size-4 opacity-75 hover:opacity-100" />
+        <.icon name="hero-sun-micro" class="size-4" />
       </button>
 
       <button
-        class="relative z-10 flex w-1/3 cursor-pointer items-center justify-center p-2 text-zinc-600 hover:text-zinc-900 dark:text-zinc-300 dark:hover:text-white"
+        class="relative z-10 flex w-1/3 cursor-pointer items-center justify-center p-1.5 text-fog hover:text-ash"
         phx-click={JS.dispatch("phx:set-theme")}
         data-phx-theme="dark"
+        aria-label="Dark theme"
       >
-        <.icon name="hero-moon-micro" class="size-4 opacity-75 hover:opacity-100" />
+        <.icon name="hero-moon-micro" class="size-4" />
       </button>
     </div>
     """
