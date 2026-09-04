@@ -40,6 +40,21 @@ This is a web application written using the Phoenix web framework.
 - If you override the default input classes (`<.input class="myclass px-2 py-1 rounded-lg">)`) class with your own values, no default classes are inherited, so your
 custom classes must fully style the input
 
+### UI & Design System Guidelines (Depot)
+
+- **Always** follow the Depot design specification in `DESIGN.md` when writing or modifying UI components, templates, or styles. Consult the `.agents/skills/depot-design` skill for complete token scales and component specifications.
+- **Theme & Aesthetic**: Dark server-rack / developer-console language. Base canvas is Carbon (`#04040b` / `bg-carbon`). Surfaces stack cleanly: Carbon (`#04040b`) → Graphite (`#121113` / `bg-graphite`) → Obsidian (`#1a191b` / `bg-obsidian`) → Slate (`#232225` / `bg-slate`).
+- **Hairline Borders**: Separate sections and surfaces with 1px hairline Basalt (`#2b292d` / `border-basalt`) borders rather than spacing alone or drop shadows.
+- **No Drop Shadows**: Never apply drop shadows. Use the subtle inset top highlight (`shadow-subtle` / `rgba(255, 255, 255, 0.06) 0px 1px 0px 0px inset`) or hairline borders for surface definition.
+- **CTA Discipline**: Signal Green (`#71d083` / `bg-signal-green`) is exclusively reserved for the single primary CTA button fill. Do not use Signal Green for cards, tags, or secondary buttons. Secondary buttons should use ghost/outline styling with Basalt borders.
+- **Border Radius**: Use 6px (`rounded-md`) for buttons, inputs, and cards. Use 2px (`rounded-xs`) for tags, badges, and nav items. Never use large rounded radii (12px+) or pill shapes for cards/buttons.
+- **Typography & Tracking**:
+  - Headings (36px+): Red Hat Display (`font-display`) with negative tracking (`tracking-[-0.025em]`).
+  - Body & UI (10-20px): Red Hat Text (`font-text`) with positive tracking (`tracking-[0.025em]`).
+  - Code & Status: Red Hat Mono (`font-mono`) for terminal logs, status labels, and code snippets.
+  - Text colors: Chalk (`#e5e5e5` / `text-chalk`) for headings, Ash (`#eeeef0` / `text-ash`) for body, Fog (`#7c7a85` / `text-fog`) for muted text. Never use pure white (`#ffffff`).
+- **Component Reuse**: Prefer `<.button>`, `<.input>`, and components from `AlurWeb.CoreComponents` rather than writing unstyled raw HTML elements.
+
 <!-- usage-rules-start -->
 <!-- igniter-start -->
 ## igniter usage

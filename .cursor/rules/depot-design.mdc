@@ -1,0 +1,31 @@
+---
+description: Depot Design System rules for Phoenix HEEX templates and CSS
+globs: lib/alur_web/**/*.{ex,heex}, assets/**/*.{css,js}
+alwaysApply: false
+---
+
+# Depot Design System Rules
+
+When creating or modifying Phoenix HEEX templates, components, or styles in this project:
+
+- **Theme**: Dark server-rack developer console. Base background is Carbon (`bg-carbon` / `#04040b`).
+- **Surfaces**:
+  - Cards / Content panels: Graphite (`bg-graphite` / `#121113`).
+  - Nested elements / Footer: Obsidian (`bg-obsidian` / `#1a191b`).
+  - Dividers and borders: 1px hairline Basalt (`border-basalt` / `#2b292d`).
+- **Elevation**:
+  - NO drop shadows (`shadow-md`, `shadow-lg`).
+  - Use 1px Basalt hairline borders and optional top highlight (`shadow-subtle`).
+- **CTA Discipline**:
+  - Signal Green (`bg-signal-green` / `#71d083`) is reserved **only** for the single primary CTA button fill.
+  - Secondary buttons must be ghost/outline: `border-basalt text-ash hover:border-pewter`.
+- **Border Radius**:
+  - `rounded-md` (6px) for cards, buttons, inputs.
+  - `rounded-xs` (2px) for tags, badges, nav items.
+  - Never use large radii (12px+, pill shapes).
+- **Typography**:
+  - Headings: Red Hat Display (`font-display`) with negative tracking (`tracking-[-0.025em]`), color Chalk (`text-chalk`).
+  - Body: Red Hat Text (`font-text`) with positive tracking (`tracking-[0.025em]`), color Ash (`text-ash`).
+  - Code/Status: Red Hat Mono (`font-mono`), color Ash/Silver with status dots (`bg-signal-green`).
+  - Never use pure white (`#ffffff`).
+- Reference `DESIGN.md` in the project root for full design details.
