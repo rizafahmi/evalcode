@@ -11,7 +11,8 @@ defmodule Alur.MixProject do
       aliases: aliases(),
       deps: deps(),
       compilers: [:phoenix_live_view] ++ Mix.compilers(),
-      listeners: [Phoenix.CodeReloader]
+      listeners: [Phoenix.CodeReloader],
+      usage_rules: usage_rules()
     ]
   end
 
@@ -40,6 +41,13 @@ defmodule Alur.MixProject do
   # Type `mix help deps` for examples and options.
   defp deps do
     [
+      {:reach, "~> 2.0"},
+      {:ex_dna, "~> 1.0"},
+      {:igniter, "~> 0.6"},
+      {:usage_rules, "~> 1.0"},
+      {:dialyxir, "~> 1.0", runtime: false},
+      {:credo, "~> 1.0", only: [:dev, :test], runtime: false},
+      {:phoenix_test, "~> 0.12.1", only: :test, runtime: false},
       {:phoenix, "~> 1.8.0"},
       {:phoenix_ecto, "~> 4.5"},
       {:ecto_sql, "~> 3.13"},
@@ -47,7 +55,7 @@ defmodule Alur.MixProject do
       {:phoenix_html, "~> 4.1"},
       {:phoenix_live_reload, "~> 1.2", only: :dev},
       {:phoenix_live_view, "~> 1.1.0"},
-      {:lazy_html, ">= 0.1.0", only: :test},
+      {:lazy_html, ">= 0.1.0"},
       {:phoenix_live_dashboard, "~> 0.8.3"},
       {:esbuild, "~> 0.10", runtime: Mix.env() == :dev},
       {:tailwind, "~> 0.3", runtime: Mix.env() == :dev},
@@ -87,7 +95,54 @@ defmodule Alur.MixProject do
         "esbuild alur --minify",
         "phx.digest"
       ],
-      precommit: ["compile --warning-as-errors", "deps.unlock --unused", "format", "test"]
+      precommit: [
+        "compile --warnings-as-errors",
+        "deps.unlock --unused",
+        "format --check-formatted",
+        "test",
+        "credo --strict",
+        "dialyzer",
+        "ex_dna --max-clones 0",
+        "reach.check --arch --smells"
+      ]
+    ]
+  end
+
+  defp usage_rules() do
+    [
+      file: "AGENTS.md",
+      usage_rules: {:all, link: :markdown},
+      skills: [
+        location: ".agents/skills",
+        build: [
+          "phoenix-framework": [
+            description:
+              "Use this skill working with Phoenix Framework. Consult this when working with the web layer, controllers, views, liveviews, database/Ecto schemas and migrations, HTTP requests with Req, Swoosh mailer, and assets.",
+            usage_rules: [
+              :phoenix,
+              ~r/^phoenix_/,
+              :ecto,
+              :ecto_sql,
+              :ecto_sqlite3,
+              :req,
+              :swoosh,
+              :tailwind,
+              :esbuild,
+              :phoenix_test
+            ]
+          ],
+          igniter: [
+            description:
+              "Use this skill for code generation, project patching, AST analysis/transformations, and writing or running Igniter tasks.",
+            usage_rules: [:igniter]
+          ],
+          "code-analysis": [
+            description:
+              "Use this skill for code quality, linting, architecture boundaries, type checking, and anti-pattern analysis with Credo, Dialyxir, Reach, ExDNA, and Elixir/OTP guidelines.",
+            usage_rules: [:elixir, :otp, :credo, :dialyxir, :reach, :ex_dna]
+          ]
+        ]
+      ]
     ]
   end
 end
