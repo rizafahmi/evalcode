@@ -46,7 +46,7 @@
 
     <section>
       <h1 class="text-4xl sm:text-5xl font-bold tracking-tight">Alur</h1>
-      <p class="mt-5 text-lg sm:text-xl text-zinc-600 dark:text-zinc-400 leading-relaxed">A simple personal CRM for managing contacts and the deals attached to them. You keep a pipeline of deals with a value in Indonesian Rupiah (IDR) and a status, move them on a Kanban board, see a timestamped activity history on each deal, and never lose the next follow-up — both on the deal itself and as a single to-do list across everything you're working. The app is Phoenix + LiveView with SQLite; from milestone 7 the Pipeline path moves to Vue over a REST API. Build it in eight browser-testable milestones.</p>
+      <p class="mt-5 text-lg sm:text-xl text-zinc-600 dark:text-zinc-400 leading-relaxed">A simple personal CRM for managing contacts and the deals attached to them. You keep a pipeline of deals with a value in Indonesian Rupiah (IDR) and a status, move them on a Kanban board, see a timestamped activity history on each deal, and never lose the next follow-up — both on the deal itself and as a single to-do list across everything you're working. The app is Phoenix + LiveView with SQLite. From milestone 7 a Vue app is served at <code class="font-mono text-xs">/app</code>; milestone 8 puts a second Kanban there over REST. Pipeline nav/home stays LiveView. Build it in eight browser-testable milestones.</p>
       <div class="mt-6 flex flex-wrap gap-2">
         <span class="inline-flex items-center gap-1.5 px-2.5 py-1 rounded-full bg-white dark:bg-zinc-900 border border-zinc-200 dark:border-zinc-800 text-xs font-medium text-zinc-700 dark:text-zinc-300">Phoenix</span>
         <span class="inline-flex items-center gap-1.5 px-2.5 py-1 rounded-full bg-white dark:bg-zinc-900 border border-zinc-200 dark:border-zinc-800 text-xs font-medium text-zinc-700 dark:text-zinc-300">LiveView</span>
@@ -569,7 +569,7 @@
             <h3 class="font-semibold text-lg text-zinc-900 dark:text-zinc-100">API health and Vue scaffold</h3>
           </header>
           <div class="p-5">
-            <p class="text-zinc-600 dark:text-zinc-400 leading-relaxed">Stand up the JSON API surface and the Vue frontend toolchain so later milestones can rewrite the Pipeline board without inventing plumbing.</p>
+            <p class="text-zinc-600 dark:text-zinc-400 leading-relaxed">Stand up the JSON API surface and the Vue frontend toolchain so milestone 8 can put a Kanban at <code class="font-mono text-xs">/app</code> without inventing plumbing. Do not change the LiveView Pipeline at <code class="font-mono text-xs">/</code>.</p>
             <div class="mt-5 grid grid-cols-1 md:grid-cols-2 gap-5">
               <div>
                 <h4 class="text-[11px] font-semibold uppercase tracking-[0.16em] text-zinc-500 dark:text-zinc-400 flex items-center gap-1.5">
@@ -578,7 +578,7 @@
                 <ul class="mt-3 space-y-2 text-sm text-zinc-700 dark:text-zinc-300 list-none p-0">
                   <li class="flex items-start gap-2"><i data-lucide="check" class="w-3.5 h-3.5 mt-0.5 shrink-0 text-emerald-600 dark:text-emerald-400"></i><span><code class="font-mono text-xs">GET /api/health</code> — unauthenticated, returns <code class="font-mono text-xs">{"status":"ok"}</code></span></li>
                   <li class="flex items-start gap-2"><i data-lucide="check" class="w-3.5 h-3.5 mt-0.5 shrink-0 text-emerald-600 dark:text-emerald-400"></i><span>Vue 3 + TypeScript + Vite + Vitest inside Phoenix <code class="font-mono text-xs">assets/</code></span></li>
-                  <li class="flex items-start gap-2"><i data-lucide="check" class="w-3.5 h-3.5 mt-0.5 shrink-0 text-emerald-600 dark:text-emerald-400"></i><span>Phoenix serves a Vue mount page (stub is enough: Vue boots and can show health <code class="font-mono text-xs">ok</code>)</span></li>
+                  <li class="flex items-start gap-2"><i data-lucide="check" class="w-3.5 h-3.5 mt-0.5 shrink-0 text-emerald-600 dark:text-emerald-400"></i><span>Phoenix serves authenticated <code class="font-mono text-xs">GET /app</code> as a controller HTML page (not LiveView). Empty mount node; Vue boots (Vue 3 sets <code class="font-mono text-xs">data-v-app</code>). Stub is enough: can show health <code class="font-mono text-xs">ok</code>. No extra nav item.</span></li>
                 </ul>
               </div>
               <div>
@@ -587,13 +587,13 @@
                 </h4>
                 <ul class="mt-3 space-y-2 text-sm text-zinc-500 dark:text-zinc-400 list-none p-0">
                   <li class="flex items-start gap-2"><i data-lucide="minus" class="w-3.5 h-3.5 mt-0.5 shrink-0"></i><span>Kanban REST endpoints or drag-and-drop</span></li>
-                  <li class="flex items-start gap-2"><i data-lucide="minus" class="w-3.5 h-3.5 mt-0.5 shrink-0"></i><span>Replacing the LiveView Pipeline board</span></li>
+                  <li class="flex items-start gap-2"><i data-lucide="minus" class="w-3.5 h-3.5 mt-0.5 shrink-0"></i><span>Changing <code class="font-mono text-xs">PipelineLive</code>, wrapping Vue inside it, or adding a fourth nav item</span></li>
                   <li class="flex items-start gap-2"><i data-lucide="minus" class="w-3.5 h-3.5 mt-0.5 shrink-0"></i><span>Extra <code class="font-mono text-xs">/api</code> resources beyond health</span></li>
                 </ul>
               </div>
             </div>
             <div class="mt-5 rounded-md border-l-4 border-emerald-500 bg-emerald-50 dark:bg-emerald-950/30 p-4 text-sm text-emerald-900 dark:text-emerald-200">
-              <p class="flex items-start gap-2"><i data-lucide="flag" class="w-4 h-4 mt-0.5 shrink-0"></i><span><span class="font-semibold">Done when:</span> An unauthenticated <code class="font-mono text-xs">GET /api/health</code> returns <code class="font-mono text-xs">{"status":"ok"}</code>. A signed-in user can open a page that is a Vue app. <code class="font-mono text-xs">mix test</code> and Vitest both pass.</span></p>
+              <p class="flex items-start gap-2"><i data-lucide="flag" class="w-4 h-4 mt-0.5 shrink-0"></i><span><span class="font-semibold">Done when:</span> An unauthenticated <code class="font-mono text-xs">GET /api/health</code> returns <code class="font-mono text-xs">{"status":"ok"}</code>. A signed-in user opening <code class="font-mono text-xs">/app</code> sees a Vue app that has mounted. <code class="font-mono text-xs">mix test</code> and Vitest both pass.</span></p>
             </div>
           </div>
         </article>
@@ -604,15 +604,15 @@
             <h3 class="font-semibold text-lg text-zinc-900 dark:text-zinc-100">Vue Kanban over REST</h3>
           </header>
           <div class="p-5">
-            <p class="text-zinc-600 dark:text-zinc-400 leading-relaxed">Replace the LiveView Pipeline board with a Vue board that loads and updates deals through the JSON API. Same UX as milestone 4; contacts, deal pages, activity, and to-dos stay LiveView.</p>
+            <p class="text-zinc-600 dark:text-zinc-400 leading-relaxed">Grow <code class="font-mono text-xs">/app</code> into a Vue Kanban that loads and updates deals through the JSON API. Same UX as milestone 4. LiveView Pipeline at <code class="font-mono text-xs">/</code> stays. Contacts, deal pages, activity, and to-dos stay LiveView.</p>
             <div class="mt-5 grid grid-cols-1 md:grid-cols-2 gap-5">
               <div>
                 <h4 class="text-[11px] font-semibold uppercase tracking-[0.16em] text-zinc-500 dark:text-zinc-400 flex items-center gap-1.5">
                   <i data-lucide="check-circle-2" class="w-3.5 h-3.5 text-emerald-600 dark:text-emerald-400"></i>What gets built
                 </h4>
                 <ul class="mt-3 space-y-2 text-sm text-zinc-700 dark:text-zinc-300 list-none p-0">
-                  <li class="flex items-start gap-2"><i data-lucide="check" class="w-3.5 h-3.5 mt-0.5 shrink-0 text-emerald-600 dark:text-emerald-400"></i><span>JSON endpoints to list deals on the board and update a deal’s column on drag</span></li>
-                  <li class="flex items-start gap-2"><i data-lucide="check" class="w-3.5 h-3.5 mt-0.5 shrink-0 text-emerald-600 dark:text-emerald-400"></i><span>Vue board on the same Pipeline nav/home route: five columns, card title/contact/IDR, column totals, click-through to the existing LiveView deal page</span></li>
+                  <li class="flex items-start gap-2"><i data-lucide="check" class="w-3.5 h-3.5 mt-0.5 shrink-0 text-emerald-600 dark:text-emerald-400"></i><span>JSON: <code class="font-mono text-xs">GET /api/deals</code>, <code class="font-mono text-xs">GET /api/deals/:id</code>, <code class="font-mono text-xs">PATCH /api/deals/:id</code> with <code class="font-mono text-xs">pipeline_column_id</code> (session cookies; unauthenticated → 401). Optional <code class="font-mono text-xs">GET /api/pipeline</code> for the board aggregate.</span></li>
+                  <li class="flex items-start gap-2"><i data-lucide="check" class="w-3.5 h-3.5 mt-0.5 shrink-0 text-emerald-600 dark:text-emerald-400"></i><span>Vue board at <code class="font-mono text-xs">/app</code> (not Pipeline nav): five columns, card title/contact/IDR, column totals, click-through to the existing LiveView deal page</span></li>
                   <li class="flex items-start gap-2"><i data-lucide="check" class="w-3.5 h-3.5 mt-0.5 shrink-0 text-emerald-600 dark:text-emerald-400"></i><span>Drag to another column persists; refresh keeps the new column; activity-log move lines from milestone 5 still fire</span></li>
                 </ul>
               </div>
@@ -621,14 +621,14 @@
                   <i data-lucide="x-circle" class="w-3.5 h-3.5 text-zinc-400 dark:text-zinc-500"></i>Not in this milestone
                 </h4>
                 <ul class="mt-3 space-y-2 text-sm text-zinc-500 dark:text-zinc-400 list-none p-0">
-                  <li class="flex items-start gap-2"><i data-lucide="minus" class="w-3.5 h-3.5 mt-0.5 shrink-0"></i><span>Rewriting contacts, deal pages, activity, or to-dos to Vue</span></li>
+                  <li class="flex items-start gap-2"><i data-lucide="minus" class="w-3.5 h-3.5 mt-0.5 shrink-0"></i><span>Replacing or wrapping <code class="font-mono text-xs">PipelineLive</code>; rewriting contacts, deal pages, activity, or to-dos to Vue; a fourth nav item</span></li>
                   <li class="flex items-start gap-2"><i data-lucide="minus" class="w-3.5 h-3.5 mt-0.5 shrink-0"></i><span>JWT or token auth; CORS; a separate frontend app</span></li>
                   <li class="flex items-start gap-2"><i data-lucide="minus" class="w-3.5 h-3.5 mt-0.5 shrink-0"></i><span>Adding, renaming, reordering, or deleting columns</span></li>
                 </ul>
               </div>
             </div>
             <div class="mt-5 rounded-md border-l-4 border-emerald-500 bg-emerald-50 dark:bg-emerald-950/30 p-4 text-sm text-emerald-900 dark:text-emerald-200">
-              <p class="flex items-start gap-2"><i data-lucide="flag" class="w-4 h-4 mt-0.5 shrink-0"></i><span><span class="font-semibold">Done when:</span> Existing deals appear on the Vue board in the right columns. You can drag one from Lead to Meeting, refresh, and it stays there. Column totals match the cards. Clicking a card opens the LiveView deal page. The board talks to <code class="font-mono text-xs">/api</code>, not LiveView events.</span></p>
+              <p class="flex items-start gap-2"><i data-lucide="flag" class="w-4 h-4 mt-0.5 shrink-0"></i><span><span class="font-semibold">Done when:</span> Signed-in <code class="font-mono text-xs">/app</code> shows existing deals on the Vue board in the right columns. You can drag one from Lead to Meeting, refresh, and it stays there. Column totals match the cards. Clicking a card opens the LiveView deal page. Drag issues <code class="font-mono text-xs">PATCH /api/deals/:id</code>, not LiveView events.</span></p>
             </div>
           </div>
         </article>
