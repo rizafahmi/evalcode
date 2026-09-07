@@ -773,6 +773,16 @@ def render_html_page(runs, generated_at):
       border-bottom: 1px solid var(--color-basalt);
       margin-bottom: 24px;
       overflow-x: auto;
+      scrollbar-width: none;
+      -ms-overflow-style: none;
+    }}
+    .tabs-bar::-webkit-scrollbar {{
+      display: none;
+    }}
+    @media (min-width: 768px) {{
+      .tabs-bar {{
+        overflow-x: visible;
+      }}
     }}
     .tab-button {{
       background: none;
@@ -788,6 +798,8 @@ def render_html_page(runs, generated_at):
       position: relative;
       white-space: nowrap;
       transition: color 0.15s;
+      border-bottom: 2px solid transparent;
+      margin-bottom: -1px;
     }}
     .tab-button:hover {{
       color: var(--color-ash);
@@ -795,15 +807,7 @@ def render_html_page(runs, generated_at):
     .tab-button.active {{
       color: var(--color-chalk);
       font-weight: 600;
-    }}
-    .tab-button.active::after {{
-      content: '';
-      position: absolute;
-      bottom: -1px;
-      left: 0;
-      right: 0;
-      height: 2px;
-      background: var(--color-signal-green);
+      border-bottom-color: var(--color-signal-green);
     }}
 
     .filter-bar {{
