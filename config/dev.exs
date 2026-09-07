@@ -23,7 +23,13 @@ config :alur, AlurWeb.Endpoint,
   secret_key_base: "8t0C6SfNvJaJ1u6s7jR09b5UjlGJ19yP1+WfzvHnL+11KTvBTlA4jkIWsI/ndRnI",
   watchers: [
     esbuild: {Esbuild, :install_and_run, [:alur, ~w(--sourcemap=inline --watch)]},
-    tailwind: {Tailwind, :install_and_run, [:alur, ~w(--watch)]}
+    tailwind: {Tailwind, :install_and_run, [:alur, ~w(--watch)]},
+    node: [
+      "node_modules/vite/bin/vite.js",
+      "build",
+      "--watch",
+      cd: Path.expand("../assets", __DIR__)
+    ]
   ]
 
 # ## SSL Support
