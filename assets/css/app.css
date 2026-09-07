@@ -4,6 +4,7 @@
 @import "tailwindcss" source(none);
 @source "../css";
 @source "../js";
+@source "../vue";
 @source "../../lib/alur_web";
 
 /* A Tailwind plugin that makes "hero-#{ICON}" classes available.
@@ -61,4 +62,16 @@
 
   /* Shadows */
   --shadow-subtle: rgba(255, 255, 255, 0.06) 0px 1px 0px 0px inset;
+}
+
+/* Kanban board drag & drop affordances.
+   These classes are toggled by the PipelineLive `.KanbanBoard` hook, so they
+   are not Tailwind utilities and must be defined here. */
+.is-dragging {
+  opacity: 0.45;
+}
+
+.kanban-drop-target {
+  border-color: var(--color-led-green);
+  background-color: color-mix(in srgb, var(--color-fern-ground) 45%, var(--color-graphite));
 }
