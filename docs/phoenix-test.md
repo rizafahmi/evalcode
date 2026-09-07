@@ -1,0 +1,1599 @@
+# `PhoenixTest`
+[🔗](https://github.com/germsvel/phoenix_test/blob/main/lib/phoenix_test.ex#L1)
+
+PhoenixTest provides a unified way of writing feature tests -- regardless of
+whether you're testing LiveView pages or static pages.
+
+It also handles navigation between LiveView and static pages seamlessly. So, you
+don't have to worry about what type of page you're visiting. Just write the
+tests from the user's perspective.
+
+Thus, you can test a flow going from static to LiveView pages and back without
+having to worry about the underlying implementation.
+
+This is a sample flow:
+
+```elixir
+test "admin can create a user", %{conn: conn} do
+  conn
+  |> visit("/")
+  |> click_link("Users")
+  |> fill_in("Name", with: "Aragorn")
+  |> choose("Ranger")
+  |> assert_has(".user", "Aragorn")
+end
+```
+
+Note that PhoenixTest does _not_ handle JavaScript. If you're looking for
+something that supports JavaScript, take a look at
+[Wallaby](https://hexdocs.pm/wallaby/readme.html)
+or the external [PhoenixTest.Playwright](https://hexdocs.pm/phoenix_test_playwright) driver.
+
+## Setup
+
+PhoenixTest requires Phoenix `1.7+` and LiveView `1.0+`. It may work with
+earlier versions, but those aren't "officially" supported.
+
+### Installation
+
+Add `phoenix_test` to your list of dependencies in `mix.exs`:
+
+```elixir
+def deps do
+  [
+    {:phoenix_test, "~> 0.12.1", only: :test, runtime: false}
+  ]
+end
+```
+
+### Configuration
+
+PhoenixTest needs to know which endpoint to use for routing requests.
+
+There are two ways of doing this:
+
+1. You can specify the endpoint at runtime in your `ConnCase` (or equivalent)
+setup block:
+
+```elixir
+setup tags do
+  # existing setup...
+
+  {:ok, conn: Phoenix.ConnTest.build_conn() |> PhoenixTest.put_endpoint(MyAppWeb.Endpoint)}
+end
+```
+
+NOTE that this opens the option for umbrella apps to have different endpoints.
+
+2. You can set it at compile time in `config/test.exs`:
+
+```elixir
+config :phoenix_test, :endpoint, MyAppWeb.Endpoint
+```
+
+### Getting `PhoenixTest` helpers
+
+`PhoenixTest` helpers can be included via `import PhoenixTest`.
+
+But since each test needs a `conn` struct to get started, you'll likely want
+to set up a few things before that.
+
+There are two ways to do that.
+
+### With `ConnCase`
+
+If you plan to use `ConnCase` solely for `PhoenixTest`, then you can import
+the helpers there and update the `setup` block to set the endpoint on the conn:
+
+```elixir
+using do
+  quote do
+    # importing other things for ConnCase
+
+    import PhoenixTest
+
+    # doing other setup for ConnCase
+  end
+end
+```
+
+### Adding a `FeatureCase`
+
+If you want to create your own `FeatureCase` helper module like `ConnCase`,
+you can copy the code below which can be `use`d from your tests (replace
+`MyApp` with your app's name):
+
+```elixir
+defmodule MyAppWeb.FeatureCase do
+  use ExUnit.CaseTemplate
+
+  using do
+    quote do
+      use MyAppWeb, :verified_routes
+
+      import MyAppWeb.FeatureCase
+
+      import PhoenixTest
+
+      @endpoint MyAppWeb.Endpoint
+    end
+  end
+
+  setup tags do
+    pid = Ecto.Adapters.SQL.Sandbox.start_owner!(MyApp.Repo, shared: not tags[:async])
+    on_exit(fn -> Ecto.Adapters.SQL.Sandbox.stop_owner(pid) end)
+
+    {:ok, conn: Phoenix.ConnTest.build_conn() |> PhoenixTest.put_endpoint(MyAppWeb.Endpoint)}
+  end
+end
+```
+
+Note that we assume your Phoenix project is using Ecto and its phenomenal
+`SQL.Sandbox`. If it doesn't, feel free to remove the `SQL.Sandbox` code
+above.
+
+## Usage
+
+Now that we have all the setup out of the way, we can create tests like
+this:
+
+```elixir
+# test/my_app_web/features/admin_can_create_user_test.exs
+
+defmodule MyAppWeb.AdminCanCreateUserTest do
+  use MyAppWeb.FeatureCase, async: true
+
+  test "admin can create user", %{conn: conn} do
+    conn
+    |> visit("/")
+    |> click_link("Users")
+    |> fill_in("Name", with: "Aragorn")
+    |> fill_in("Email", with: "aragorn@dunedain.com")
+    |> click_button("Create")
+    |> assert_has(".user", "Aragorn")
+  end
+end
+```
+
+### Filling out forms
+
+We can fill out forms by targetting their inputs, selects, etc. by label:
+
+```elixir
+test "admin can create user", %{conn: conn} do
+  conn
+  |> visit("/")
+  |> click_link("Users")
+  |> fill_in("Name", with: "Aragorn")
+  |> select("Elessar", from: "Aliases")
+  |> choose("Human") # <- choose a radio option
+  |> check("Ranger") # <- check a checkbox
+  |> click_button("Create")
+  |> assert_has(".user", "Aragorn")
+end
+```
+
+For more info, see `fill_in/3`, `select/3`, `choose/3`, `check/2`,
+`uncheck/2`.
+
+### Submitting forms without clicking a button
+
+Once we've filled out a form, you can click a button with
+`click_button/2` to submit the form. But sometimes you want to emulate what
+would happen by just pressing <Enter>.
+
+For that case, you can use `submit/1` to submit the form you just filled
+out.
+
+```elixir
+session
+|> fill_in("Name", with: "Aragorn")
+|> check("Ranger")
+|> submit()
+```
+
+For more info, see `submit/1`.
+
+### Targeting which form to fill out
+
+If you find yourself in a situation where you have multiple forms with the
+same labels (even when those labels point to different inputs), then you
+might have to scope your form-filling.
+
+To do that, you can scope all of the form helpers using `within/3`:
+
+```elixir
+session
+|> within("#user-form", fn session ->
+  session
+  |> fill_in("Name", with: "Aragorn")
+  |> check("Ranger")
+  |> click_button("Create")
+end)
+```
+
+For more info, see `within/3`.
+
+## Credo
+
+Add `PhoenixTest.Credo.NoOpenBrowser` to your `.credo.exs` config file to prevent
+dev-only `open_browser/1` from lingering in your code base.
+
+# `assert_download`
+
+Assert helper to verify a file download.
+
+> ### Note on supported download types
+>
+> Only downloads with HTTP response header `Content-Type: attachment; filename=...` are supported.
+
+## Examples
+
+```elixir
+conn
+|> visit("/users")
+|> click_link("Download avatar")
+|> assert_download("avatar.jpg")
+
+conn
+|> visit("/users")
+|> click_link("Download avatar")
+|> assert_download(fn %{mime_type: type, content: content} ->
+  assert file.mime_type == "image/jpeg"
+  assert content == File.read!(expected_file_path)
+end)
+```
+
+# `check`
+
+Check a checkbox.
+
+In addition to targeting the checkbox via a `<label>`, you can also target it
+via `aria-label` or `aria-labelledby`. But note that the `<label>` takes
+precedence over its ARIA attributes, and `aria-label` takes precedence over
+`aria-labelledby`. This differs from the browser's accessible-name
+calculation.
+
+To uncheck a checkbox, see `uncheck/3`.
+
+## Options
+
+- `exact`: whether to match label text exactly. (Defaults to `true`)
+
+## Inside a form
+
+If the form is a LiveView form, and if the form has a `phx-change` attribute
+defined, `check/3` will trigger the `phx-change` event.
+
+This can be followed by a `click_button/3` or `submit/1` to submit the form.
+
+### Example
+
+Given we have a form that contains this:
+
+```html
+<label for="admin">Admin</label>
+<input type="hidden" name="admin" value="off" />
+<input id="admin" type="checkbox" name="admin" value="on" />
+```
+
+We can check the "Admin" option:
+
+```elixir
+session
+|> check("Admin")
+```
+
+## Outside of a form
+
+If the checkbox exists outside of a form, `check/3` will trigger the
+`phx-click` event.
+
+### Example
+
+```html
+<label for="admin">Admin</label>
+<input phx-click="toggle-admin" id="admin" type="checkbox" name="admin" value="on" />
+```
+
+We can check the "Admin" option:
+
+```elixir
+session
+|> check("Admin")
+```
+
+And that will send a `"toggle-admin"` event with the input's `value` as the
+payload.
+
+## Complex labels
+
+If we have a complex label, you can use `exact: false` to target part of the
+label.
+
+### Example
+
+Given we have a form that contains this:
+
+```html
+<label for="admin">Admin <span>*</span></label>
+<input type="hidden" name="admin" value="off" />
+<input id="admin" type="checkbox" name="admin" value="on" />
+```
+
+We can check the "Admin" option:
+
+```elixir
+session
+|> check("Admin", exact: false)
+```
+
+# `check`
+
+Like `check/3` but allows you to specify the checkbox's CSS selector.
+
+Helpful in cases when you have multiple checkboxes with the same label on the
+same form.
+
+For more on checking boxes, see `check/3`. To uncheck a checkbox, see
+`uncheck/3` and `uncheck/4`.
+
+# `choose`
+
+Choose a radio button option.
+
+In addition to targeting the radio button via a `<label>`, you can also
+target it via `aria-label` or `aria-labelledby`. But note that the `<label>`
+takes precedence over its ARIA attributes, and `aria-label` takes precedence
+over `aria-labelledby`. This differs from the browser's accessible-name
+calculation.
+
+## Options
+
+- `exact`: whether to match label text exactly. (Defaults to `true`)
+
+## Inside a form
+
+If the form is a LiveView form, and if the form has a `phx-change` attribute
+defined, `choose/3` will trigger the `phx-change` event.
+
+This can be followed by a `click_button/3` or `submit/1` to submit the form.
+
+If the radio button exists outside of a form, `choose/3` will trigger the
+`phx-click` event.
+
+### Example
+
+Given we have a form that contains this:
+
+```html
+<input type="radio" id="email" name="contact" value="email" />
+<label for="email">Email</label>
+
+<input type="radio" id="phone" name="contact" value="phone" />
+<label for="phone">Phone</label>
+```
+
+We can choose to be contacted by email:
+
+```elixir
+session
+|> choose("Email")
+```
+
+## Outside of a form
+
+If the checkbox exists outside of a form, `choose/3` will trigger the
+`phx-click` event.
+
+### Example
+
+```html
+<input phx-click="select-contact" type="radio" id="email" name="contact" value="email" />
+<label for="email">Email</label>
+```
+
+We can choose to be contacted by email:
+
+```elixir
+session
+|> choose("Email")
+```
+
+And we'll get a `"select-contact"` event with the input's value in the payload.
+
+## Complex labels
+
+If we have a complex label, you can use `exact: false` to target part of the
+label.
+
+### Example
+
+Given we have a form that contains this:
+
+```html
+<input type="radio" id="email" name="contact" value="email" />
+<label for="email">Email <span>*</span></label>
+```
+
+We can choose to be contacted by email:
+
+```elixir
+session
+|> choose("Email", exact: false)
+```
+
+# `choose`
+
+Like `choose/3` but you can specify an input's selector (in addition to the
+label).
+
+Helpful for cases when you have multiple radio buttons with the same label.
+
+## Example
+
+Consider a form containig the following:
+
+```heex
+<fieldset>
+  <legend>Do you like Elixir:</legend>
+
+  <div>
+    <input name="elixir-yes" type="radio" id="elixir-yes" value="yes" />
+    <label for="elixir-yes">Yes</label>
+  </div>
+  <div>
+    <input name="elixir-no" type="radio" id="elixir-no" value="no" />
+    <label for="elixir-no">No</label>
+  </div>
+</fieldset>
+
+<fieldset>
+  <legend>Do you like Erlang:</legend>
+
+  <div>
+    <input name="erlang-yes" type="radio" id="erlang-yes" value="yes" />
+    <label for="erlang-yes">Yes</label>
+  </div>
+  <div>
+    <input name="erlang-yes" type="radio" id="erlang-no" value="no" />
+    <label for="erlang-no">No</label>
+  </div>
+</fieldset>
+```
+
+Since all radio buttons have the labels "Yes" or "No", you can target a
+specific radio button like so:
+
+```elixir
+session
+|> choose("#elixir-yes", "Yes")
+```
+
+# `click_button`
+
+Perfoms action defined by button with given text (using a substring match).
+The action is based on attributes present.
+
+In addition to targeting the button via text or an input's value, you can
+also target it via `aria-label` or `aria-labelledby`. But note that the
+button's inner text, input value, or associated `<label>` takes precedence
+over its ARIA attributes, and `aria-label` takes precedence over
+`aria-labelledby`. This differs from the browser's accessible-name
+calculation.
+
+This can be used in a number of ways.
+
+## Button with `phx-click`
+
+If the button has a `phx-click` on it, it'll send the event to the LiveView.
+
+### Example
+
+```html
+<button phx-click="save">Save</button>
+```
+
+```elixir
+session
+|> click_button("Save") # <- will send "save" event to LiveView
+```
+
+## Button relying on Phoenix.HTML.js
+
+If the button acts as a form via Phoenix.HTML's `data-method`, `data-to`, and
+`data-csrf`, this will emulate Phoenix.HTML.js and submit the form via data
+attributes.
+
+But note that this _doesn't guarantee_ the JavaScript that handles form
+submissions via `data` attributes is loaded. The test emulates the behavior
+but you must make sure the JavaScript is loaded.
+
+For more on that, see https://hexdocs.pm/phoenix_html/Phoenix.HTML.html#module-javascript-library
+
+### Example
+
+```html
+<button data-method="delete" data-to="/users/2" data-csrf="token">Delete</button>
+```
+
+```elixir
+session
+|> click_button("Delete") # <- will submit form like Phoenix.HTML.js does
+```
+
+## Combined with `fill_in/3`, `select/3`, etc.
+
+This function can be preceded by filling out a form.
+
+### Example
+
+```elixir
+session
+|> fill_in("Name", name: "Aragorn")
+|> check("Human")
+|> click_button("Create")
+```
+
+### Submitting default data
+
+By default, using `click_button/2` will submit the form it's part of (so long
+as it has a `phx-click`, `data-*` attrs, or an `action`).
+
+It will also include any hidden inputs and default data (e.g. inputs with a
+`value` set and the button's `name` and `value` if present).
+
+### Example
+
+```html
+<form method="post" action="/users/2">
+  <input type="hidden" name="admin" value="true"/>
+  <button name="complete" value="true">Complete</button>
+</form>
+```
+
+```elixir
+session
+|> click_button("Complete")
+# ^ includes `%{"admin" => "true", "complete" => "true"}` in payload
+```
+
+## Single-button forms
+
+`click_button/2` is smart enough to use a hidden input's value with
+`name=_method` as the method to send (e.g. when we want to send `delete`,
+`put`, or `patch`)
+
+That means, it is helpful to submit single-button forms.
+
+### Example
+
+```html
+<form method="post" action="/users/2">
+  <input type="hidden" name="_method" value="delete" />
+  <button>Delete</button>
+</form>
+```
+
+```elixir
+session
+|> click_button("Delete") # <- Triggers full form delete.
+```
+
+## Clicking elements that behave as buttons
+
+Even though we can technically add an `onClick` or `phx-click` handler on any
+HTML element, the HTML spec encourages that clickable elements be links or
+buttons.
+
+But in some cases, people want to have other elements act as buttons even if
+they don't use a `<button>` tag.
+
+To that end, `click_button/2` also supports clicking these elements:
+
+- elements with the "button" role (e.g. `<span role="button">I'm clickable</span>`)
+- `input` elements with types: "button", "image", "reset", or "submit"
+
+For more on the "button" role, see [MDN's button role](https://developer.mozilla.org/en-US/docs/Web/Accessibility/ARIA/Reference/Roles/button_role)
+
+# `click_button`
+
+Performs action defined by button with CSS selector and text.
+
+See `click_button/2` for more details.
+
+# `click_link`
+
+Clicks a link with given text (using a substring match) and performs the
+action.
+
+In addition to targeting the link via its inner text, you can also target it
+via `aria-label` or `aria-labelledby`. But note that the link's inner text
+and any associated `<label>` take precedence over its ARIA attributes, and
+`aria-label` takes precedence over `aria-labelledby`. This differs from the
+browser's accessible-name calculation.
+
+Here's how it handles different types of `a` tags:
+
+- With `href`: follows it to the next page
+- With `phx-click`: it'll send the event to the appropriate LiveView
+- With live redirect: it'll follow the live navigation to the next LiveView
+- With live patch: it'll patch the current LiveView
+
+## Examples
+
+```heex
+<.link href="/page/2">Page 2</.link>
+<.link phx-click="next-page">Next Page</.link>
+<.link navigate="next-liveview">Next LiveView</.link>
+<.link patch="page/details">Page Details</.link>
+```
+
+```elixir
+session
+|> click_link("Page 2") # <- follows to next page
+
+session
+|> click_link("Next Page") # <- sends "next-page" event to LiveView
+
+session
+|> click_link("Next LiveView") # <- follows to next LiveView
+
+session
+|> click_link("Page Details") # <- applies live patch
+```
+
+## Submitting forms
+
+Phoenix allows for submitting forms on links via Phoenix.HTML's `data-method`,
+`data-to`, and `data-csrf`.
+
+We can use `click_link` to emulate Phoenix.HTML.js and submit the
+form via data attributes.
+
+But note that this _doesn't guarantee_ the JavaScript that handles form
+submissions via `data` attributes is loaded. The test emulates the behavior
+but you must make sure the JavaScript is loaded.
+
+For more on that, see https://hexdocs.pm/phoenix_html/Phoenix.HTML.html#module-javascript-library
+
+### Example
+
+```html
+<a href="/users/2" data-method="delete" data-to="/users/2" data-csrf="token">
+  Delete
+</a>
+```
+
+```elixir
+session
+|> click_link("Delete") # <- will submit form like Phoenix.HTML.js does
+```
+
+# `click_link`
+
+Clicks a link with given CSS selector and text and performs the action.
+selector to target the link.
+
+See `click_link/2` for more details.
+
+# `fill_in`
+
+Fills text inputs and textareas, targetting the elements by their labels.
+
+This can be followed by a `click_button/3` or `submit/1` to submit the form.
+
+If the input has a `phx-change` attribute, the `phx-change` will be triggered.
+For this to work, the input needs to be wrapped with a `<form>` element
+(just like a regular LiveView).
+
+If the form is a LiveView form, and if the form has a `phx-change` attribute
+defined, `fill_in/3` will trigger the `phx-change` event on the form.
+
+## Options
+
+- `with` (required): the text to fill in.
+
+- `exact`: whether to match label text exactly. (Defaults to `true`)
+
+## Examples
+
+Given we have a form that contains this:
+
+```html
+<label for="name">Name</label>
+<input id="name" name="name"/>
+```
+
+or this:
+
+```html
+<label>
+  Name
+  <input name="name"/>
+</label>
+```
+
+We can fill in the `name` field:
+
+```elixir
+session
+|> fill_in("Name", with: "Aragorn")
+```
+
+## Complex labels
+
+If we have a complex label, you can use `exact: false` to target part of the
+label.
+
+### Example
+
+Given the following:
+
+```html
+<label for="name">Name <span>*</span></label>
+<input id="name" name="name"/>
+```
+
+We can fill in the `name` field:
+
+```elixir
+session
+|> fill_in("Name", with: "Aragorn", exact: false)
+```
+
+## Labels and Accessibility
+
+This function requires a label to target the input element. This is by design, as labels are
+crucial for accessibility. Labels provide both visual and programmatic association with inputs,
+allowing screen readers to announce the input's purpose when focused.
+
+If you need to hide a label visually while maintaining accessibility, use a screen-reader-only
+class (like Tailwind's `sr-only`) rather than removing the label. For example:
+
+```html
+<label for="search" class="sr-only">Search</label>
+<input id="search" type="text" name="q" />
+```
+
+In addition to targeting the field via a `<label>`, you can also target it
+via `aria-label` or `aria-labelledby`. But note that the `<label>` takes
+precedence over its ARIA attributes, and `aria-label` takes precedence over
+`aria-labelledby`. This differs from the browser's accessible-name
+calculation.
+
+For example:
+
+```html
+<input type="text" name="q" aria-label="Search" />
+```
+
+# `fill_in`
+
+Like `fill_in/3` but you can specify an input's selector (in addition to the
+label).
+
+Helpful for cases when you have multiple fields with the same label.
+
+## Example
+
+Consider a form containig the following:
+
+```html
+<div>
+  <div>
+    <label for="contact_0_first_name">First Name</label>
+    <input type="text" name="contact[0][first_name]" id="contact_0_first_name" />
+  </div>
+</div>
+
+<div>
+  <div>
+    <label for="contact_1_first_name">First Name</label>
+    <input type="text" name="contact[1][first_name]" id="contact_1_first_name" value="">
+  </div>
+</div>
+```
+
+Since each new contact gets the same "First Name" label, you can target a
+specific input like so:
+
+```elixir
+session
+|> fill_in("#contact_1_first_name", "First Name", with: "Aragorn")
+```
+
+# `open_browser`
+
+Open the default browser to display current HTML of `session`.
+
+## Examples
+
+```elixir
+session
+|> visit("/")
+|> fill_in("Name", with: "Aragorn")
+|> open_browser()
+|> submit()
+```
+
+# `put_endpoint`
+
+Sets the endpoint on the conn so PhoenixTest knows which endpoint to use.
+
+Call this in your test setup with your app's endpoint module.
+
+## Examples
+
+```elixir
+setup tags do
+  {:ok, conn: Phoenix.ConnTest.build_conn() |> PhoenixTest.put_endpoint(MyAppWeb.Endpoint)}
+end
+```
+
+# `reload_page`
+
+Reloads the current page, similar to pressing F5 or Cmd+r in the browser.
+
+# `select`
+
+Selects an option from a select dropdown.
+
+In addition to targeting the select via a `<label>`, you can also target it
+via `aria-label` or `aria-labelledby`. But note that the `<label>` takes
+precedence over its ARIA attributes, and `aria-label` takes precedence over
+`aria-labelledby`. This differs from the browser's accessible-name
+calculation.
+
+## Options
+
+- `option` (required): the text of the option to select.
+
+- `from` (deprecated): the label of the select dropdown. Label is now a
+positional argument and use the `:option` option to pass the option text.
+
+- `exact`: whether to match label text exactly. (Defaults to `true`)
+
+- `exact_option`: whether to match the option's text exactly. (Defaults to `true`)
+
+## Inside a form
+
+If the form is a LiveView form, and if the form has a `phx-change` attribute
+defined, `select/3` will trigger the `phx-change` event.
+
+This can be followed by a `click_button/3` or `submit/1` to submit the form.
+
+### Example
+
+Given we have a form that contains this:
+
+```html
+<form>
+  <label for="race">Race</label>
+  <select id="race" name="race">
+    <option value="human">Human</option>
+    <option value="elf">Elf</option>
+    <option value="dwarf">Dwarf</option>
+    <option value="orc">Orc</option>
+  </select>
+</form>
+```
+
+We can select an option:
+
+```elixir
+session
+|> select("Race", option: "Human")
+```
+
+## Outside a form
+
+If the select dropdown exists outside of a form, `select/3` will trigger the
+`phx-click` event associated to the option being selected (note that all
+options must have a `phx-click` in that case).
+
+### Examples
+
+Given we have a form that contains this:
+
+```html
+<label for="race">Race</label>
+<select id="race" name="race">
+  <option phx-click="select-race" value="human">Human</option>
+  <option phx-click="select-race" value="elf">Elf</option>
+  <option phx-click="select-race" value="dwarf">Dwarf</option>
+  <option phx-click="select-race" value="orc">Orc</option>
+</select>
+```
+
+We can select an option:
+
+```elixir
+session
+|> select("Race", option: "Human")
+```
+
+And we'll get an event `"select-race"` with the payload `%{"value" =>
+"human"}`.
+
+## Complex labels
+
+If we have a complex label, you can use `exact: false` to target part of the
+label.
+
+### Example
+
+Given we have a form that contains this:
+
+```html
+<label for="race">Race <span>*</span></label>
+<select id="race" name="race">
+  <option value="human">Human</option>
+  <option value="elf">Elf</option>
+  <option value="dwarf">Dwarf</option>
+  <option value="orc">Orc</option>
+</select>
+```
+
+We can select an option:
+
+```elixir
+session
+|> select("Race", exact: false, option: "Human")
+```
+
+# `select`
+
+Like `select/3` but you can specify a select's CSS selector (in addition to
+the label).
+
+Helpful when you have multiple selects with the same label.
+
+For more on selecting options, see `select/3`.
+
+# `submit`
+
+Helper to submit a pre-filled form without clicking a button (see `fill_in/3`,
+`select/3`, `choose/3`, etc. for how to fill a form.)
+
+Forms are typically submitted by clicking buttons. But sometimes we want to
+emulate what happens when we submit a form hitting <Enter>. That's what this
+helper does.
+
+If the form is a LiveView form, and if the form has a `phx-submit` attribute
+defined, `submit/1` will trigger the `phx-submit` event. Otherwise, it'll
+submit the form regularly.
+
+If the form has a submit button with a `name` and `value`, `submit/1` will
+also include that data in the payload.
+
+## Example
+
+```elixir
+session
+|> fill_in("Name", with: "Aragorn")
+|> select("Human", from: "Race")
+|> choose("Email")
+|> submit()
+```
+
+# `uncheck`
+
+Uncheck a checkbox.
+
+In addition to targeting the checkbox via a `<label>`, you can also target it
+via `aria-label` or `aria-labelledby`. But note that the `<label>` takes
+precedence over its ARIA attributes, and `aria-label` takes precedence over
+`aria-labelledby`. This differs from the browser's accessible-name
+calculation.
+
+To check a checkbox, see `check/3`.
+
+## Options
+
+- `exact`: whether to match label text exactly. (Defaults to `true`)
+
+## Inside a form
+
+If the form is a LiveView form, and if the form has a `phx-change` attribute
+defined, `uncheck/3` will trigger the `phx-change` event.
+
+This can be followed by a `click_button/3` or `submit/1` to submit the form.
+
+### Example
+
+Given we have a form that contains this:
+
+```html
+<label for="admin">Admin</label>
+<input type="hidden" name="admin" value="off" />
+<input id="admin" type="checkbox" name="admin" value="on" />
+```
+
+We can uncheck the "Admin" option:
+
+```elixir
+session
+|> uncheck("Admin")
+```
+
+Note that unchecking a checkbox in HTML doesn't actually send any data to the
+server. That's why we have to have a hidden input with the default value (in
+the example above: `admin="off"`).
+
+## Outside of a form
+
+If the checkbox exists outside of a form, `uncheck/3` will trigger the
+`phx-click` event and send an empty (`%{}`) payload.
+
+### Example
+
+```html
+<label for="admin">Admin</label>
+<input phx-click="toggle-admin" id="admin" type="checkbox" name="admin" value="on" />
+```
+
+We can uncheck the "Admin" option:
+
+```elixir
+session
+|> uncheck("Admin")
+```
+
+And that will send a `"toggle-admin"` event with an empty map `%{}` as a
+payload.
+
+## Complex labels
+
+If we have a complex label, you can use `exact: false` to target part of the
+label.
+
+### Example
+
+Given we have a form that contains this:
+
+```html
+<label for="admin">Admin <span>*</span></label>
+<input type="hidden" name="admin" value="off" />
+<input id="admin" type="checkbox" name="admin" value="on" />
+```
+
+We can uncheck the "Admin" option:
+
+```elixir
+session
+|> uncheck("Admin", exact: false)
+```
+
+# `uncheck`
+
+Like `uncheck/3` but allows you to specify the checkbox's CSS selector.
+
+Helpful when you have multiple checkboxes with the same label. In those cases,
+you might need to specify the selector of the labeled element.
+
+Note that in those cases, the selector should point to the checkbox that is
+visible, not to the hidden input. For more, see `uncheck/2`.
+
+For more on unchecking boxes, see `uncheck/3`. To check a checkbox, see
+`check/3` and `check/4`.
+
+# `unwrap`
+
+Escape hatch to give users access to underlying "native" data structure.
+
+Once the unwrapped actions are performed, PhoenixTest will handle redirects
+(if any).
+
+- In LiveView tests, `unwrap/2` will pass the `view` that comes from
+Phoenix.LiveViewTest `live/2`. Your action _must_ return the result of a
+`render_*` LiveViewTest action.
+
+- In non-LiveView tests, `unwrap/2` will pass the `conn` struct. And your
+action _must_ return a `conn` struct.
+
+## Examples
+
+```elixir
+# in a LiveView
+session
+|> unwrap(fn view ->
+  view
+  |> LiveViewTest.element("#hook")
+  |> LiveViewTest.render_hook(:hook_event, %{name: "Legolas"})
+end)
+```
+
+```elixir
+# in a non-LiveView
+session
+|> unwrap(fn conn ->
+  conn
+  |> Phoenix.ConnTest.recycle()
+end)
+```
+
+# `upload`
+
+Upload a file.
+
+In addition to targeting the file input via a `<label>`, you can also target
+it via `aria-label` or `aria-labelledby`. But note that the `<label>` takes
+precedence over its ARIA attributes, and `aria-label` takes precedence over
+`aria-labelledby`. This differs from the browser's accessible-name
+calculation.
+
+If the form is a LiveView form, this will perform a live file upload and trigger the associated `phx-change` event.
+
+This can be followed by a `click_button/3` or `submit/1` to submit the form.
+
+> LiveView Note: If `allow_upload/3` has a `:progress` callback that issues a navigate or redirect,
+> it will be used instead of any navigate, redirect or patch from the upload's `phx-change` event.
+
+## Options
+
+- `exact`: whether to match the entire label. (Defaults to `true`)
+
+## Examples
+
+Given we have a form that contains this:
+
+```html
+<label for="avatar">Avatar</label>
+<input type="file" id="avatar" name="avatar" />
+```
+
+We can upload a file:
+
+```elixir
+session
+|> upload("Avatar", "/path/to/file")
+```
+
+## Complex labels
+
+If we have a complex label, you can use `exact: false` to target part of the
+label.
+
+### Example
+
+Given the following:
+
+```html
+<label for="avatar">Avatar <span>*</span></label>
+<input type="file" id="avatar" name="avatar" />
+```
+
+We can upload a file:
+
+```elixir
+session
+|> upload("Avatar", "/path/to/file", exact: false)
+```
+
+# `upload`
+
+Like `upload/4` but you can specify an input's selector (in addition to the
+label).
+
+Helpful in cases when you have uploads with the same label on the same form.
+
+For more, see `upload/4`.
+
+# `visit`
+
+Entrypoint to create a session.
+
+`visit/2` takes a `Plug.Conn` struct and the path to visit.
+
+It returns a `session` which the rest of the `PhoenixTest` functions can use.
+
+Note that `visit/2` is smart enough to know if the page you're visiting is a
+LiveView or a static view. You don't need to worry about which type of page
+you're visiting.
+
+# `within`
+
+Helper to scope filling out form within a given selector or targeting child
+LiveViews.
+
+## Examples
+
+For example, you can use this if you have more than one form on a page with
+similar labels.
+
+Given we have some HTML like this:
+
+```html
+<form id="user-form" action="/users" method="post">
+  <label for="name">Name</label>
+  <input id="name" name="name"/>
+
+  <input type="hidden" name="admin" value="off" />
+  <label for="admin">Admin</label>
+  <input id="admin" type="checkbox" name="admin" value="on" />
+</form>
+
+# and assume another form with "Name" and "Admin" labels
+```
+
+We can fill the form like this:
+
+```elixir
+session
+|> within("#user-form", fn session ->
+  session
+  |> fill_in("Name", with: "Aragorn")
+  |> check("Admin")
+end)
+```
+
+---
+
+You can also use `within/2` to scope actions to a child LiveView (i.e.
+something rendered via
+[`live_render/3`](https://hexdocs.pm/phoenix_live_view/Phoenix.Component.html#live_render/3)).
+
+NOTE: that child LiveViews can _only_ be targeted by ID, so make sure the
+selector you pass to `within/2` is an ID.
+
+```elixir
+session
+|> within("#child-live-view", fn session ->
+  session
+  |> fill_in("Email", with: "someone@example.com")
+  |> click_button("Save") # <- event triggered will be sent to child LiveView
+end)
+```
+
+# `assert_has`
+
+Assert helper to ensure an element with given CSS selector is present.
+
+It'll raise an error if no elements are found, but it will _not_ raise if more
+than one matching element is found.
+
+If you want to specify the content of the element, use `assert_has/3`.
+
+## Examples
+
+```elixir
+# assert there's an h1
+assert_has(session, "h1")
+
+# assert there's an element with ID "user"
+assert_has(session, "#user")
+```
+
+# `assert_has`
+
+Assertion helper to ensure an element with given CSS selector and contents is
+found
+
+It'll raise an error if no elements are found, but it will _not_ raise if more
+than one matching element is found (unless `:count` option is used).
+
+You can assert an element's contents using `:text`, assert a field's value
+using `:value` (with an optional `:label`), assert a `select` element's
+selected option text using `:selected`, or assert a checkbox/radio's checked
+state using `:checked` (with an optional `:label`).
+
+NOTE that you cannot specify more than one of `:text`, `:value`, `:selected`,
+and `:checked` as options.
+
+The `:text`, `:value`, or `:selected` option can be a binary or anything for which
+there is an implementation of the `Phoenix.HTML.Safe` protocol. PhoenixTest
+uses that protocol to convert the argument to a binary then looks for the
+converted value.
+
+## Options
+
+- `text`: the text contents to look for.
+
+- `value`: the element's value to look for.
+
+- `selected`: the selected option's text to look for on a `select`.
+
+- `checked`: whether the radio or checkbox form field is checked.
+  Pass `true` to look for a checked field, or `false` to look for an
+  unchecked field.
+
+- `label`: the label associated to the form field with `value`, `selected`, or
+`checked`. The association can be a `<label>` element (wrapping the field or
+pointing to it via `for`/`id`), or an accessible name provided by the field's
+`aria-label` or `aria-labelledby` attribute. But note that a `<label>` takes
+precedence over its ARIA attributes, and `aria-label` takes precedence over
+`aria-labelledby`. This differs from the browser's accessible-name calculation.
+
+- `exact`: by default `assert_has/3` will perform a substring match (e.g. `a
+=~ b`). That makes it easier to assert text within HTML elements that also
+contain other HTML elements. But sometimes we want to assert the exact text is
+present. For that, use `exact: true`. Note: when used with `:value` or
+`:selected`, the exactness applies to the label's text, not the field value
+or selected option. (defaults to `false`)
+
+- `count`: the number of items you expect to match CSS selector (and `text` or
+`value` if provided)
+
+- `at`: (integer) position of the element to be asserted against
+
+- `timeout`: currently only works with LiveViews. If you pass a positive
+`timeout`, PhoenixTest will wait for any async operations (i.e. LiveView's
+`assign_async` and `start_async`) and handle redirects that happen as result
+of a `handle_async` or `handle_info`. (defaults to `0`)
+
+## Examples
+
+```elixir
+# assert there's an element with ID "user" and text "Aragorn"
+assert_has(session, "#user", "Aragorn")
+  # ^ succeeds if text found is "Aragorn" or "Aragorn, Son of Arathorn"
+
+# assert there's an element with ID "user" and text "Aragorn"
+assert_has(session, "#user", text: "Aragorn", exact: true)
+  # ^ succeeds only if text found is "Aragorn". Fails if finds "Aragorn, Son of Arathorn"
+
+# assert there's an input with value "Frodo"
+assert_has(session, "input", value: "Frodo")
+
+# assert there's an input with value "Frodo" labeled by "Hobbit"
+assert_has(session, "input", value: "Frodo", label: "Hobbit")
+
+# assert there's a select labeled by "Race" with the "Elf" option selected
+assert_has(session, "select", selected: "Elf", label: "Race")
+
+# assert there's a checked checkbox or radio button labeled by "Frodo"
+assert_has(session, "input", checked: true, label: "Frodo")
+
+# assert there's an unchecked checkbox or radio button labeled by "Sam"
+assert_has(session, "input", checked: false, label: "Sam")
+
+# assert there are two elements with class "posts"
+assert_has(session, ".posts", count: 2)
+
+# assert there are two elements with class "posts" and text "Hello"
+assert_has(session, ".posts", text: "Hello", count: 2)
+
+# assert the second element in the list of ".posts" has text "Hello"
+assert_has(session, ".posts", at: 2, text: "Hello")
+
+# assert the h1 has text "Hello" in the next 100ms (perhaps as a result of an
+# async assign)
+assert_has(session, "h1", text: "Hello", timeout: 100)
+```
+
+# `assert_has`
+
+Assertion helper to find element with CSS selector, text content, and additional options.
+
+This is a convenience wrapper to allow passing text as a positional argument along with additional options.
+
+## Examples
+
+```elixir
+# assert there's an h1 with text "Hello" appearing exactly twice
+assert_has(session, "h1", "Hello", count: 2)
+
+# assert there's an element with exact text match
+assert_has(session, "#user", "Aragorn", exact: true)
+```
+
+# `assert_path`
+
+Assert helper to verify current request path. Takes optional `query_params`
+and `timeout` options.
+
+> ### Note on Live Patch Implementation {: .info}
+>
+> Capturing the current path in live patches relies on message passing and
+could, therefore, be subject to intermittent failures. Please open an issue if
+you see intermittent failures when using `assert_path` with live patches so we
+can improve the implementation.
+
+## Options
+
+- `query_params`: map of query params to match exactly
+
+- `timeout`: currently only works with LiveViews. If you pass a positive
+`timeout`, PhoenixTest will wait for async navigation and patch updates before
+asserting on the current path. (defaults to `0`)
+
+## Examples
+
+```elixir
+# assert we're at /users
+conn
+|> visit("/users")
+|> assert_path("/users")
+
+# assert we're at /users?name=frodo
+conn
+|> visit("/users")
+|> assert_path("/users", query_params: %{name: "frodo"})
+
+# assert we're at a path with a wildcard. The wildcard represents a single part of the path.
+conn
+|> visit("/users")
+|> click_link("Any User")
+|> assert_path("/users/*/profile")
+
+# assert the path after an async patch or navigation
+conn
+|> visit("/live/async_page")
+|> click_button("Async patch!")
+|> assert_path("/live/async_page", query_params: %{patched: "true"}, timeout: 250)
+```
+
+# `assert_path`
+
+Same as `assert_path/2` but takes optional `query_params` and `timeout`
+options.
+
+# `refute_has`
+
+Opposite of `assert_has/2` helper. Verifies that element with
+given CSS selector is _not_ present.
+
+It'll raise an error if any elements that match selector are found.
+
+If you want to specify the content of the element, use `refute_has/3`.
+
+## Example
+
+```elixir
+# refute there's an h1
+refute_has(session, "h1")
+
+# refute there's an element with ID "user"
+refute_has(session, "#user")
+```
+
+# `refute_has`
+
+Opposite of `assert_has/3` helper. Verifies that element with
+given CSS selector and content is _not_ present.
+
+It'll raise an error if any elements that match selector and options.
+
+NOTE that you cannot specify more than one of `:text`, `:value`, `:selected`,
+and `:checked` as options.
+
+The `:text`, `:value`, or `:selected` option can be a binary or anything for which
+there is an implementation of the `Phoenix.HTML.Safe` protocol. PhoenixTest
+uses that protocol to convert the argument to a binary, then looks for the
+converted value.
+
+## Options
+
+- `text`: the text filter to look for.
+
+- `value`: the element's value to look for.
+
+- `selected`: the selected option's text to look for on a `select`.
+
+- `checked`: whether the checkbox or radio button form field is checked.
+  Pass `true` to look for a checked field or `false` to look for an
+  unchecked field.
+
+- `label`: the label associated to the form field with `value`, `selected`, or
+`checked`. The association can be a `<label>` element (wrapping the field or
+pointing to it via `for`/`id`), or an accessible name provided by the field's
+`aria-label` or `aria-labelledby` attribute. But note that a `<label>` takes
+precedence over its ARIA attributes, and `aria-label` takes precedence over
+`aria-labelledby`. This differs from the browser's accessible-name calculation.
+
+- `exact`: by default `refute_has/3` will perform a substring match (e.g. `a
+=~ b`). That makes it easier to refute text within HTML elements that also
+contain other HTML elements. But sometimes we want to refute the exact text is
+absent. For that, use `exact: true`. Note: when used with `:value` or
+`:selected`, the exactness applies to the label's text, not the field value
+or selected option. (defaults to `false`)
+
+- `count`: the number of items you're expecting _should not_ match the CSS
+selector (and `text` or `value` if provided)
+
+- `at`: (integer) position of the element to be refuted against
+
+- `timeout`: experimental option that only works with LiveViews. If you pass a
+positive `timeout`, PhoenixTest will wait for any async operations (i.e.
+LiveView's `assign_async` and `start_async`) and handle redirects that happen
+as result of a `handle_async` or `handle_info`. (defaults to `0`)
+
+## Examples
+
+```elixir
+# refute there's an element with ID "user" and text "Aragorn"
+refute_has(session, "#user", "Aragorn")
+
+# refute there's an element with ID "user" and exact text "Aragorn"
+refute_has(session, "#user", text: "Aragorn", exact: true)
+
+# refute there's an input with value "Frodo"
+refute_has(session, "input", value: "Frodo")
+
+# refute there's an input with value "Frodo" and label "Hobbit"
+refute_has(session, "input", value: "Frodo", label: "Hobbit")
+
+# refute there's a select labeled by "Race" with the "Human" option selected
+refute_has(session, "select", selected: "Human", label: "Race")
+
+# refute there's a checked checkbox or radio button labeled by "Sam"
+refute_has(session, "input", checked: true, label: "Sam")
+
+# refute there's an unchecked checkbox or radio button labeled by "Frodo"
+refute_has(session, "input", checked: false, label: "Frodo")
+
+# refute there are two elements with class "posts" (less or more will not raise)
+refute_has(session, ".posts", count: 2)
+
+# refute there are two elements with class "posts" and text "Hello"
+refute_has(session, ".posts", text: "Hello", count: 2)
+
+# refute the second element with class "posts" has text "Hello"
+refute_has(session, ".posts", at: 2, text: "Hello")
+
+# refute the "h1" has text "Hello" in the next 100ms (perhaps as a result of
+# an async assign)
+refute_has(session, "h1", text: "Hello", timeout: 100)
+```
+
+# `refute_has`
+
+Opposite of `assert_has/4` helper. Verifies that element with
+given CSS selector and text content is _not_ present.
+
+This is a convenience wrapper that allows passing text as a positional argument
+along with additional options.
+
+## Examples
+
+```elixir
+# refute there are two h1s with text "Hello"
+refute_has(session, "h1", "Hello", count: 2)
+
+# refute there's an element with exact text match
+refute_has(session, "#user", "Aragorn", exact: true)
+```
+
+# `refute_path`
+
+Verifies current request path is NOT the one provided. Takes an optional
+`query_params` map for more specificity.
+
+> ### Note on Live Patch Implementation {: .info}
+>
+> Capturing the current path in live patches relies on message passing and
+could, therefore, be subject to intermittent failures. Please open an issue if
+you see intermittent failures when using `refute_path` with live patches so we
+can improve the implementation.
+
+## Options
+
+- `query_params`: map of query params to refute
+
+- `timeout`: currently only works with LiveViews. If you pass a positive
+`timeout`, PhoenixTest will wait for async navigation and patch updates before
+refuting the current path. (defaults to `0`)
+
+## Examples
+
+```elixir
+# refute we're at /posts
+conn
+|> visit("/users")
+|> refute_path("/posts")
+
+# refute we're at /users?name=frodo
+conn
+|> visit("/users?name=aragorn")
+|> refute_path("/users", query_params: %{name: "frodo"})
+```
+
+# `refute_path`
+
+Same as `refute_path/2` but takes optional `query_params` and `timeout`
+options for more specific refutation.
+
+---
+
+*Consult [api-reference.md](api-reference.md) for complete listing*

@@ -1,0 +1,288 @@
+<Layouts.flash_group flash={@flash} />
+
+<div class="w-full bg-carbon text-ash selection:bg-forest-wash selection:text-signal-green">
+  <!-- Top Notification Banner -->
+  <aside class="w-full border-b border-moss-border bg-carbon px-4 py-2.5 text-center text-xs sm:text-sm font-text tracking-[0.025em] text-ash">
+    <span class="mr-2">✨</span>
+    <span>
+      Introducing Depot Design System for Phoenix: developer-console aesthetics built on Tailwind v4.
+    </span>
+    <a
+      href="https://hexdocs.pm/phoenix/overview.html"
+      class="ml-2 font-medium text-link-blue hover:underline"
+    >
+      Read documentation &rarr;
+    </a>
+  </aside>
+  
+<!-- Navigation Header -->
+  <header class="sticky top-0 z-30 border-b border-basalt bg-carbon/90 backdrop-blur px-4 py-3 sm:px-6 lg:px-8">
+    <div class="mx-auto flex max-w-[1200px] items-center justify-between">
+      <div class="flex items-center gap-3">
+        <a
+          href="/"
+          class="flex items-center gap-2 font-display text-base font-semibold tracking-[-0.025em] text-chalk"
+        >
+          <span class="inline-block h-2 w-2 rounded-full bg-signal-green"></span> Depot
+        </a>
+        <span class="rounded-xs bg-fern-ground border border-moss-border px-1.5 py-0.5 font-mono text-xs uppercase tracking-[0.025em] text-signal-green">
+          v{Application.spec(:phoenix, :vsn)}
+        </span>
+      </div>
+
+      <nav class="hidden md:flex items-center space-x-6 text-sm font-medium font-text tracking-[0.025em] text-fog">
+        <a
+          href="https://hexdocs.pm/phoenix/overview.html"
+          class="hover:text-ash transition-colors"
+        >
+          Guides &amp; Docs
+        </a>
+        <a
+          href="https://github.com/phoenixframework/phoenix"
+          class="hover:text-ash transition-colors"
+        >
+          Source Code
+        </a>
+        <a
+          href={"https://github.com/phoenixframework/phoenix/blob/v#{Application.spec(:phoenix, :vsn)}/CHANGELOG.md"}
+          class="hover:text-ash transition-colors"
+        >
+          Changelog
+        </a>
+      </nav>
+
+      <div class="flex items-center gap-3">
+        <Layouts.theme_toggle />
+        <.button
+          variant="primary"
+          href="https://hexdocs.pm/phoenix/overview.html"
+        >
+          Get started &rarr;
+        </.button>
+      </div>
+    </div>
+  </header>
+  
+<!-- Main Hero & Content -->
+  <main class="mx-auto max-w-[1200px] px-4 sm:px-6 lg:px-8 py-16 sm:py-24">
+    <!-- Hero Section -->
+    <section class="max-w-3xl">
+      <div class="mb-4">
+        <span class="inline-flex items-center rounded-xs bg-fern-ground border border-moss-border px-2.5 py-1 text-xs uppercase font-medium tracking-[0.025em] text-signal-green">
+          Developer Console Architecture
+        </span>
+      </div>
+
+      <h1 class="font-display text-4xl sm:text-6xl font-bold tracking-[-0.025em] text-chalk leading-tight">
+        Phoenix Framework
+      </h1>
+
+      <p class="mt-4 font-display text-xl sm:text-2xl font-semibold tracking-[-0.015em] text-ash">
+        Peace of mind from prototype to production.
+      </p>
+
+      <p class="mt-4 text-base leading-relaxed text-silver font-text tracking-[0.025em] max-w-2xl">
+        Build rich, interactive web applications quickly, with less code and fewer moving parts. Craft APIs, HTML5 apps, and real-time LiveView experiences with zero compromise.
+      </p>
+
+      <div class="mt-8 flex flex-wrap items-center gap-4">
+        <.button
+          variant="primary"
+          href="https://hexdocs.pm/phoenix/overview.html"
+        >
+          Get started &rarr;
+        </.button>
+        <.button href="https://github.com/phoenixframework/phoenix">
+          Source Code
+        </.button>
+      </div>
+    </section>
+    
+<!-- CI Workflow Comparison Panel -->
+    <section class="mt-16 rounded-md bg-graphite border border-basalt shadow-subtle overflow-hidden">
+      <div class="flex items-center justify-between border-b border-basalt bg-obsidian px-4 py-3">
+        <div class="flex items-center gap-2">
+          <span class="font-mono text-xs uppercase tracking-[0.025em] text-fog">
+            CI Workflow Comparison
+          </span>
+        </div>
+        <div class="flex items-center gap-2">
+          <span class="h-2 w-2 rounded-full bg-signal-green"></span>
+          <span class="font-mono text-xs text-signal-green tracking-[0.025em]">OPTIMIZED</span>
+        </div>
+      </div>
+
+      <div class="grid grid-cols-1 md:grid-cols-2 divide-y md:divide-y-0 md:divide-x divide-basalt font-mono text-sm">
+        <!-- Standard CI Column -->
+        <div class="p-6 space-y-4">
+          <div class="flex items-center justify-between text-xs uppercase tracking-[0.025em] text-fog">
+            <span>Standard CI Runner</span>
+            <span>Elapsed: 4m 12s</span>
+          </div>
+          <div class="space-y-2.5">
+            <div class="flex items-center justify-between text-silver">
+              <span class="flex items-center gap-2 text-ash">
+                <span class="h-1.5 w-1.5 rounded-full bg-fog"></span> mix deps.get
+              </span>
+              <span class="text-fog">42.1s</span>
+            </div>
+            <div class="flex items-center justify-between text-silver">
+              <span class="flex items-center gap-2 text-ash">
+                <span class="h-1.5 w-1.5 rounded-full bg-fog"></span> mix compile
+              </span>
+              <span class="text-fog">1m 18s</span>
+            </div>
+            <div class="flex items-center justify-between text-silver">
+              <span class="flex items-center gap-2 text-ash">
+                <span class="h-1.5 w-1.5 rounded-full bg-fog"></span> mix assets.deploy
+              </span>
+              <span class="text-fog">35.4s</span>
+            </div>
+            <div class="flex items-center justify-between text-silver">
+              <span class="flex items-center gap-2 text-ash">
+                <span class="h-1.5 w-1.5 rounded-full bg-fog"></span> mix test
+              </span>
+              <span class="text-fog">1m 36s</span>
+            </div>
+          </div>
+        </div>
+        
+<!-- Depot CI Column -->
+        <div class="p-6 space-y-4 bg-graphite/60">
+          <div class="flex items-center justify-between text-xs uppercase tracking-[0.025em] text-signal-green">
+            <span>Depot Container Cache</span>
+            <span>Elapsed: 18.2s</span>
+          </div>
+          <div class="space-y-2.5">
+            <div class="flex items-center justify-between text-silver">
+              <span class="flex items-center gap-2 text-ash">
+                <span class="h-1.5 w-1.5 rounded-full bg-signal-green"></span> mix deps.get
+              </span>
+              <span class="text-signal-green">1.2s (cached)</span>
+            </div>
+            <div class="flex items-center justify-between text-silver">
+              <span class="flex items-center gap-2 text-ash">
+                <span class="h-1.5 w-1.5 rounded-full bg-signal-green"></span> mix compile
+              </span>
+              <span class="text-signal-green">4.8s (cached)</span>
+            </div>
+            <div class="flex items-center justify-between text-silver">
+              <span class="flex items-center gap-2 text-ash">
+                <span class="h-1.5 w-1.5 rounded-full bg-signal-green"></span> mix assets.deploy
+              </span>
+              <span class="text-signal-green">2.1s</span>
+            </div>
+            <div class="flex items-center justify-between text-silver">
+              <span class="flex items-center gap-2 text-ash">
+                <span class="h-1.5 w-1.5 rounded-full bg-signal-green"></span> mix test
+              </span>
+              <span class="text-signal-green">10.1s</span>
+            </div>
+          </div>
+        </div>
+      </div>
+    </section>
+    
+<!-- 3-Column Feature Cards Grid -->
+    <section class="mt-16 grid grid-cols-1 md:grid-cols-3 gap-6">
+      <div class="rounded-md bg-graphite border border-basalt p-6 shadow-subtle flex flex-col justify-between">
+        <div>
+          <span class="text-xs uppercase font-medium tracking-[0.025em] text-signal-green font-text">
+            Hot Code Reloading
+          </span>
+          <h3 class="mt-3 font-display text-xl font-semibold tracking-[-0.015em] text-chalk">
+            Instant Developer Loop
+          </h3>
+          <p class="mt-2 text-sm leading-relaxed text-silver font-text tracking-[0.025em]">
+            Recompile templates, controllers, and LiveViews instantly with sub-100ms asset updates in local dev.
+          </p>
+        </div>
+        <div class="mt-6 pt-4 border-t border-basalt/60">
+          <a
+            href="https://hexdocs.pm/phoenix/overview.html"
+            class="inline-flex items-center text-xs font-mono text-link-blue hover:underline"
+          >
+            Inspect live reload &rarr;
+          </a>
+        </div>
+      </div>
+
+      <div class="rounded-md bg-graphite border border-basalt p-6 shadow-subtle flex flex-col justify-between">
+        <div>
+          <span class="text-xs uppercase font-medium tracking-[0.025em] text-fog font-text">
+            BEAM Core
+          </span>
+          <h3 class="mt-3 font-display text-xl font-semibold tracking-[-0.015em] text-chalk">
+            Concurrency &amp; Fault Tolerance
+          </h3>
+          <p class="mt-2 text-sm leading-relaxed text-silver font-text tracking-[0.025em]">
+            Scale to millions of concurrent socket connections per host with isolated, lightweight process supervision.
+          </p>
+        </div>
+        <div class="mt-6 pt-4 border-t border-basalt/60">
+          <a
+            href="https://elixir-lang.org"
+            class="inline-flex items-center text-xs font-mono text-link-blue hover:underline"
+          >
+            Explore BEAM concurrency &rarr;
+          </a>
+        </div>
+      </div>
+
+      <div class="rounded-md bg-graphite border border-basalt p-6 shadow-subtle flex flex-col justify-between">
+        <div>
+          <span class="text-xs uppercase font-medium tracking-[0.025em] text-fog font-text">
+            LiveView
+          </span>
+          <h3 class="mt-3 font-display text-xl font-semibold tracking-[-0.015em] text-chalk">
+            Real-Time Without Client Bloat
+          </h3>
+          <p class="mt-2 text-sm leading-relaxed text-silver font-text tracking-[0.025em]">
+            Build reactive, rich single-page experiences without JavaScript build cascades or API glue code.
+          </p>
+        </div>
+        <div class="mt-6 pt-4 border-t border-basalt/60">
+          <a
+            href="https://hexdocs.pm/phoenix_live_view"
+            class="inline-flex items-center text-xs font-mono text-link-blue hover:underline"
+          >
+            Learn LiveView &rarr;
+          </a>
+        </div>
+      </div>
+    </section>
+    
+<!-- Community & Ecosystem Flat Grid -->
+    <section class="mt-16 pt-16 border-t border-basalt">
+      <div class="text-xs uppercase font-mono tracking-[0.025em] text-fog mb-6">
+        Ecosystem &amp; Community
+      </div>
+      <div class="grid grid-cols-2 sm:grid-cols-4 gap-4">
+        <a
+          href="https://elixirforum.com"
+          class="flex items-center justify-center rounded-md border border-basalt bg-graphite/40 py-4 px-3 text-sm font-text tracking-[0.025em] text-ash hover:border-pewter hover:bg-graphite transition-all"
+        >
+          Elixir Forum
+        </a>
+        <a
+          href="https://discord.gg/elixir"
+          class="flex items-center justify-center rounded-md border border-basalt bg-graphite/40 py-4 px-3 text-sm font-text tracking-[0.025em] text-ash hover:border-pewter hover:bg-graphite transition-all"
+        >
+          Discord Server
+        </a>
+        <a
+          href="https://elixir-slack.community/"
+          class="flex items-center justify-center rounded-md border border-basalt bg-graphite/40 py-4 px-3 text-sm font-text tracking-[0.025em] text-ash hover:border-pewter hover:bg-graphite transition-all"
+        >
+          Slack Community
+        </a>
+        <a
+          href="https://fly.io/docs/elixir/getting-started/"
+          class="flex items-center justify-center rounded-md border border-basalt bg-graphite/40 py-4 px-3 text-sm font-text tracking-[0.025em] text-ash hover:border-pewter hover:bg-graphite transition-all"
+        >
+          Fly.io Deployment
+        </a>
+      </div>
+    </section>
+  </main>
+</div>

@@ -1,0 +1,64 @@
+/* See the Tailwind configuration guide for advanced usage
+   https://tailwindcss.com/docs/configuration */
+
+@import "tailwindcss" source(none);
+@source "../css";
+@source "../js";
+@source "../../lib/alur_web";
+
+/* A Tailwind plugin that makes "hero-#{ICON}" classes available.
+   The heroicons installation itself is managed by your mix.exs */
+@plugin "../vendor/heroicons";
+
+
+/* Add variants based on LiveView classes */
+@custom-variant phx-click-loading (.phx-click-loading&, .phx-click-loading &);
+@custom-variant phx-submit-loading (.phx-submit-loading&, .phx-submit-loading &);
+@custom-variant phx-change-loading (.phx-change-loading&, .phx-change-loading &);
+
+/* Use the data attribute for dark mode or system preference */
+@custom-variant dark (&:where([data-theme=dark], [data-theme=dark] *), @media (prefers-color-scheme: dark) { &:where(:not([data-theme=light]), :not([data-theme=light]) *) });
+
+/* Make LiveView wrapper divs transparent for layout */
+[data-phx-session], [data-phx-teleported-src] { display: contents }
+
+/* This file is for your main application CSS */
+
+@theme {
+  /* Colors */
+  --color-signal-green: #71d083;
+  --color-led-green: #366740;
+  --color-moss-border: #2d5736;
+  --color-forest-wash: #1d3a24;
+  --color-fern-ground: #1b2a1e;
+  --color-link-blue: #70b8ff;
+  --color-lilac-accent: #baa7ff;
+  --color-plum-edge: #291f43;
+  --color-iris-border: #473876;
+  --color-lavender-mist: #e2ddfe;
+  --color-carbon: #04040b;
+  --color-graphite: #121113;
+  --color-obsidian: #1a191b;
+  --color-slate: #232225;
+  --color-basalt: #2b292d;
+  --color-iron: #323035;
+  --color-pewter: #3c393f;
+  --color-steel: #49474e;
+  --color-fog: #7c7a85;
+  --color-silver: #b5b2bc;
+  --color-ash: #eeeef0;
+  --color-chalk: #e5e5e5;
+
+  /* Typography */
+  --font-display: 'Red Hat Display Variable', 'Red Hat Display', ui-sans-serif, system-ui, -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif;
+  --font-text: 'Red Hat Text Variable', 'Red Hat Text', ui-sans-serif, system-ui, -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif;
+  --font-mono: 'Red Hat Mono Variable', 'Red Hat Mono', ui-monospace, SFMono-Regular, Menlo, Monaco, Consolas, monospace;
+
+  /* Border Radius */
+  --radius-xs: 2px;
+  --radius-sm: 2px;
+  --radius-md: 6px;
+
+  /* Shadows */
+  --shadow-subtle: rgba(255, 255, 255, 0.06) 0px 1px 0px 0px inset;
+}
