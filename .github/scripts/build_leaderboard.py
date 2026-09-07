@@ -412,44 +412,29 @@ def collect_branch_data(branch_info, cwd=None):
     }
 
 
-def compute_ranks_and_badges(runs):
-    """Sort and assign badges (Fastest UI, Cleanest A11y, etc.) across all runs."""
+def attach_run_metadata(runs):
+    """Assign objective metadata tags and sort runs alphabetically by branch."""
     if not runs:
         return runs
 
-    def sort_key(run):
-        has_rep = 1 if run.get("has_reports", True) else 0
-        comp = run["execution"]["completion_rate"]
-        mean_ready = run["perf"]["mean_ready_ms"] or 9999.0
-        a11y_v = run["a11y"]["total_violations"]
-        return (-has_rep, -comp, mean_ready, a11y_v)
-
-    runs.sort(key=sort_key)
-
-    for i, run in enumerate(runs, start=1):
-        run["rank"] = i
-
-    runs_with_perf = [r for r in runs if r["perf"]["mean_ready_ms"] is not None]
-    if runs_with_perf:
-        fastest_run = min(runs_with_perf, key=lambda r: r["perf"]["mean_ready_ms"])
-        fastest_run["badges"].append({"type": "green", "text": "⚡ Fastest UI"})
-
-    runs_with_a11y = [r for r in runs if r["a11y"]["screen_count"] > 0]
-    if runs_with_a11y:
-        cleanest_a11y = min(runs_with_a11y, key=lambda r: (r["a11y"]["total_violations"], r["a11y"]["total_affected_nodes"]))
-        cleanest_a11y["badges"].append({"type": "violet", "text": "🛡️ Cleanest A11y"})
+    # Sort runs alphabetically by branch name (no arbitrary ranking or medals)
+    runs.sort(key=lambda r: r["branch"])
 
     for r in runs:
         if r["git"]["has_phx_18_scope"]:
-            r["badges"].append({"type": "blue", "text": "🔥 Phx 1.8 Scoped"})
+            r["badges"].append({"type": "blue", "text": "Phx 1.8 Scoped"})
         if r["git"]["test_file_count"] >= 30:
-            r["badges"].append({"type": "neutral", "text": "📦 Modular Tests"})
+            r["badges"].append({"type": "neutral", "text": "Modular Tests"})
         if r["execution"]["completion_rate"] == 100.0:
-            r["badges"].append({"type": "green-outline", "text": "✓ 100% PRD"})
+            r["badges"].append({"type": "neutral", "text": "100% PRD"})
         if not r.get("has_reports", True):
-            r["badges"].append({"type": "neutral", "text": "⏳ Pending Report"})
+            r["badges"].append({"type": "neutral", "text": "Pending Report"})
 
     return runs
+
+
+# Backwards compatibility alias
+compute_ranks_and_badges = attach_run_metadata
 
 
 # Helper rendering functions
@@ -528,8 +513,6 @@ def render_html_page(runs, generated_at):
     # Pre-render rows
     scorecard_rows = []
     for r in runs:
-        rank_val = r.get("rank", "-")
-        rank_cls = "rank-pill rank-1" if rank_val == 1 else "rank-pill"
         title_esc = html.escape(r["title"])
         branch_esc = html.escape(r["branch"])
         comp_str = f"{r['execution']['completed_milestones']}/{r['execution']['total_milestones']}"
@@ -550,7 +533,7 @@ def render_html_page(runs, generated_at):
             cost_sub = ""
         
         ready_cell = f"{r['perf']['mean_ready_ms']} ms" if r['perf']['mean_ready_ms'] else "—"
-        ready_cls = "mono-cell text-green" if (r.get("rank") == 1 and r['perf']['mean_ready_ms']) else "mono-cell"
+        ready_cls = "mono-cell"
 
         a11y_str = f"{r['a11y']['total_violations']} viols" if r.get("has_reports", True) else "—"
         a11y_sub = f"({r['a11y']['total_affected_nodes']} nodes)" if r.get("has_reports", True) else ""
@@ -562,7 +545,6 @@ def render_html_page(runs, generated_at):
 
         scorecard_rows.append(f'''
         <tr data-name="{title_esc.lower()} {branch_esc.lower()}">
-          <td><span class="{rank_cls}">{rank_val}</span></td>
           <td>
             <div style="font-weight: 600; color: var(--color-chalk);">{title_esc}</div>
             <div class="mono-cell text-fog" style="font-size: 11px;">branch: {branch_esc}</div>
@@ -720,7 +702,7 @@ def render_html_page(runs, generated_at):
 <head>
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
-  <title>Evalcode // Coding Agent Leaderboard</title>
+  <title>Evalcode // Coding Agent Benchmark</title>
   <link rel="preconnect" href="https://fonts.googleapis.com">
   <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
   <link href="https://fonts.googleapis.com/css2?family=Red+Hat+Display:wght@600;700&family=Red+Hat+Mono:wght@400;500&family=Red+Hat+Text:wght@400;500;600&display=swap" rel="stylesheet">
@@ -1068,26 +1050,6 @@ def render_html_page(runs, generated_at):
       color: var(--color-fog);
     }}
 
-    .rank-pill {{
-      display: inline-flex;
-      align-items: center;
-      justify-content: center;
-      width: 26px;
-      height: 26px;
-      border-radius: 4px;
-      font-family: var(--font-mono);
-      font-weight: 600;
-      font-size: 13px;
-      background: var(--color-obsidian);
-      border: 1px solid var(--color-basalt);
-      color: var(--color-silver);
-    }}
-    .rank-1 {{
-      border-color: var(--color-moss-border);
-      background: var(--color-fern-ground);
-      color: var(--color-signal-green);
-    }}
-
     .scenario-grid {{
       display: grid;
       grid-template-columns: repeat(auto-fit, minmax(260px, 1fr));
@@ -1267,7 +1229,7 @@ def render_html_page(runs, generated_at):
         <a href="#" class="brand-logo">
           <span class="led-dot"></span> Evalcode
         </a>
-        <span class="tag">LEADERBOARD</span>
+        <span class="tag">BENCHMARK</span>
       </div>
       <div>
         <a href="data/runs.json" class="btn-outline" download>
@@ -1282,7 +1244,7 @@ def render_html_page(runs, generated_at):
     
     <section class="hero">
       <div class="hero-eyebrow">Autonomous Coding Agent Benchmark</div>
-      <h1>Personal Benchmark Leaderboard</h1>
+      <h1>Personal Benchmark Results</h1>
       <p>
         Evaluating AI coding agents on full-stack Phoenix 1.8 + Vue 3 CRM synthesis across 8 milestones (M1–M8).
         Every row represents an isolated autonomous run with measured UI latency, accessibility audits, and test coverage.
@@ -1306,7 +1268,7 @@ def render_html_page(runs, generated_at):
         <div class="kpi-subtext">DeepSeek $1.37 &bull; Gemini $1.92 est</div>
       </div>
       <div class="kpi-card">
-        <div class="kpi-label">Fastest UI Ready</div>
+        <div class="kpi-label">deal-open Ready Latency</div>
         <div class="kpi-value text-green">{best_ready}</div>
         <div class="kpi-subtext">deal-open scenario median</div>
       </div>
@@ -1323,7 +1285,7 @@ def render_html_page(runs, generated_at):
     </section>
 
     <nav class="tabs-bar">
-      <button class="tab-button active" onclick="switchTab('overview', this)">Overview Scorecard</button>
+      <button class="tab-button active" onclick="switchTab('overview', this)">Overview Matrix</button>
       <button class="tab-button" onclick="switchTab('cost', this)">Tokens &amp; Cost</button>
       <button class="tab-button" onclick="switchTab('perf', this)">Performance Arena</button>
       <button class="tab-button" onclick="switchTab('a11y', this)">Accessibility Matrix</button>
@@ -1336,27 +1298,26 @@ def render_html_page(runs, generated_at):
       <div class="filter-meta">Auto-updated: {generated_at} UTC</div>
     </div>
 
-    <!-- TAB 1: OVERVIEW SCORECARD -->
+    <!-- TAB 1: OVERVIEW MATRIX -->
     <div id="tab-overview" class="tab-content active">
       <div class="panel">
         <div class="panel-header">
-          <span class="panel-title">Overall Agent Rankings &amp; Metrics</span>
+          <span class="panel-title">Agent Evaluation &amp; Resource Metrics</span>
           <span class="font-mono text-xs text-fog">Click headers to sort</span>
         </div>
         <div class="table-responsive">
           <table class="depot-table" id="leaderboardTable">
             <thead>
               <tr>
-                <th onclick="sortTable(0)">Rank</th>
-                <th onclick="sortTable(1)">Agent / Model</th>
-                <th onclick="sortTable(2)">Milestones</th>
-                <th onclick="sortTable(3)">Tokens</th>
-                <th onclick="sortTable(4)">Cost</th>
-                <th onclick="sortTable(5)">Mean Ready (ms)</th>
-                <th onclick="sortTable(6)">A11y Violations</th>
-                <th onclick="sortTable(7)">Tests (Passed)</th>
-                <th onclick="sortTable(8)">Coverage</th>
-                <th>Badges</th>
+                <th onclick="sortTable(0)">Agent / Model</th>
+                <th onclick="sortTable(1)">Milestones</th>
+                <th onclick="sortTable(2)">Tokens</th>
+                <th onclick="sortTable(3)">Cost</th>
+                <th onclick="sortTable(4)">Mean Ready (ms)</th>
+                <th onclick="sortTable(5)">A11y Violations</th>
+                <th onclick="sortTable(6)">Tests (Passed)</th>
+                <th onclick="sortTable(7)">Coverage</th>
+                <th>Tags</th>
               </tr>
             </thead>
             <tbody>
