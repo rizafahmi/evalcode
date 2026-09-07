@@ -30,7 +30,9 @@
         pkgs:
         let
           inherit (pkgs) lib;
-          beam = pkgs.beam.packages.erlang_27;
+          # OTP 28 required: OTP 27's :cover cannot instrument Elixir modules
+          # (erlang/otp#11524), which breaks `mix test --cover`.
+          beam = pkgs.beam.packages.erlang_28;
           elixir = beam.elixir_1_20;
 
           # Evaluated before any shell exists, so a wrong nixpkgs pin fails
@@ -40,8 +42,8 @@
               (lib.versionAtLeast elixir.version "1.20" && lib.versionOlder elixir.version "1.21")
               "evalcode: pinned nixpkgs must provide Elixir 1.20.x, got ${elixir.version}"
             && lib.assertMsg
-              (lib.versionAtLeast beam.erlang.version "27" && lib.versionOlder beam.erlang.version "28")
-              "evalcode: pinned nixpkgs must provide Erlang/OTP 27, got ${beam.erlang.version}";
+              (lib.versionAtLeast beam.erlang.version "28" && lib.versionOlder beam.erlang.version "29")
+              "evalcode: pinned nixpkgs must provide Erlang/OTP 28, got ${beam.erlang.version}";
 
           commonPackages = with pkgs; [
             beam.erlang
@@ -93,8 +95,8 @@
                   ;;
               esac
 
-              if [ "$otp_release" != "27" ]; then
-                echo "Expected Erlang/OTP 27 from the pinned flake, got: $otp_release" >&2
+              if [ "$otp_release" != "28" ]; then
+                echo "Expected Erlang/OTP 28 from the pinned flake, got: $otp_release" >&2
                 exit 1
               fi
 

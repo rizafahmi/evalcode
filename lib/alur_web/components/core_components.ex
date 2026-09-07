@@ -331,6 +331,38 @@ defmodule AlurWeb.CoreComponents do
   end
 
   @doc """
+  Renders an empty state card for placeholder sections.
+
+  ## Examples
+
+      <.empty_state icon="hero-view-columns" title="Your pipeline starts here" description="Nothing here yet." />
+  """
+  attr :icon, :string, default: "hero-squares-2x2", doc: "the hero icon name"
+  attr :title, :string, required: true, doc: "the empty state heading"
+  attr :description, :string, required: true, doc: "the empty state description"
+
+  slot :inner_block, doc: "optional call-to-action slot rendered under the description"
+
+  def empty_state(assigns) do
+    ~H"""
+    <div class="rounded-md border border-basalt bg-graphite px-6 py-16 text-center shadow-subtle">
+      <div class="mx-auto mb-4 inline-flex h-11 w-11 items-center justify-center rounded-md border border-basalt bg-obsidian">
+        <.icon name={@icon} class="size-5 text-fog" />
+      </div>
+      <h2 class="font-display text-xl font-semibold tracking-[-0.015em] text-chalk">
+        {@title}
+      </h2>
+      <p class="mx-auto mt-2 max-w-md text-sm leading-relaxed font-text tracking-[0.025em] text-fog">
+        {@description}
+      </p>
+      <div :if={render_slot(@inner_block) != []} class="mt-6">
+        {render_slot(@inner_block)}
+      </div>
+    </div>
+    """
+  end
+
+  @doc """
   Renders a table with generic styling.
 
   ## Examples

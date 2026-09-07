@@ -1,0 +1,59 @@
+<Layouts.app flash={@flash} current_scope={@current_scope}>
+  <div class="mx-auto flex w-full max-w-md flex-col justify-center px-4 py-14 sm:py-20">
+    <div class="mb-8 text-center">
+      <div class="mb-3 inline-flex h-10 w-10 items-center justify-center rounded-md border border-moss-border bg-fern-ground">
+        <.icon name="hero-key" class="size-5 text-signal-green" />
+      </div>
+      <h1 class="font-display text-3xl font-semibold tracking-[-0.025em] text-chalk">
+        Log in to Alur
+      </h1>
+      <p class="mt-2 text-sm font-text tracking-[0.025em] text-fog">
+        Keep moving your deals and follow-ups forward.
+      </p>
+    </div>
+
+    <div class="rounded-md border border-basalt bg-graphite p-6 shadow-subtle sm:p-8">
+      <.form
+        :let={f}
+        for={@form}
+        action={~p"/accounts/log-in"}
+        id="login_form"
+        class="space-y-4"
+      >
+        <div>
+          <.input
+            field={f[:email]}
+            type="email"
+            label="Email"
+            autocomplete="username"
+            spellcheck="false"
+            required
+          />
+        </div>
+
+        <div>
+          <.input
+            field={f[:password]}
+            type="password"
+            label="Password"
+            autocomplete="current-password"
+            required
+          />
+        </div>
+
+        <div class="pt-2">
+          <.button variant="primary" type="submit" class="w-full">
+            Log in
+          </.button>
+        </div>
+      </.form>
+    </div>
+
+    <p class="mt-6 text-center text-sm font-text tracking-[0.025em] text-fog">
+      New to Alur?
+      <.link href={~p"/accounts/register"} class="font-medium text-link-blue hover:underline">
+        Create an account
+      </.link>
+    </p>
+  </div>
+</Layouts.app>
