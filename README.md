@@ -15,6 +15,17 @@ A worked example of a self-built LLM coding benchmark. Agents implement **Alur**
 
 ---
 
+## Benchmark results
+
+| Rank | Agent / Harness | Model | Branch | PRD | Tokens | Cost | UI Ready | A11y | Tests | Coverage |
+| :---: | :--- | :--- | :--- | :---: | :---: | :---: | :---: | :---: | :---: | :---: |
+| 🥇 1 | Antigravity CLI | Gemini 3.8 Flash (High) | [`evalcode_agy`](https://github.com/rizafahmi/evalcode/tree/evalcode_agy) | 8/8 (100%) | 86.7M (99.2% cached) | $1.92 (est) | **40.0 ms** | 6 viols | 122 passed (31 files) | 88.5% |
+| 🥈 2 | DeepSeek Harness | DeepSeek V4 Flash (High) | [`evalcode_dsh`](https://github.com/rizafahmi/evalcode/tree/evalcode_dsh) | 8/8 (100%) | 86.7M (99.2% cached) | **$1.37** | 44.2 ms | **5 viols** | 122 passed (18 files) | 88.5% |
+
+> Latency measured via Playwright UI probes (`deal-open` drawer median). Accessibility audited via Axe-core (WCAG 2.2 AA). For full milestone curves, latency distributions, and cost formulas, visit the [interactive leaderboard](https://rizafahmi.github.io/evalcode/).
+
+---
+
 ## What this repo is
 
 This GitHub repository is the **eval harness and public starter**, not a finished product CRM.
