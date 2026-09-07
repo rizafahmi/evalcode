@@ -504,4 +504,53 @@ defmodule AlurWeb.CoreComponents do
   def translate_errors(errors, field) when is_list(errors) do
     for {^field, {msg, opts}} <- errors, do: translate_error({msg, opts})
   end
+
+  @doc """
+  Formats an amount into Indonesian Rupiah (e.g. "Rp 15.000.000").
+  """
+  defdelegate format_idr(amount), to: Alur.Deals.Currency
+
+  @doc """
+  Formats an activity timestamp into Indonesian time (WIB).
+  """
+  defdelegate format_activity_time(dt), to: Alur.Activities
+
+  @doc """
+  Formats a next action's due date and optional time.
+  """
+  defdelegate format_due(next_action), to: Alur.NextActions
+
+  @doc """
+  Checks if a next action is overdue.
+  """
+  defdelegate overdue?(next_action), to: Alur.NextActions
+
+  @doc """
+  Renders a stage badge for deals and pipeline columns.
+  """
+  attr :name, :string, required: true
+  attr :class, :string, default: nil
+
+  def stage_badge(assigns) do
+    colors = %{
+      "Lead" => "bg-slate border-basalt text-ash",
+      "Meeting" => "bg-slate border-link-blue/40 text-link-blue",
+      "Proposal" => "bg-plum-edge border-iris-border text-lavender-mist",
+      "Won" => "bg-fern-ground border-moss-border text-signal-green",
+      "Lost" => "bg-rose-950/40 border-rose-900/50 text-rose-400"
+    }
+
+    style = Map.get(colors, assigns.name, "bg-slate border-basalt text-ash")
+    assigns = assign(assigns, :style, style)
+
+    ~H"""
+    <span class={[
+      "inline-flex items-center rounded-xs px-2 py-0.5 text-xs font-mono tracking-[0.025em] border font-medium",
+      @style,
+      @class
+    ]}>
+      {@name}
+    </span>
+    """
+  end
 end
