@@ -22,8 +22,13 @@ config :alur, AlurWeb.Endpoint,
   debug_errors: true,
   secret_key_base: "8t0C6SfNvJaJ1u6s7jR09b5UjlGJ19yP1+WfzvHnL+11KTvBTlA4jkIWsI/ndRnI",
   watchers: [
-    esbuild: {Esbuild, :install_and_run, [:alur, ~w(--sourcemap=inline --watch)]},
-    tailwind: {Tailwind, :install_and_run, [:alur, ~w(--watch)]}
+    {:esbuild, {Esbuild, :install_and_run, [:alur, ~w(--sourcemap=inline --watch)]}},
+    {:tailwind, {Tailwind, :install_and_run, [:alur, ~w(--watch)]}},
+    # Builds the Vue app for /app into priv/static/assets/vue on change
+    # (see assets/vite.config.ts). Phoenix serves those files directly, the
+    # same way it serves the esbuild and tailwind output above. The watcher
+    # key is the executable to run, hence the string key "npm".
+    {"npm", ["run", "dev", cd: Path.expand("../assets", __DIR__)]}
   ]
 
 # ## SSL Support

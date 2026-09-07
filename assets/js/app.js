@@ -23,7 +23,9 @@ import "phoenix_html"
 import {Socket} from "phoenix"
 import {LiveSocket} from "phoenix_live_view"
 import {hooks as colocatedHooks} from "phoenix-colocated/alur"
-import topbar from "../vendor/topbar"
+// topbar is a CommonJS UMD file; it is named .cjs so esbuild keeps treating
+// it as CommonJS now that assets/package.json sets "type": "module".
+import topbar from "../vendor/topbar.cjs"
 
 const csrfToken = document.querySelector("meta[name='csrf-token']").getAttribute("content")
 const liveSocket = new LiveSocket("/live", Socket, {

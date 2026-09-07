@@ -1,0 +1,28 @@
+<Layouts.app flash={@flash} current_scope={@current_scope}>
+  <div class="flex flex-col gap-6">
+    <header class="flex items-end justify-between gap-4">
+      <div>
+        <p class="font-mono text-xs uppercase tracking-[0.025em] text-signal-green">
+          Vue Kanban · REST
+        </p>
+        <h1 class="mt-1 font-display text-3xl font-semibold tracking-[-0.025em] text-chalk">
+          Deal board
+        </h1>
+        <p class="mt-2 max-w-xl text-sm font-text tracking-[0.025em] text-fog">
+          Alur's five-column pipeline rendered in Vue over the JSON API. Drag a card sideways
+          to move it — a refresh keeps your place.
+        </p>
+      </div>
+
+      <span class="rounded-xs border border-basalt bg-obsidian px-2 py-1 font-mono text-[10px] uppercase tracking-[0.025em] text-fog">
+        Vue 3 · Vite
+      </span>
+    </header>
+    
+<!-- Empty mount node: Vue 3 mounts here and sets data-v-app on it. -->
+    <div id="app" aria-label="Vue application"></div>
+  </div>
+</Layouts.app>
+
+<script defer src={~p"/assets/vue/app.js"}>
+</script>
