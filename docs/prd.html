@@ -1,662 +1,2023 @@
 <!doctype html>
 <html lang="en">
-<head>
-  <meta charset="utf-8" />
-  <meta name="viewport" content="width=device-width, initial-scale=1" />
-  <title>Alur — PRD</title>
-  <script src="https://cdn.tailwindcss.com"></script>
-  <script>
-    tailwind.config = { darkMode: 'class' };
-  </script>
-  <link rel="preconnect" href="https://fonts.googleapis.com">
-  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
-  <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&display=swap" rel="stylesheet">
-  <script src="https://unpkg.com/lucide@latest"></script>
-  <style>
-    html { font-family: 'Inter', system-ui, -apple-system, sans-serif; }
-    body { font-feature-settings: "cv11", "ss01"; }
-    @media print {
-      html { background: white !important; color: black !important; color-scheme: light; }
-      html.dark { color-scheme: light; }
-      html.dark body, html.dark * { background: white !important; color: black !important; border-color: #d4d4d8 !important; }
-      .no-print { display: none !important; }
-      .print-card { break-inside: avoid; page-break-inside: avoid; }
-      header.sticky { position: static !important; backdrop-filter: none !important; }
-      main { padding-top: 0 !important; }
-      a { color: black !important; text-decoration: none !important; }
-    }
-  </style>
-</head>
-<body class="bg-zinc-50 dark:bg-zinc-950 text-zinc-900 dark:text-zinc-100 antialiased">
-  <header class="sticky top-0 z-10 backdrop-blur bg-zinc-50/80 dark:bg-zinc-950/80 border-b border-zinc-200 dark:border-zinc-800">
-    <div class="max-w-4xl mx-auto px-4 sm:px-6 py-3 flex items-center justify-between">
-      <span class="text-sm font-medium text-zinc-500 dark:text-zinc-400">PRD · Alur</span>
-      <button id="theme-toggle" class="no-print inline-flex items-center justify-center w-9 h-9 rounded-md border border-zinc-200 dark:border-zinc-800 hover:bg-zinc-100 dark:hover:bg-zinc-900 transition" aria-label="Toggle theme">
-        <i data-lucide="sun" class="hidden dark:inline-block w-4 h-4"></i>
-        <i data-lucide="moon" class="inline-block dark:hidden w-4 h-4"></i>
-      </button>
-    </div>
-  </header>
-
-  <main class="max-w-4xl mx-auto px-4 sm:px-6 py-10 sm:py-14 space-y-14">
-
-    <div class="rounded-lg border border-amber-200 dark:border-amber-900/60 bg-amber-50 dark:bg-amber-950/30 p-4 text-sm text-amber-900 dark:text-amber-200">
-      <p><strong class="font-semibold">About this file:</strong> The build-plan artifacts in <code class="font-mono text-xs">docs/</code> — this PRD (<code class="font-mono text-xs">prd.html</code>), <code class="font-mono text-xs">decisions.md</code>, <code class="font-mono text-xs">run-autonomous.md</code>, and <code class="font-mono text-xs">milestones/</code> — are temporary documentation for the initial build-out of this codebase. These files are not functional — no code, configuration, runtime logic, tests, or deployment process should import, read, reference, or depend on them. Once the initial milestones are built and shipped, those build-plan files are expected to be deleted. Do not delete the entire <code class="font-mono text-xs">docs/</code> folder (other docs such as <code class="font-mono text-xs">phoenix-test.md</code> remain).</p>
-    </div>
-
-    <section>
-      <h1 class="text-4xl sm:text-5xl font-bold tracking-tight">Alur</h1>
-      <p class="mt-5 text-lg sm:text-xl text-zinc-600 dark:text-zinc-400 leading-relaxed">A simple personal CRM for managing contacts and the deals attached to them. You keep a pipeline of deals with a value in Indonesian Rupiah (IDR) and a status, move them on a Kanban board, see a timestamped activity history on each deal, and never lose the next follow-up — both on the deal itself and as a single to-do list across everything you're working. The app is Phoenix + LiveView with SQLite. From milestone 7 a Vue app is served at <code class="font-mono text-xs">/app</code>; milestone 8 puts a second Kanban there over REST. Pipeline nav/home stays LiveView. Build it in eight browser-testable milestones.</p>
-      <div class="mt-6 flex flex-wrap gap-2">
-        <span class="inline-flex items-center gap-1.5 px-2.5 py-1 rounded-full bg-white dark:bg-zinc-900 border border-zinc-200 dark:border-zinc-800 text-xs font-medium text-zinc-700 dark:text-zinc-300">Phoenix</span>
-        <span class="inline-flex items-center gap-1.5 px-2.5 py-1 rounded-full bg-white dark:bg-zinc-900 border border-zinc-200 dark:border-zinc-800 text-xs font-medium text-zinc-700 dark:text-zinc-300">LiveView</span>
-        <span class="inline-flex items-center gap-1.5 px-2.5 py-1 rounded-full bg-white dark:bg-zinc-900 border border-zinc-200 dark:border-zinc-800 text-xs font-medium text-zinc-700 dark:text-zinc-300">SQLite</span>
-        <span class="inline-flex items-center gap-1.5 px-2.5 py-1 rounded-full bg-white dark:bg-zinc-900 border border-zinc-200 dark:border-zinc-800 text-xs font-medium text-zinc-700 dark:text-zinc-300">Vue</span>
-        <span class="inline-flex items-center gap-1.5 px-2.5 py-1 rounded-full bg-white dark:bg-zinc-900 border border-zinc-200 dark:border-zinc-800 text-xs font-medium text-zinc-700 dark:text-zinc-300">Vite</span>
-        <span class="inline-flex items-center gap-1.5 px-2.5 py-1 rounded-full bg-white dark:bg-zinc-900 border border-zinc-200 dark:border-zinc-800 text-xs font-medium text-zinc-700 dark:text-zinc-300">REST</span>
-        <span class="inline-flex items-center gap-1.5 px-2.5 py-1 rounded-full bg-white dark:bg-zinc-900 border border-zinc-200 dark:border-zinc-800 text-xs font-medium text-zinc-700 dark:text-zinc-300">Nix flake (Elixir 1.20 / OTP 27)</span>
-      </div>
-    </section>
-
-    <section>
-      <h2 class="text-xs font-semibold uppercase tracking-[0.18em] text-zinc-500 dark:text-zinc-400 flex items-center gap-2">
-        <i data-lucide="sparkles" class="w-3.5 h-3.5"></i>What the app does
-      </h2>
-      <ul class="mt-5 grid grid-cols-1 sm:grid-cols-2 gap-3 list-none p-0">
-        <li class="print-card rounded-lg border border-zinc-200 dark:border-zinc-800 bg-white dark:bg-zinc-900 p-4">
-          <div class="flex items-start gap-3">
-            <div class="shrink-0 mt-0.5 w-8 h-8 rounded-md bg-zinc-100 dark:bg-zinc-800 flex items-center justify-center">
-              <i data-lucide="lock" class="w-4 h-4 text-zinc-700 dark:text-zinc-300"></i>
-            </div>
-            <div>
-              <p class="font-medium text-zinc-900 dark:text-zinc-100">Login and layout</p>
-              <p class="mt-1 text-sm text-zinc-600 dark:text-zinc-400 leading-relaxed">Register with email and password, log in and out. After login: nav to Pipeline, Contacts, and To-dos. Pipeline is home.</p>
-            </div>
-          </div>
-        </li>
-        <li class="print-card rounded-lg border border-zinc-200 dark:border-zinc-800 bg-white dark:bg-zinc-900 p-4">
-          <div class="flex items-start gap-3">
-            <div class="shrink-0 mt-0.5 w-8 h-8 rounded-md bg-zinc-100 dark:bg-zinc-800 flex items-center justify-center">
-              <i data-lucide="users" class="w-4 h-4 text-zinc-700 dark:text-zinc-300"></i>
-            </div>
-            <div>
-              <p class="font-medium text-zinc-900 dark:text-zinc-100">Contacts</p>
-              <p class="mt-1 text-sm text-zinc-600 dark:text-zinc-400 leading-relaxed">List, search by name, add/edit/delete. Name required; email, phone, company, notes optional. Open a contact to see deals and start a new one.</p>
-            </div>
-          </div>
-        </li>
-        <li class="print-card rounded-lg border border-zinc-200 dark:border-zinc-800 bg-white dark:bg-zinc-900 p-4">
-          <div class="flex items-start gap-3">
-            <div class="shrink-0 mt-0.5 w-8 h-8 rounded-md bg-zinc-100 dark:bg-zinc-800 flex items-center justify-center">
-              <i data-lucide="receipt" class="w-4 h-4 text-zinc-700 dark:text-zinc-300"></i>
-            </div>
-            <div>
-              <p class="font-medium text-zinc-900 dark:text-zinc-100">Deals</p>
-              <p class="mt-1 text-sm text-zinc-600 dark:text-zinc-400 leading-relaxed">Each deal has a title, IDR value (shown as e.g. Rp 15.000.000), a contact, a pipeline column, and optional notes. Open, edit, or delete from the deal page.</p>
-            </div>
-          </div>
-        </li>
-        <li class="print-card rounded-lg border border-zinc-200 dark:border-zinc-800 bg-white dark:bg-zinc-900 p-4">
-          <div class="flex items-start gap-3">
-            <div class="shrink-0 mt-0.5 w-8 h-8 rounded-md bg-zinc-100 dark:bg-zinc-800 flex items-center justify-center">
-              <i data-lucide="columns-3" class="w-4 h-4 text-zinc-700 dark:text-zinc-300"></i>
-            </div>
-            <div>
-              <p class="font-medium text-zinc-900 dark:text-zinc-100">Kanban pipeline</p>
-              <p class="mt-1 text-sm text-zinc-600 dark:text-zinc-400 leading-relaxed">Five columns: Lead, Meeting, Proposal, Won, Lost. Cards show title, contact, IDR. Drag to change status. Column totals. Click a card to open the deal.</p>
-            </div>
-          </div>
-        </li>
-        <li class="print-card rounded-lg border border-zinc-200 dark:border-zinc-800 bg-white dark:bg-zinc-900 p-4">
-          <div class="flex items-start gap-3">
-            <div class="shrink-0 mt-0.5 w-8 h-8 rounded-md bg-zinc-100 dark:bg-zinc-800 flex items-center justify-center">
-              <i data-lucide="file-text" class="w-4 h-4 text-zinc-700 dark:text-zinc-300"></i>
-            </div>
-            <div>
-              <p class="font-medium text-zinc-900 dark:text-zinc-100">Deal activity log</p>
-              <p class="mt-1 text-sm text-zinc-600 dark:text-zinc-400 leading-relaxed">Newest-first history on the deal: created, moved, follow-up added or completed, plus manual notes you type. Lines are not edited later.</p>
-            </div>
-          </div>
-        </li>
-        <li class="print-card rounded-lg border border-zinc-200 dark:border-zinc-800 bg-white dark:bg-zinc-900 p-4">
-          <div class="flex items-start gap-3">
-            <div class="shrink-0 mt-0.5 w-8 h-8 rounded-md bg-zinc-100 dark:bg-zinc-800 flex items-center justify-center">
-              <i data-lucide="calendar" class="w-4 h-4 text-zinc-700 dark:text-zinc-300"></i>
-            </div>
-            <div>
-              <p class="font-medium text-zinc-900 dark:text-zinc-100">Next actions</p>
-              <p class="mt-1 text-sm text-zinc-600 dark:text-zinc-400 leading-relaxed">Schedule a follow-up on a deal (description + due date, optional time). Incomplete items appear on a global To-do list, soonest first, overdue called out. Mark done from the deal or the list.</p>
-            </div>
-          </div>
-        </li>
-      </ul>
-    </section>
-
-    <section>
-      <h2 class="text-xs font-semibold uppercase tracking-[0.18em] text-zinc-500 dark:text-zinc-400 flex items-center gap-2">
-        <i data-lucide="package-check" class="w-3.5 h-3.5"></i>Already provided by the existing codebase
-      </h2>
-      <ul class="mt-5 flex flex-wrap gap-2 list-none p-0">
-        <li class="inline-flex items-center gap-1.5 px-3 py-1.5 rounded-md bg-white dark:bg-zinc-900 border border-zinc-200 dark:border-zinc-800 text-sm text-zinc-700 dark:text-zinc-300">
-          <i data-lucide="check" class="w-3.5 h-3.5 text-emerald-600 dark:text-emerald-400"></i>Nix dev shell (Elixir 1.20, OTP 27, SQLite, Node)
-        </li>
-        <li class="inline-flex items-center gap-1.5 px-3 py-1.5 rounded-md bg-white dark:bg-zinc-900 border border-zinc-200 dark:border-zinc-800 text-sm text-zinc-700 dark:text-zinc-300">
-          <i data-lucide="check" class="w-3.5 h-3.5 text-emerald-600 dark:text-emerald-400"></i>Credo / editorconfig / Reach config
-        </li>
-      </ul>
-      <p class="mt-4 text-sm text-zinc-500 dark:text-zinc-400">No Phoenix app, pages, or login exist yet. Milestone 1 creates the app. Login, layout, and every CRM feature are in v1 — nothing of the product is pre-built.</p>
-    </section>
-
-    <section>
-      <h2 class="text-xs font-semibold uppercase tracking-[0.18em] text-zinc-500 dark:text-zinc-400 flex items-center gap-2">
-        <i data-lucide="minus-circle" class="w-3.5 h-3.5"></i>Out of scope (v1)
-      </h2>
-      <ul class="mt-5 space-y-2.5 list-none p-0">
-        <li class="flex items-start gap-3">
-          <i data-lucide="x" class="w-4 h-4 mt-1 shrink-0 text-zinc-400 dark:text-zinc-600"></i>
-          <span class="text-zinc-700 dark:text-zinc-300"><span class="font-medium">Teams, roles, and sharing</span><span class="text-zinc-500 dark:text-zinc-400"> — this is your pipeline, not a company-wide CRM. Extra accounts do not share data.</span></span>
-        </li>
-        <li class="flex items-start gap-3">
-          <i data-lucide="x" class="w-4 h-4 mt-1 shrink-0 text-zinc-400 dark:text-zinc-600"></i>
-          <span class="text-zinc-700 dark:text-zinc-300"><span class="font-medium">Email and calendar sync</span><span class="text-zinc-500 dark:text-zinc-400"> — no Gmail, Outlook, or Google Calendar. Reminders live in the app.</span></span>
-        </li>
-        <li class="flex items-start gap-3">
-          <i data-lucide="x" class="w-4 h-4 mt-1 shrink-0 text-zinc-400 dark:text-zinc-600"></i>
-          <span class="text-zinc-700 dark:text-zinc-300"><span class="font-medium">Native mobile app</span><span class="text-zinc-500 dark:text-zinc-400"> — phone browser is enough.</span></span>
-        </li>
-        <li class="flex items-start gap-3">
-          <i data-lucide="x" class="w-4 h-4 mt-1 shrink-0 text-zinc-400 dark:text-zinc-600"></i>
-          <span class="text-zinc-700 dark:text-zinc-300"><span class="font-medium">Import/export</span><span class="text-zinc-500 dark:text-zinc-400"> — no HubSpot, Salesforce, or CSV. You add contacts yourself.</span></span>
-        </li>
-        <li class="flex items-start gap-3">
-          <i data-lucide="x" class="w-4 h-4 mt-1 shrink-0 text-zinc-400 dark:text-zinc-600"></i>
-          <span class="text-zinc-700 dark:text-zinc-300"><span class="font-medium">Invoices, quotes, payments</span><span class="text-zinc-500 dark:text-zinc-400"> — deals have an IDR value; money does not move through the app.</span></span>
-        </li>
-        <li class="flex items-start gap-3">
-          <i data-lucide="x" class="w-4 h-4 mt-1 shrink-0 text-zinc-400 dark:text-zinc-600"></i>
-          <span class="text-zinc-700 dark:text-zinc-300"><span class="font-medium">Multiple pipelines, currencies, custom fields</span><span class="text-zinc-500 dark:text-zinc-400"> — one IDR pipeline, fixed fields and columns.</span></span>
-        </li>
-        <li class="flex items-start gap-3">
-          <i data-lucide="x" class="w-4 h-4 mt-1 shrink-0 text-zinc-400 dark:text-zinc-600"></i>
-          <span class="text-zinc-700 dark:text-zinc-300"><span class="font-medium">Reports and forecasts</span><span class="text-zinc-500 dark:text-zinc-400"> — Kanban, activity, and to-dos are the views. No charts or win-rate dashboards.</span></span>
-        </li>
-        <li class="flex items-start gap-3">
-          <i data-lucide="x" class="w-4 h-4 mt-1 shrink-0 text-zinc-400 dark:text-zinc-600"></i>
-          <span class="text-zinc-700 dark:text-zinc-300"><span class="font-medium">Automation and email sequences</span><span class="text-zinc-500 dark:text-zinc-400"> — next actions are something you schedule, not a drip campaign.</span></span>
-        </li>
-        <li class="flex items-start gap-3">
-          <i data-lucide="x" class="w-4 h-4 mt-1 shrink-0 text-zinc-400 dark:text-zinc-600"></i>
-          <span class="text-zinc-700 dark:text-zinc-300"><span class="font-medium">Google/GitHub login, magic links, 2FA, email password reset</span><span class="text-zinc-500 dark:text-zinc-400"> — email/password only. No mail provider in v1.</span></span>
-        </li>
-      </ul>
-    </section>
-
-    <section>
-      <h2 class="text-xs font-semibold uppercase tracking-[0.18em] text-zinc-500 dark:text-zinc-400 flex items-center gap-2">
-        <i data-lucide="database" class="w-3.5 h-3.5"></i>Data model
-      </h2>
-      <p class="mt-3 text-sm text-zinc-500 dark:text-zinc-400">What the app needs to remember.</p>
-      <div class="mt-5 grid grid-cols-1 sm:grid-cols-2 gap-3">
-        <div class="print-card rounded-lg border border-zinc-200 dark:border-zinc-800 bg-white dark:bg-zinc-900 p-5">
-          <div class="flex items-center gap-2">
-            <i data-lucide="box" class="w-4 h-4 text-zinc-500 dark:text-zinc-400"></i>
-            <h3 class="font-semibold text-zinc-900 dark:text-zinc-100">Account</h3>
-          </div>
-          <table class="mt-4 w-full text-sm">
-            <tbody class="divide-y divide-zinc-100 dark:divide-zinc-800">
-              <tr>
-                <td class="py-2 pr-4 font-mono text-xs font-medium text-zinc-700 dark:text-zinc-300 align-top whitespace-nowrap">email</td>
-                <td class="py-2 text-zinc-600 dark:text-zinc-400 leading-relaxed">Login email</td>
-              </tr>
-              <tr>
-                <td class="py-2 pr-4 font-mono text-xs font-medium text-zinc-700 dark:text-zinc-300 align-top whitespace-nowrap">password</td>
-                <td class="py-2 text-zinc-600 dark:text-zinc-400 leading-relaxed">Login password</td>
-              </tr>
-            </tbody>
-          </table>
-          <p class="mt-4 text-xs text-zinc-500 dark:text-zinc-400"><span class="font-semibold uppercase tracking-[0.14em] text-[11px]">Related to</span> · Contact, Deal (everything you create belongs to your account)</p>
-        </div>
-        <div class="print-card rounded-lg border border-zinc-200 dark:border-zinc-800 bg-white dark:bg-zinc-900 p-5">
-          <div class="flex items-center gap-2">
-            <i data-lucide="box" class="w-4 h-4 text-zinc-500 dark:text-zinc-400"></i>
-            <h3 class="font-semibold text-zinc-900 dark:text-zinc-100">Contact</h3>
-          </div>
-          <table class="mt-4 w-full text-sm">
-            <tbody class="divide-y divide-zinc-100 dark:divide-zinc-800">
-              <tr>
-                <td class="py-2 pr-4 font-mono text-xs font-medium text-zinc-700 dark:text-zinc-300 align-top whitespace-nowrap">name</td>
-                <td class="py-2 text-zinc-600 dark:text-zinc-400 leading-relaxed">Required display name</td>
-              </tr>
-              <tr>
-                <td class="py-2 pr-4 font-mono text-xs font-medium text-zinc-700 dark:text-zinc-300 align-top whitespace-nowrap">email</td>
-                <td class="py-2 text-zinc-600 dark:text-zinc-400 leading-relaxed">Optional</td>
-              </tr>
-              <tr>
-                <td class="py-2 pr-4 font-mono text-xs font-medium text-zinc-700 dark:text-zinc-300 align-top whitespace-nowrap">phone</td>
-                <td class="py-2 text-zinc-600 dark:text-zinc-400 leading-relaxed">Optional</td>
-              </tr>
-              <tr>
-                <td class="py-2 pr-4 font-mono text-xs font-medium text-zinc-700 dark:text-zinc-300 align-top whitespace-nowrap">company</td>
-                <td class="py-2 text-zinc-600 dark:text-zinc-400 leading-relaxed">Optional text field — not a separate company record</td>
-              </tr>
-              <tr>
-                <td class="py-2 pr-4 font-mono text-xs font-medium text-zinc-700 dark:text-zinc-300 align-top whitespace-nowrap">notes</td>
-                <td class="py-2 text-zinc-600 dark:text-zinc-400 leading-relaxed">Optional free text</td>
-              </tr>
-            </tbody>
-          </table>
-          <p class="mt-4 text-xs text-zinc-500 dark:text-zinc-400"><span class="font-semibold uppercase tracking-[0.14em] text-[11px]">Related to</span> · Account · Deal</p>
-        </div>
-        <div class="print-card rounded-lg border border-zinc-200 dark:border-zinc-800 bg-white dark:bg-zinc-900 p-5">
-          <div class="flex items-center gap-2">
-            <i data-lucide="box" class="w-4 h-4 text-zinc-500 dark:text-zinc-400"></i>
-            <h3 class="font-semibold text-zinc-900 dark:text-zinc-100">Deal</h3>
-          </div>
-          <table class="mt-4 w-full text-sm">
-            <tbody class="divide-y divide-zinc-100 dark:divide-zinc-800">
-              <tr>
-                <td class="py-2 pr-4 font-mono text-xs font-medium text-zinc-700 dark:text-zinc-300 align-top whitespace-nowrap">title</td>
-                <td class="py-2 text-zinc-600 dark:text-zinc-400 leading-relaxed">Name of the opportunity</td>
-              </tr>
-              <tr>
-                <td class="py-2 pr-4 font-mono text-xs font-medium text-zinc-700 dark:text-zinc-300 align-top whitespace-nowrap">amount</td>
-                <td class="py-2 text-zinc-600 dark:text-zinc-400 leading-relaxed">Value in Indonesian Rupiah</td>
-              </tr>
-              <tr>
-                <td class="py-2 pr-4 font-mono text-xs font-medium text-zinc-700 dark:text-zinc-300 align-top whitespace-nowrap">notes</td>
-                <td class="py-2 text-zinc-600 dark:text-zinc-400 leading-relaxed">Optional</td>
-              </tr>
-            </tbody>
-          </table>
-          <p class="mt-4 text-xs text-zinc-500 dark:text-zinc-400"><span class="font-semibold uppercase tracking-[0.14em] text-[11px]">Related to</span> · Account · Contact (required) · Pipeline column · Activity · Next action</p>
-        </div>
-        <div class="print-card rounded-lg border border-zinc-200 dark:border-zinc-800 bg-white dark:bg-zinc-900 p-5">
-          <div class="flex items-center gap-2">
-            <i data-lucide="box" class="w-4 h-4 text-zinc-500 dark:text-zinc-400"></i>
-            <h3 class="font-semibold text-zinc-900 dark:text-zinc-100">Pipeline column</h3>
-          </div>
-          <table class="mt-4 w-full text-sm">
-            <tbody class="divide-y divide-zinc-100 dark:divide-zinc-800">
-              <tr>
-                <td class="py-2 pr-4 font-mono text-xs font-medium text-zinc-700 dark:text-zinc-300 align-top whitespace-nowrap">name</td>
-                <td class="py-2 text-zinc-600 dark:text-zinc-400 leading-relaxed">Column label</td>
-              </tr>
-              <tr>
-                <td class="py-2 pr-4 font-mono text-xs font-medium text-zinc-700 dark:text-zinc-300 align-top whitespace-nowrap">order</td>
-                <td class="py-2 text-zinc-600 dark:text-zinc-400 leading-relaxed">Left-to-right position</td>
-              </tr>
-            </tbody>
-          </table>
-          <p class="mt-4 text-xs text-zinc-500 dark:text-zinc-400">Starting set, in order: Lead, Meeting, Proposal, Won, Lost. v1 does not let you add, rename, reorder, or delete columns.</p>
-          <p class="mt-2 text-xs text-zinc-500 dark:text-zinc-400"><span class="font-semibold uppercase tracking-[0.14em] text-[11px]">Related to</span> · Deal</p>
-        </div>
-        <div class="print-card rounded-lg border border-zinc-200 dark:border-zinc-800 bg-white dark:bg-zinc-900 p-5">
-          <div class="flex items-center gap-2">
-            <i data-lucide="box" class="w-4 h-4 text-zinc-500 dark:text-zinc-400"></i>
-            <h3 class="font-semibold text-zinc-900 dark:text-zinc-100">Activity</h3>
-          </div>
-          <table class="mt-4 w-full text-sm">
-            <tbody class="divide-y divide-zinc-100 dark:divide-zinc-800">
-              <tr>
-                <td class="py-2 pr-4 font-mono text-xs font-medium text-zinc-700 dark:text-zinc-300 align-top whitespace-nowrap">when</td>
-                <td class="py-2 text-zinc-600 dark:text-zinc-400 leading-relaxed">Date and time it happened</td>
-              </tr>
-              <tr>
-                <td class="py-2 pr-4 font-mono text-xs font-medium text-zinc-700 dark:text-zinc-300 align-top whitespace-nowrap">description</td>
-                <td class="py-2 text-zinc-600 dark:text-zinc-400 leading-relaxed">Short line: created, moved, follow-up logged, or a manual note</td>
-              </tr>
-            </tbody>
-          </table>
-          <p class="mt-4 text-xs text-zinc-500 dark:text-zinc-400"><span class="font-semibold uppercase tracking-[0.14em] text-[11px]">Related to</span> · Deal. Not edited or deleted after it is written.</p>
-        </div>
-        <div class="print-card rounded-lg border border-zinc-200 dark:border-zinc-800 bg-white dark:bg-zinc-900 p-5">
-          <div class="flex items-center gap-2">
-            <i data-lucide="box" class="w-4 h-4 text-zinc-500 dark:text-zinc-400"></i>
-            <h3 class="font-semibold text-zinc-900 dark:text-zinc-100">Next action</h3>
-          </div>
-          <table class="mt-4 w-full text-sm">
-            <tbody class="divide-y divide-zinc-100 dark:divide-zinc-800">
-              <tr>
-                <td class="py-2 pr-4 font-mono text-xs font-medium text-zinc-700 dark:text-zinc-300 align-top whitespace-nowrap">what</td>
-                <td class="py-2 text-zinc-600 dark:text-zinc-400 leading-relaxed">What to do</td>
-              </tr>
-              <tr>
-                <td class="py-2 pr-4 font-mono text-xs font-medium text-zinc-700 dark:text-zinc-300 align-top whitespace-nowrap">due</td>
-                <td class="py-2 text-zinc-600 dark:text-zinc-400 leading-relaxed">Due date, optional time</td>
-              </tr>
-              <tr>
-                <td class="py-2 pr-4 font-mono text-xs font-medium text-zinc-700 dark:text-zinc-300 align-top whitespace-nowrap">done</td>
-                <td class="py-2 text-zinc-600 dark:text-zinc-400 leading-relaxed">Whether it is completed. Incomplete items show on the To-do page.</td>
-              </tr>
-            </tbody>
-          </table>
-          <p class="mt-4 text-xs text-zinc-500 dark:text-zinc-400"><span class="font-semibold uppercase tracking-[0.14em] text-[11px]">Related to</span> · Deal</p>
-        </div>
-      </div>
-    </section>
-
-    <section>
-      <h2 class="text-xs font-semibold uppercase tracking-[0.18em] text-zinc-500 dark:text-zinc-400 flex items-center gap-2">
-        <i data-lucide="route" class="w-3.5 h-3.5"></i>Milestones
-      </h2>
-      <div class="mt-5 space-y-5">
-
-        <article class="print-card rounded-lg border border-zinc-200 dark:border-zinc-800 bg-white dark:bg-zinc-900 overflow-hidden">
-          <header class="flex items-center gap-3 p-5 border-b border-zinc-100 dark:border-zinc-800">
-            <span class="shrink-0 w-8 h-8 rounded-full bg-zinc-900 dark:bg-zinc-100 text-zinc-50 dark:text-zinc-900 flex items-center justify-center text-sm font-semibold">1</span>
-            <h3 class="font-semibold text-lg text-zinc-900 dark:text-zinc-100">Login and shell</h3>
-          </header>
-          <div class="p-5">
-            <p class="text-zinc-600 dark:text-zinc-400 leading-relaxed">Stand up the Phoenix app and the signed-in chrome. You can register, log in, and move between empty placeholder pages.</p>
-            <div class="mt-5 grid grid-cols-1 md:grid-cols-2 gap-5">
-              <div>
-                <h4 class="text-[11px] font-semibold uppercase tracking-[0.16em] text-zinc-500 dark:text-zinc-400 flex items-center gap-1.5">
-                  <i data-lucide="check-circle-2" class="w-3.5 h-3.5 text-emerald-600 dark:text-emerald-400"></i>What gets built
-                </h4>
-                <ul class="mt-3 space-y-2 text-sm text-zinc-700 dark:text-zinc-300 list-none p-0">
-                  <li class="flex items-start gap-2"><i data-lucide="check" class="w-3.5 h-3.5 mt-0.5 shrink-0 text-emerald-600 dark:text-emerald-400"></i><span>Phoenix + LiveView app using SQLite, runnable from the existing Nix shell</span></li>
-                  <li class="flex items-start gap-2"><i data-lucide="check" class="w-3.5 h-3.5 mt-0.5 shrink-0 text-emerald-600 dark:text-emerald-400"></i><span>Register with email and password; log in and log out</span></li>
-                  <li class="flex items-start gap-2"><i data-lucide="check" class="w-3.5 h-3.5 mt-0.5 shrink-0 text-emerald-600 dark:text-emerald-400"></i><span>Logged-out visitors only see sign-in / register</span></li>
-                  <li class="flex items-start gap-2"><i data-lucide="check" class="w-3.5 h-3.5 mt-0.5 shrink-0 text-emerald-600 dark:text-emerald-400"></i><span>After login: nav — Pipeline, Contacts, To-dos — plus log out. Pipeline is home</span></li>
-                  <li class="flex items-start gap-2"><i data-lucide="check" class="w-3.5 h-3.5 mt-0.5 shrink-0 text-emerald-600 dark:text-emerald-400"></i><span>Pipeline and To-dos may be empty placeholders</span></li>
-                </ul>
-              </div>
-              <div>
-                <h4 class="text-[11px] font-semibold uppercase tracking-[0.16em] text-zinc-500 dark:text-zinc-400 flex items-center gap-1.5">
-                  <i data-lucide="x-circle" class="w-3.5 h-3.5 text-zinc-400 dark:text-zinc-500"></i>Not in this milestone
-                </h4>
-                <ul class="mt-3 space-y-2 text-sm text-zinc-500 dark:text-zinc-400 list-none p-0">
-                  <li class="flex items-start gap-2"><i data-lucide="minus" class="w-3.5 h-3.5 mt-0.5 shrink-0"></i><span>Contacts, deals, Kanban, activity, or next actions</span></li>
-                  <li class="flex items-start gap-2"><i data-lucide="minus" class="w-3.5 h-3.5 mt-0.5 shrink-0"></i><span>OAuth, magic links, 2FA, or email password reset</span></li>
-                </ul>
-              </div>
-            </div>
-            <div class="mt-5 rounded-md border-l-4 border-emerald-500 bg-emerald-50 dark:bg-emerald-950/30 p-4 text-sm text-emerald-900 dark:text-emerald-200">
-              <p class="flex items-start gap-2"><i data-lucide="flag" class="w-4 h-4 mt-0.5 shrink-0"></i><span><span class="font-semibold">Done when:</span> In the browser you can create an account, log in, see the nav, open the three sections, and log out. A logged-out visit cannot see the app.</span></p>
-            </div>
-          </div>
-        </article>
-
-        <article class="print-card rounded-lg border border-zinc-200 dark:border-zinc-800 bg-white dark:bg-zinc-900 overflow-hidden">
-          <header class="flex items-center gap-3 p-5 border-b border-zinc-100 dark:border-zinc-800">
-            <span class="shrink-0 w-8 h-8 rounded-full bg-zinc-900 dark:bg-zinc-100 text-zinc-50 dark:text-zinc-900 flex items-center justify-center text-sm font-semibold">2</span>
-            <h3 class="font-semibold text-lg text-zinc-900 dark:text-zinc-100">Contacts</h3>
-          </header>
-          <div class="p-5">
-            <p class="text-zinc-600 dark:text-zinc-400 leading-relaxed">You can keep a real contact list and open each person.</p>
-            <div class="mt-5 grid grid-cols-1 md:grid-cols-2 gap-5">
-              <div>
-                <h4 class="text-[11px] font-semibold uppercase tracking-[0.16em] text-zinc-500 dark:text-zinc-400 flex items-center gap-1.5">
-                  <i data-lucide="check-circle-2" class="w-3.5 h-3.5 text-emerald-600 dark:text-emerald-400"></i>What gets built
-                </h4>
-                <ul class="mt-3 space-y-2 text-sm text-zinc-700 dark:text-zinc-300 list-none p-0">
-                  <li class="flex items-start gap-2"><i data-lucide="check" class="w-3.5 h-3.5 mt-0.5 shrink-0 text-emerald-600 dark:text-emerald-400"></i><span>Contacts page listing name, company, and email</span></li>
-                  <li class="flex items-start gap-2"><i data-lucide="check" class="w-3.5 h-3.5 mt-0.5 shrink-0 text-emerald-600 dark:text-emerald-400"></i><span>Search/filter the list by name</span></li>
-                  <li class="flex items-start gap-2"><i data-lucide="check" class="w-3.5 h-3.5 mt-0.5 shrink-0 text-emerald-600 dark:text-emerald-400"></i><span>Add, edit, and delete (name required; email, phone, company, notes optional)</span></li>
-                  <li class="flex items-start gap-2"><i data-lucide="check" class="w-3.5 h-3.5 mt-0.5 shrink-0 text-emerald-600 dark:text-emerald-400"></i><span>Contact detail page with those fields</span></li>
-                  <li class="flex items-start gap-2"><i data-lucide="check" class="w-3.5 h-3.5 mt-0.5 shrink-0 text-emerald-600 dark:text-emerald-400"></i><span>You only see your own contacts</span></li>
-                </ul>
-              </div>
-              <div>
-                <h4 class="text-[11px] font-semibold uppercase tracking-[0.16em] text-zinc-500 dark:text-zinc-400 flex items-center gap-1.5">
-                  <i data-lucide="x-circle" class="w-3.5 h-3.5 text-zinc-400 dark:text-zinc-500"></i>Not in this milestone
-                </h4>
-                <ul class="mt-3 space-y-2 text-sm text-zinc-500 dark:text-zinc-400 list-none p-0">
-                  <li class="flex items-start gap-2"><i data-lucide="minus" class="w-3.5 h-3.5 mt-0.5 shrink-0"></i><span>Deals on the contact, or a “new deal” button that works</span></li>
-                  <li class="flex items-start gap-2"><i data-lucide="minus" class="w-3.5 h-3.5 mt-0.5 shrink-0"></i><span>Import, tags, bulk edit, photos, companies as their own records</span></li>
-                </ul>
-              </div>
-            </div>
-            <div class="mt-5 rounded-md border-l-4 border-emerald-500 bg-emerald-50 dark:bg-emerald-950/30 p-4 text-sm text-emerald-900 dark:text-emerald-200">
-              <p class="flex items-start gap-2"><i data-lucide="flag" class="w-4 h-4 mt-0.5 shrink-0"></i><span><span class="font-semibold">Done when:</span> Logged in, you can add a contact, find them by name, edit, open their page, and delete them. Another account does not see that contact.</span></p>
-            </div>
-          </div>
-        </article>
-
-        <article class="print-card rounded-lg border border-zinc-200 dark:border-zinc-800 bg-white dark:bg-zinc-900 overflow-hidden">
-          <header class="flex items-center gap-3 p-5 border-b border-zinc-100 dark:border-zinc-800">
-            <span class="shrink-0 w-8 h-8 rounded-full bg-zinc-900 dark:bg-zinc-100 text-zinc-50 dark:text-zinc-900 flex items-center justify-center text-sm font-semibold">3</span>
-            <h3 class="font-semibold text-lg text-zinc-900 dark:text-zinc-100">Deals</h3>
-          </header>
-          <div class="p-5">
-            <p class="text-zinc-600 dark:text-zinc-400 leading-relaxed">Deals exist with an IDR value and a contact. You manage them from the contact and a deal page — not yet from a board.</p>
-            <div class="mt-5 grid grid-cols-1 md:grid-cols-2 gap-5">
-              <div>
-                <h4 class="text-[11px] font-semibold uppercase tracking-[0.16em] text-zinc-500 dark:text-zinc-400 flex items-center gap-1.5">
-                  <i data-lucide="check-circle-2" class="w-3.5 h-3.5 text-emerald-600 dark:text-emerald-400"></i>What gets built
-                </h4>
-                <ul class="mt-3 space-y-2 text-sm text-zinc-700 dark:text-zinc-300 list-none p-0">
-                  <li class="flex items-start gap-2"><i data-lucide="check" class="w-3.5 h-3.5 mt-0.5 shrink-0 text-emerald-600 dark:text-emerald-400"></i><span>Create a deal from a contact: title, IDR amount, starting column, optional notes. Contact is required</span></li>
-                  <li class="flex items-start gap-2"><i data-lucide="check" class="w-3.5 h-3.5 mt-0.5 shrink-0 text-emerald-600 dark:text-emerald-400"></i><span>IDR shown as rupiah everywhere (e.g. Rp 15.000.000)</span></li>
-                  <li class="flex items-start gap-2"><i data-lucide="check" class="w-3.5 h-3.5 mt-0.5 shrink-0 text-emerald-600 dark:text-emerald-400"></i><span>Deal page: title, value, contact, column, notes</span></li>
-                  <li class="flex items-start gap-2"><i data-lucide="check" class="w-3.5 h-3.5 mt-0.5 shrink-0 text-emerald-600 dark:text-emerald-400"></i><span>Edit those fields; delete the deal</span></li>
-                  <li class="flex items-start gap-2"><i data-lucide="check" class="w-3.5 h-3.5 mt-0.5 shrink-0 text-emerald-600 dark:text-emerald-400"></i><span>Contact detail lists that contact’s deals</span></li>
-                  <li class="flex items-start gap-2"><i data-lucide="check" class="w-3.5 h-3.5 mt-0.5 shrink-0 text-emerald-600 dark:text-emerald-400"></i><span>Five columns exist as data (Lead → Lost) even if the Kanban UI is not built yet; new deals pick a starting column</span></li>
-                </ul>
-              </div>
-              <div>
-                <h4 class="text-[11px] font-semibold uppercase tracking-[0.16em] text-zinc-500 dark:text-zinc-400 flex items-center gap-1.5">
-                  <i data-lucide="x-circle" class="w-3.5 h-3.5 text-zinc-400 dark:text-zinc-500"></i>Not in this milestone
-                </h4>
-                <ul class="mt-3 space-y-2 text-sm text-zinc-500 dark:text-zinc-400 list-none p-0">
-                  <li class="flex items-start gap-2"><i data-lucide="minus" class="w-3.5 h-3.5 mt-0.5 shrink-0"></i><span>Kanban drag-and-drop or column totals</span></li>
-                  <li class="flex items-start gap-2"><i data-lucide="minus" class="w-3.5 h-3.5 mt-0.5 shrink-0"></i><span>Activity log or next actions on the deal page</span></li>
-                  <li class="flex items-start gap-2"><i data-lucide="minus" class="w-3.5 h-3.5 mt-0.5 shrink-0"></i><span>Multiple currencies, line items, quotes</span></li>
-                </ul>
-              </div>
-            </div>
-            <div class="mt-5 rounded-md border-l-4 border-emerald-500 bg-emerald-50 dark:bg-emerald-950/30 p-4 text-sm text-emerald-900 dark:text-emerald-200">
-              <p class="flex items-start gap-2"><i data-lucide="flag" class="w-4 h-4 mt-0.5 shrink-0"></i><span><span class="font-semibold">Done when:</span> From a contact you create a deal with an IDR value, open it, see rupiah formatting, change the column on the deal page, and delete it. The contact shows the deal in its list.</span></p>
-            </div>
-          </div>
-        </article>
-
-        <article class="print-card rounded-lg border border-zinc-200 dark:border-zinc-800 bg-white dark:bg-zinc-900 overflow-hidden">
-          <header class="flex items-center gap-3 p-5 border-b border-zinc-100 dark:border-zinc-800">
-            <span class="shrink-0 w-8 h-8 rounded-full bg-zinc-900 dark:bg-zinc-100 text-zinc-50 dark:text-zinc-900 flex items-center justify-center text-sm font-semibold">4</span>
-            <h3 class="font-semibold text-lg text-zinc-900 dark:text-zinc-100">Kanban pipeline</h3>
-          </header>
-          <div class="p-5">
-            <p class="text-zinc-600 dark:text-zinc-400 leading-relaxed">The Pipeline page becomes the working board. Dragging a card is how you change status.</p>
-            <div class="mt-5 grid grid-cols-1 md:grid-cols-2 gap-5">
-              <div>
-                <h4 class="text-[11px] font-semibold uppercase tracking-[0.16em] text-zinc-500 dark:text-zinc-400 flex items-center gap-1.5">
-                  <i data-lucide="check-circle-2" class="w-3.5 h-3.5 text-emerald-600 dark:text-emerald-400"></i>What gets built
-                </h4>
-                <ul class="mt-3 space-y-2 text-sm text-zinc-700 dark:text-zinc-300 list-none p-0">
-                  <li class="flex items-start gap-2"><i data-lucide="check" class="w-3.5 h-3.5 mt-0.5 shrink-0 text-emerald-600 dark:text-emerald-400"></i><span>Pipeline page: columns Lead, Meeting, Proposal, Won, Lost in that order</span></li>
-                  <li class="flex items-start gap-2"><i data-lucide="check" class="w-3.5 h-3.5 mt-0.5 shrink-0 text-emerald-600 dark:text-emerald-400"></i><span>Each card: deal title, contact name, IDR value</span></li>
-                  <li class="flex items-start gap-2"><i data-lucide="check" class="w-3.5 h-3.5 mt-0.5 shrink-0 text-emerald-600 dark:text-emerald-400"></i><span>Drag a card to another column; that is the deal’s new status</span></li>
-                  <li class="flex items-start gap-2"><i data-lucide="check" class="w-3.5 h-3.5 mt-0.5 shrink-0 text-emerald-600 dark:text-emerald-400"></i><span>Click a card to open the deal</span></li>
-                  <li class="flex items-start gap-2"><i data-lucide="check" class="w-3.5 h-3.5 mt-0.5 shrink-0 text-emerald-600 dark:text-emerald-400"></i><span>IDR total per column</span></li>
-                </ul>
-              </div>
-              <div>
-                <h4 class="text-[11px] font-semibold uppercase tracking-[0.16em] text-zinc-500 dark:text-zinc-400 flex items-center gap-1.5">
-                  <i data-lucide="x-circle" class="w-3.5 h-3.5 text-zinc-400 dark:text-zinc-500"></i>Not in this milestone
-                </h4>
-                <ul class="mt-3 space-y-2 text-sm text-zinc-500 dark:text-zinc-400 list-none p-0">
-                  <li class="flex items-start gap-2"><i data-lucide="minus" class="w-3.5 h-3.5 mt-0.5 shrink-0"></i><span>Adding, renaming, reordering, or deleting columns</span></li>
-                  <li class="flex items-start gap-2"><i data-lucide="minus" class="w-3.5 h-3.5 mt-0.5 shrink-0"></i><span>Filters, swimlanes, WIP limits, card colors</span></li>
-                  <li class="flex items-start gap-2"><i data-lucide="minus" class="w-3.5 h-3.5 mt-0.5 shrink-0"></i><span>Activity log entries for a move (that is milestone 5)</span></li>
-                </ul>
-              </div>
-            </div>
-            <div class="mt-5 rounded-md border-l-4 border-emerald-500 bg-emerald-50 dark:bg-emerald-950/30 p-4 text-sm text-emerald-900 dark:text-emerald-200">
-              <p class="flex items-start gap-2"><i data-lucide="flag" class="w-4 h-4 mt-0.5 shrink-0"></i><span><span class="font-semibold">Done when:</span> Existing deals appear on the board in the right columns. You can drag one from Lead to Meeting, refresh, and it stays there. Column totals match the cards. Clicking a card opens the deal.</span></p>
-            </div>
-          </div>
-        </article>
-
-        <article class="print-card rounded-lg border border-zinc-200 dark:border-zinc-800 bg-white dark:bg-zinc-900 overflow-hidden">
-          <header class="flex items-center gap-3 p-5 border-b border-zinc-100 dark:border-zinc-800">
-            <span class="shrink-0 w-8 h-8 rounded-full bg-zinc-900 dark:bg-zinc-100 text-zinc-50 dark:text-zinc-900 flex items-center justify-center text-sm font-semibold">5</span>
-            <h3 class="font-semibold text-lg text-zinc-900 dark:text-zinc-100">Activity log</h3>
-          </header>
-          <div class="p-5">
-            <p class="text-zinc-600 dark:text-zinc-400 leading-relaxed">Each deal keeps a timestamped history of what happened, plus notes you write yourself.</p>
-            <div class="mt-5 grid grid-cols-1 md:grid-cols-2 gap-5">
-              <div>
-                <h4 class="text-[11px] font-semibold uppercase tracking-[0.16em] text-zinc-500 dark:text-zinc-400 flex items-center gap-1.5">
-                  <i data-lucide="check-circle-2" class="w-3.5 h-3.5 text-emerald-600 dark:text-emerald-400"></i>What gets built
-                </h4>
-                <ul class="mt-3 space-y-2 text-sm text-zinc-700 dark:text-zinc-300 list-none p-0">
-                  <li class="flex items-start gap-2"><i data-lucide="check" class="w-3.5 h-3.5 mt-0.5 shrink-0 text-emerald-600 dark:text-emerald-400"></i><span>On the deal page, a log newest-first with date/time and a short description</span></li>
-                  <li class="flex items-start gap-2"><i data-lucide="check" class="w-3.5 h-3.5 mt-0.5 shrink-0 text-emerald-600 dark:text-emerald-400"></i><span>A line when the deal is created and when it moves column (including Kanban drags)</span></li>
-                  <li class="flex items-start gap-2"><i data-lucide="check" class="w-3.5 h-3.5 mt-0.5 shrink-0 text-emerald-600 dark:text-emerald-400"></i><span>You can add a free-text note to the log</span></li>
-                  <li class="flex items-start gap-2"><i data-lucide="check" class="w-3.5 h-3.5 mt-0.5 shrink-0 text-emerald-600 dark:text-emerald-400"></i><span>Hook points ready for next-action add/complete lines in milestone 6</span></li>
-                </ul>
-              </div>
-              <div>
-                <h4 class="text-[11px] font-semibold uppercase tracking-[0.16em] text-zinc-500 dark:text-zinc-400 flex items-center gap-1.5">
-                  <i data-lucide="x-circle" class="w-3.5 h-3.5 text-zinc-400 dark:text-zinc-500"></i>Not in this milestone
-                </h4>
-                <ul class="mt-3 space-y-2 text-sm text-zinc-500 dark:text-zinc-400 list-none p-0">
-                  <li class="flex items-start gap-2"><i data-lucide="minus" class="w-3.5 h-3.5 mt-0.5 shrink-0"></i><span>Editing or deleting log lines</span></li>
-                  <li class="flex items-start gap-2"><i data-lucide="minus" class="w-3.5 h-3.5 mt-0.5 shrink-0"></i><span>A global activity feed across all deals</span></li>
-                  <li class="flex items-start gap-2"><i data-lucide="minus" class="w-3.5 h-3.5 mt-0.5 shrink-0"></i><span>Attachments, call recording, comment threads</span></li>
-                  <li class="flex items-start gap-2"><i data-lucide="minus" class="w-3.5 h-3.5 mt-0.5 shrink-0"></i><span>Follow-up add/complete events (milestone 6)</span></li>
-                </ul>
-              </div>
-            </div>
-            <div class="mt-5 rounded-md border-l-4 border-emerald-500 bg-emerald-50 dark:bg-emerald-950/30 p-4 text-sm text-emerald-900 dark:text-emerald-200">
-              <p class="flex items-start gap-2"><i data-lucide="flag" class="w-4 h-4 mt-0.5 shrink-0"></i><span><span class="font-semibold">Done when:</span> Opening a deal shows a created line. Dragging it on the board (or changing column on the deal page) adds a move line with a timestamp. You can type a note and see it in the log. You cannot edit or delete a line.</span></p>
-            </div>
-          </div>
-        </article>
-
-        <article class="print-card rounded-lg border border-zinc-200 dark:border-zinc-800 bg-white dark:bg-zinc-900 overflow-hidden">
-          <header class="flex items-center gap-3 p-5 border-b border-zinc-100 dark:border-zinc-800">
-            <span class="shrink-0 w-8 h-8 rounded-full bg-zinc-900 dark:bg-zinc-100 text-zinc-50 dark:text-zinc-900 flex items-center justify-center text-sm font-semibold">6</span>
-            <h3 class="font-semibold text-lg text-zinc-900 dark:text-zinc-100">Next actions</h3>
-          </header>
-          <div class="p-5">
-            <p class="text-zinc-600 dark:text-zinc-400 leading-relaxed">Follow-ups live on the deal and on one To-do page for everything still open.</p>
-            <div class="mt-5 grid grid-cols-1 md:grid-cols-2 gap-5">
-              <div>
-                <h4 class="text-[11px] font-semibold uppercase tracking-[0.16em] text-zinc-500 dark:text-zinc-400 flex items-center gap-1.5">
-                  <i data-lucide="check-circle-2" class="w-3.5 h-3.5 text-emerald-600 dark:text-emerald-400"></i>What gets built
-                </h4>
-                <ul class="mt-3 space-y-2 text-sm text-zinc-700 dark:text-zinc-300 list-none p-0">
-                  <li class="flex items-start gap-2"><i data-lucide="check" class="w-3.5 h-3.5 mt-0.5 shrink-0 text-emerald-600 dark:text-emerald-400"></i><span>On a deal: add a follow-up with description and due date (optional time)</span></li>
-                  <li class="flex items-start gap-2"><i data-lucide="check" class="w-3.5 h-3.5 mt-0.5 shrink-0 text-emerald-600 dark:text-emerald-400"></i><span>Incomplete actions are obvious on the deal; completed ones stay visible on the deal</span></li>
-                  <li class="flex items-start gap-2"><i data-lucide="check" class="w-3.5 h-3.5 mt-0.5 shrink-0 text-emerald-600 dark:text-emerald-400"></i><span>Mark done from the deal page</span></li>
-                  <li class="flex items-start gap-2"><i data-lucide="check" class="w-3.5 h-3.5 mt-0.5 shrink-0 text-emerald-600 dark:text-emerald-400"></i><span>To-do page: all incomplete actions across deals, soonest due first; row shows what, when, and which deal; click through to the deal</span></li>
-                  <li class="flex items-start gap-2"><i data-lucide="check" class="w-3.5 h-3.5 mt-0.5 shrink-0 text-emerald-600 dark:text-emerald-400"></i><span>Mark done from the To-do page</span></li>
-                  <li class="flex items-start gap-2"><i data-lucide="check" class="w-3.5 h-3.5 mt-0.5 shrink-0 text-emerald-600 dark:text-emerald-400"></i><span>Overdue items are visually distinct</span></li>
-                  <li class="flex items-start gap-2"><i data-lucide="check" class="w-3.5 h-3.5 mt-0.5 shrink-0 text-emerald-600 dark:text-emerald-400"></i><span>Adding or completing a follow-up writes an activity log line on the deal</span></li>
-                </ul>
-              </div>
-              <div>
-                <h4 class="text-[11px] font-semibold uppercase tracking-[0.16em] text-zinc-500 dark:text-zinc-400 flex items-center gap-1.5">
-                  <i data-lucide="x-circle" class="w-3.5 h-3.5 text-zinc-400 dark:text-zinc-500"></i>Not in this milestone
-                </h4>
-                <ul class="mt-3 space-y-2 text-sm text-zinc-500 dark:text-zinc-400 list-none p-0">
-                  <li class="flex items-start gap-2"><i data-lucide="minus" class="w-3.5 h-3.5 mt-0.5 shrink-0"></i><span>Email, push, SMS, or calendar reminders</span></li>
-                  <li class="flex items-start gap-2"><i data-lucide="minus" class="w-3.5 h-3.5 mt-0.5 shrink-0"></i><span>Recurring tasks, subtasks, assignees, extra priority fields, a calendar view</span></li>
-                </ul>
-              </div>
-            </div>
-            <div class="mt-5 rounded-md border-l-4 border-emerald-500 bg-emerald-50 dark:bg-emerald-950/30 p-4 text-sm text-emerald-900 dark:text-emerald-200">
-              <p class="flex items-start gap-2"><i data-lucide="flag" class="w-4 h-4 mt-0.5 shrink-0"></i><span><span class="font-semibold">Done when:</span> You add a follow-up on a deal, see it on the To-do page with the deal name, see an overdue item called out if the due date is in the past, mark it done from either place, and see matching lines in the deal’s activity log.</span></p>
-            </div>
-          </div>
-        </article>
-
-        <article class="print-card rounded-lg border border-zinc-200 dark:border-zinc-800 bg-white dark:bg-zinc-900 overflow-hidden">
-          <header class="flex items-center gap-3 p-5 border-b border-zinc-100 dark:border-zinc-800">
-            <span class="shrink-0 w-8 h-8 rounded-full bg-zinc-900 dark:bg-zinc-100 text-zinc-50 dark:text-zinc-900 flex items-center justify-center text-sm font-semibold">7</span>
-            <h3 class="font-semibold text-lg text-zinc-900 dark:text-zinc-100">API health and Vue scaffold</h3>
-          </header>
-          <div class="p-5">
-            <p class="text-zinc-600 dark:text-zinc-400 leading-relaxed">Stand up the JSON API surface and the Vue frontend toolchain so milestone 8 can put a Kanban at <code class="font-mono text-xs">/app</code> without inventing plumbing. Do not change the LiveView Pipeline at <code class="font-mono text-xs">/</code>.</p>
-            <div class="mt-5 grid grid-cols-1 md:grid-cols-2 gap-5">
-              <div>
-                <h4 class="text-[11px] font-semibold uppercase tracking-[0.16em] text-zinc-500 dark:text-zinc-400 flex items-center gap-1.5">
-                  <i data-lucide="check-circle-2" class="w-3.5 h-3.5 text-emerald-600 dark:text-emerald-400"></i>What gets built
-                </h4>
-                <ul class="mt-3 space-y-2 text-sm text-zinc-700 dark:text-zinc-300 list-none p-0">
-                  <li class="flex items-start gap-2"><i data-lucide="check" class="w-3.5 h-3.5 mt-0.5 shrink-0 text-emerald-600 dark:text-emerald-400"></i><span><code class="font-mono text-xs">GET /api/health</code> — unauthenticated, returns <code class="font-mono text-xs">{"status":"ok"}</code></span></li>
-                  <li class="flex items-start gap-2"><i data-lucide="check" class="w-3.5 h-3.5 mt-0.5 shrink-0 text-emerald-600 dark:text-emerald-400"></i><span>Vue 3 + TypeScript + Vite + Vitest inside Phoenix <code class="font-mono text-xs">assets/</code></span></li>
-                  <li class="flex items-start gap-2"><i data-lucide="check" class="w-3.5 h-3.5 mt-0.5 shrink-0 text-emerald-600 dark:text-emerald-400"></i><span>Phoenix serves authenticated <code class="font-mono text-xs">GET /app</code> as a controller HTML page (not LiveView). Empty mount node; Vue boots (Vue 3 sets <code class="font-mono text-xs">data-v-app</code>). Stub is enough: can show health <code class="font-mono text-xs">ok</code>. No extra nav item.</span></li>
-                </ul>
-              </div>
-              <div>
-                <h4 class="text-[11px] font-semibold uppercase tracking-[0.16em] text-zinc-500 dark:text-zinc-400 flex items-center gap-1.5">
-                  <i data-lucide="x-circle" class="w-3.5 h-3.5 text-zinc-400 dark:text-zinc-500"></i>Not in this milestone
-                </h4>
-                <ul class="mt-3 space-y-2 text-sm text-zinc-500 dark:text-zinc-400 list-none p-0">
-                  <li class="flex items-start gap-2"><i data-lucide="minus" class="w-3.5 h-3.5 mt-0.5 shrink-0"></i><span>Kanban REST endpoints or drag-and-drop</span></li>
-                  <li class="flex items-start gap-2"><i data-lucide="minus" class="w-3.5 h-3.5 mt-0.5 shrink-0"></i><span>Changing <code class="font-mono text-xs">PipelineLive</code>, wrapping Vue inside it, or adding a fourth nav item</span></li>
-                  <li class="flex items-start gap-2"><i data-lucide="minus" class="w-3.5 h-3.5 mt-0.5 shrink-0"></i><span>Extra <code class="font-mono text-xs">/api</code> resources beyond health</span></li>
-                </ul>
-              </div>
-            </div>
-            <div class="mt-5 rounded-md border-l-4 border-emerald-500 bg-emerald-50 dark:bg-emerald-950/30 p-4 text-sm text-emerald-900 dark:text-emerald-200">
-              <p class="flex items-start gap-2"><i data-lucide="flag" class="w-4 h-4 mt-0.5 shrink-0"></i><span><span class="font-semibold">Done when:</span> An unauthenticated <code class="font-mono text-xs">GET /api/health</code> returns <code class="font-mono text-xs">{"status":"ok"}</code>. A signed-in user opening <code class="font-mono text-xs">/app</code> sees a Vue app that has mounted. <code class="font-mono text-xs">mix test</code> and Vitest both pass.</span></p>
-            </div>
-          </div>
-        </article>
-
-        <article class="print-card rounded-lg border border-zinc-200 dark:border-zinc-800 bg-white dark:bg-zinc-900 overflow-hidden">
-          <header class="flex items-center gap-3 p-5 border-b border-zinc-100 dark:border-zinc-800">
-            <span class="shrink-0 w-8 h-8 rounded-full bg-zinc-900 dark:bg-zinc-100 text-zinc-50 dark:text-zinc-900 flex items-center justify-center text-sm font-semibold">8</span>
-            <h3 class="font-semibold text-lg text-zinc-900 dark:text-zinc-100">Vue Kanban over REST</h3>
-          </header>
-          <div class="p-5">
-            <p class="text-zinc-600 dark:text-zinc-400 leading-relaxed">Grow <code class="font-mono text-xs">/app</code> into a Vue Kanban that loads and updates deals through the JSON API. Same UX as milestone 4. LiveView Pipeline at <code class="font-mono text-xs">/</code> stays. Contacts, deal pages, activity, and to-dos stay LiveView.</p>
-            <div class="mt-5 grid grid-cols-1 md:grid-cols-2 gap-5">
-              <div>
-                <h4 class="text-[11px] font-semibold uppercase tracking-[0.16em] text-zinc-500 dark:text-zinc-400 flex items-center gap-1.5">
-                  <i data-lucide="check-circle-2" class="w-3.5 h-3.5 text-emerald-600 dark:text-emerald-400"></i>What gets built
-                </h4>
-                <ul class="mt-3 space-y-2 text-sm text-zinc-700 dark:text-zinc-300 list-none p-0">
-                  <li class="flex items-start gap-2"><i data-lucide="check" class="w-3.5 h-3.5 mt-0.5 shrink-0 text-emerald-600 dark:text-emerald-400"></i><span>JSON: <code class="font-mono text-xs">GET /api/deals</code>, <code class="font-mono text-xs">GET /api/deals/:id</code>, <code class="font-mono text-xs">PATCH /api/deals/:id</code> with <code class="font-mono text-xs">pipeline_column_id</code> (session cookies; unauthenticated → 401). Optional <code class="font-mono text-xs">GET /api/pipeline</code> for the board aggregate.</span></li>
-                  <li class="flex items-start gap-2"><i data-lucide="check" class="w-3.5 h-3.5 mt-0.5 shrink-0 text-emerald-600 dark:text-emerald-400"></i><span>Vue board at <code class="font-mono text-xs">/app</code> (not Pipeline nav): five columns, card title/contact/IDR, column totals, click-through to the existing LiveView deal page</span></li>
-                  <li class="flex items-start gap-2"><i data-lucide="check" class="w-3.5 h-3.5 mt-0.5 shrink-0 text-emerald-600 dark:text-emerald-400"></i><span>Drag to another column persists; refresh keeps the new column; activity-log move lines from milestone 5 still fire</span></li>
-                </ul>
-              </div>
-              <div>
-                <h4 class="text-[11px] font-semibold uppercase tracking-[0.16em] text-zinc-500 dark:text-zinc-400 flex items-center gap-1.5">
-                  <i data-lucide="x-circle" class="w-3.5 h-3.5 text-zinc-400 dark:text-zinc-500"></i>Not in this milestone
-                </h4>
-                <ul class="mt-3 space-y-2 text-sm text-zinc-500 dark:text-zinc-400 list-none p-0">
-                  <li class="flex items-start gap-2"><i data-lucide="minus" class="w-3.5 h-3.5 mt-0.5 shrink-0"></i><span>Replacing or wrapping <code class="font-mono text-xs">PipelineLive</code>; rewriting contacts, deal pages, activity, or to-dos to Vue; a fourth nav item</span></li>
-                  <li class="flex items-start gap-2"><i data-lucide="minus" class="w-3.5 h-3.5 mt-0.5 shrink-0"></i><span>JWT or token auth; CORS; a separate frontend app</span></li>
-                  <li class="flex items-start gap-2"><i data-lucide="minus" class="w-3.5 h-3.5 mt-0.5 shrink-0"></i><span>Adding, renaming, reordering, or deleting columns</span></li>
-                </ul>
-              </div>
-            </div>
-            <div class="mt-5 rounded-md border-l-4 border-emerald-500 bg-emerald-50 dark:bg-emerald-950/30 p-4 text-sm text-emerald-900 dark:text-emerald-200">
-              <p class="flex items-start gap-2"><i data-lucide="flag" class="w-4 h-4 mt-0.5 shrink-0"></i><span><span class="font-semibold">Done when:</span> Signed-in <code class="font-mono text-xs">/app</code> shows existing deals on the Vue board in the right columns. You can drag one from Lead to Meeting, refresh, and it stays there. Column totals match the cards. Clicking a card opens the LiveView deal page. Drag issues <code class="font-mono text-xs">PATCH /api/deals/:id</code>, not LiveView events.</span></p>
-            </div>
-          </div>
-        </article>
-
-      </div>
-    </section>
-
-    <footer class="pt-8 border-t border-zinc-200 dark:border-zinc-800 text-xs text-zinc-500 dark:text-zinc-400">
-      Generated by <span class="font-medium">bm-prd-creator</span>. Open the milestone-1 <code class="font-mono">prompt.md</code> to start building.
-    </footer>
-  </main>
-
-  <script>
-    (function () {
-      var html = document.documentElement;
-      var stored = localStorage.getItem('prd-theme');
-      var prefersDark = window.matchMedia && window.matchMedia('(prefers-color-scheme: dark)').matches;
-      var initial = stored ? stored : (prefersDark ? 'dark' : 'light');
-      if (initial === 'dark') html.classList.add('dark');
-      var btn = document.getElementById('theme-toggle');
-      if (btn) {
-        btn.addEventListener('click', function () {
-          var isDark = html.classList.toggle('dark');
-          localStorage.setItem('prd-theme', isDark ? 'dark' : 'light');
-        });
+  <head>
+    <meta charset="utf-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1" />
+    <title>Alur — PRD</title>
+    <script src="https://cdn.tailwindcss.com"></script>
+    <script>
+      tailwind.config = { darkMode: "class" };
+    </script>
+    <link rel="preconnect" href="https://fonts.googleapis.com" />
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
+    <link
+      href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&display=swap"
+      rel="stylesheet"
+    />
+    <script src="https://unpkg.com/lucide@latest"></script>
+    <style>
+      html {
+        font-family:
+          "Inter",
+          system-ui,
+          -apple-system,
+          sans-serif;
       }
-      if (window.lucide) window.lucide.createIcons();
-    })();
-  </script>
-</body>
+      body {
+        font-feature-settings: "cv11", "ss01";
+      }
+      @media print {
+        html {
+          background: white !important;
+          color: black !important;
+          color-scheme: light;
+        }
+        html.dark {
+          color-scheme: light;
+        }
+        html.dark body,
+        html.dark * {
+          background: white !important;
+          color: black !important;
+          border-color: #d4d4d8 !important;
+        }
+        .no-print {
+          display: none !important;
+        }
+        .print-card {
+          break-inside: avoid;
+          page-break-inside: avoid;
+        }
+        header.sticky {
+          position: static !important;
+          backdrop-filter: none !important;
+        }
+        main {
+          padding-top: 0 !important;
+        }
+        a {
+          color: black !important;
+          text-decoration: none !important;
+        }
+      }
+    </style>
+  </head>
+  <body
+    class="bg-zinc-50 dark:bg-zinc-950 text-zinc-900 dark:text-zinc-100 antialiased"
+  >
+    <header
+      class="sticky top-0 z-10 backdrop-blur bg-zinc-50/80 dark:bg-zinc-950/80 border-b border-zinc-200 dark:border-zinc-800"
+    >
+      <div
+        class="max-w-4xl mx-auto px-4 sm:px-6 py-3 flex items-center justify-between"
+      >
+        <span class="text-sm font-medium text-zinc-500 dark:text-zinc-400"
+          >PRD · Alur</span
+        >
+        <button
+          id="theme-toggle"
+          class="no-print inline-flex items-center justify-center w-9 h-9 rounded-md border border-zinc-200 dark:border-zinc-800 hover:bg-zinc-100 dark:hover:bg-zinc-900 transition"
+          aria-label="Toggle theme"
+        >
+          <i data-lucide="sun" class="hidden dark:inline-block w-4 h-4"></i>
+          <i data-lucide="moon" class="inline-block dark:hidden w-4 h-4"></i>
+        </button>
+      </div>
+    </header>
+
+    <main class="max-w-4xl mx-auto px-4 sm:px-6 py-10 sm:py-14 space-y-14">
+      <div
+        class="rounded-lg border border-amber-200 dark:border-amber-900/60 bg-amber-50 dark:bg-amber-950/30 p-4 text-sm text-amber-900 dark:text-amber-200"
+      >
+        <p>
+          <strong class="font-semibold">About this file:</strong> The build-plan
+          artifacts in <code class="font-mono text-xs">docs/</code> — this PRD
+          (<code class="font-mono text-xs">prd.html</code>),
+          <code class="font-mono text-xs">decisions.md</code>,
+          <code class="font-mono text-xs">run-autonomous.md</code>, and
+          <code class="font-mono text-xs">milestones/</code> — are temporary
+          documentation for the initial build-out of this codebase. These files
+          are not functional — no code, configuration, runtime logic, tests, or
+          deployment process should import, read, reference, or depend on them.
+          Once the initial milestones are built and shipped, those build-plan
+          files are expected to be deleted. Do not delete the entire
+          <code class="font-mono text-xs">docs/</code> folder (other docs such
+          as <code class="font-mono text-xs">phoenix-test.md</code> remain).
+        </p>
+      </div>
+
+      <section>
+        <h1 class="text-4xl sm:text-5xl font-bold tracking-tight">Alur</h1>
+        <p
+          class="mt-5 text-lg sm:text-xl text-zinc-600 dark:text-zinc-400 leading-relaxed"
+        >
+          A simple personal CRM for managing contacts and the deals attached to
+          them. You keep a pipeline of deals with a value in Indonesian Rupiah
+          (IDR) and a status, move them on a Kanban board, see a timestamped
+          activity history on each deal, and never lose the next follow-up —
+          both on the deal itself and as a single to-do list across everything
+          you're working. The app is Phoenix + LiveView with SQLite. From
+          milestone 7 a Vue app is served at
+          <code class="font-mono text-xs">/app</code>; milestone 8 puts a second
+          Kanban there over REST. Pipeline nav/home stays LiveView. Build it in
+          eight browser-testable milestones.
+        </p>
+        <div class="mt-6 flex flex-wrap gap-2">
+          <span
+            class="inline-flex items-center gap-1.5 px-2.5 py-1 rounded-full bg-white dark:bg-zinc-900 border border-zinc-200 dark:border-zinc-800 text-xs font-medium text-zinc-700 dark:text-zinc-300"
+            >Phoenix</span
+          >
+          <span
+            class="inline-flex items-center gap-1.5 px-2.5 py-1 rounded-full bg-white dark:bg-zinc-900 border border-zinc-200 dark:border-zinc-800 text-xs font-medium text-zinc-700 dark:text-zinc-300"
+            >LiveView</span
+          >
+          <span
+            class="inline-flex items-center gap-1.5 px-2.5 py-1 rounded-full bg-white dark:bg-zinc-900 border border-zinc-200 dark:border-zinc-800 text-xs font-medium text-zinc-700 dark:text-zinc-300"
+            >SQLite</span
+          >
+          <span
+            class="inline-flex items-center gap-1.5 px-2.5 py-1 rounded-full bg-white dark:bg-zinc-900 border border-zinc-200 dark:border-zinc-800 text-xs font-medium text-zinc-700 dark:text-zinc-300"
+            >Vue</span
+          >
+          <span
+            class="inline-flex items-center gap-1.5 px-2.5 py-1 rounded-full bg-white dark:bg-zinc-900 border border-zinc-200 dark:border-zinc-800 text-xs font-medium text-zinc-700 dark:text-zinc-300"
+            >Vite</span
+          >
+          <span
+            class="inline-flex items-center gap-1.5 px-2.5 py-1 rounded-full bg-white dark:bg-zinc-900 border border-zinc-200 dark:border-zinc-800 text-xs font-medium text-zinc-700 dark:text-zinc-300"
+            >REST</span
+          >
+          <span
+            class="inline-flex items-center gap-1.5 px-2.5 py-1 rounded-full bg-white dark:bg-zinc-900 border border-zinc-200 dark:border-zinc-800 text-xs font-medium text-zinc-700 dark:text-zinc-300"
+            >Nix flake (Elixir 1.20 / OTP 27)</span
+          >
+        </div>
+      </section>
+
+      <section>
+        <h2
+          class="text-xs font-semibold uppercase tracking-[0.18em] text-zinc-500 dark:text-zinc-400 flex items-center gap-2"
+        >
+          <i data-lucide="sparkles" class="w-3.5 h-3.5"></i>What the app does
+        </h2>
+        <ul class="mt-5 grid grid-cols-1 sm:grid-cols-2 gap-3 list-none p-0">
+          <li
+            class="print-card rounded-lg border border-zinc-200 dark:border-zinc-800 bg-white dark:bg-zinc-900 p-4"
+          >
+            <div class="flex items-start gap-3">
+              <div
+                class="shrink-0 mt-0.5 w-8 h-8 rounded-md bg-zinc-100 dark:bg-zinc-800 flex items-center justify-center"
+              >
+                <i
+                  data-lucide="lock"
+                  class="w-4 h-4 text-zinc-700 dark:text-zinc-300"
+                ></i>
+              </div>
+              <div>
+                <p class="font-medium text-zinc-900 dark:text-zinc-100">
+                  Login and layout
+                </p>
+                <p
+                  class="mt-1 text-sm text-zinc-600 dark:text-zinc-400 leading-relaxed"
+                >
+                  Register with email and password, log in and out. After login:
+                  nav to Pipeline, Contacts, and To-dos. Pipeline is home.
+                </p>
+              </div>
+            </div>
+          </li>
+          <li
+            class="print-card rounded-lg border border-zinc-200 dark:border-zinc-800 bg-white dark:bg-zinc-900 p-4"
+          >
+            <div class="flex items-start gap-3">
+              <div
+                class="shrink-0 mt-0.5 w-8 h-8 rounded-md bg-zinc-100 dark:bg-zinc-800 flex items-center justify-center"
+              >
+                <i
+                  data-lucide="users"
+                  class="w-4 h-4 text-zinc-700 dark:text-zinc-300"
+                ></i>
+              </div>
+              <div>
+                <p class="font-medium text-zinc-900 dark:text-zinc-100">
+                  Contacts
+                </p>
+                <p
+                  class="mt-1 text-sm text-zinc-600 dark:text-zinc-400 leading-relaxed"
+                >
+                  List, search by name, add/edit/delete. Name required; email,
+                  phone, company, notes optional. Open a contact to see deals
+                  and start a new one.
+                </p>
+              </div>
+            </div>
+          </li>
+          <li
+            class="print-card rounded-lg border border-zinc-200 dark:border-zinc-800 bg-white dark:bg-zinc-900 p-4"
+          >
+            <div class="flex items-start gap-3">
+              <div
+                class="shrink-0 mt-0.5 w-8 h-8 rounded-md bg-zinc-100 dark:bg-zinc-800 flex items-center justify-center"
+              >
+                <i
+                  data-lucide="receipt"
+                  class="w-4 h-4 text-zinc-700 dark:text-zinc-300"
+                ></i>
+              </div>
+              <div>
+                <p class="font-medium text-zinc-900 dark:text-zinc-100">
+                  Deals
+                </p>
+                <p
+                  class="mt-1 text-sm text-zinc-600 dark:text-zinc-400 leading-relaxed"
+                >
+                  Each deal has a title, IDR value (shown as e.g. Rp
+                  15.000.000), a contact, a pipeline column, and optional notes.
+                  Open, edit, or delete from the deal page.
+                </p>
+              </div>
+            </div>
+          </li>
+          <li
+            class="print-card rounded-lg border border-zinc-200 dark:border-zinc-800 bg-white dark:bg-zinc-900 p-4"
+          >
+            <div class="flex items-start gap-3">
+              <div
+                class="shrink-0 mt-0.5 w-8 h-8 rounded-md bg-zinc-100 dark:bg-zinc-800 flex items-center justify-center"
+              >
+                <i
+                  data-lucide="columns-3"
+                  class="w-4 h-4 text-zinc-700 dark:text-zinc-300"
+                ></i>
+              </div>
+              <div>
+                <p class="font-medium text-zinc-900 dark:text-zinc-100">
+                  Kanban pipeline
+                </p>
+                <p
+                  class="mt-1 text-sm text-zinc-600 dark:text-zinc-400 leading-relaxed"
+                >
+                  Five columns: Lead, Meeting, Proposal, Won, Lost. Cards show
+                  title, contact, IDR. Drag to change status. Column totals.
+                  Click a card to open the deal.
+                </p>
+              </div>
+            </div>
+          </li>
+          <li
+            class="print-card rounded-lg border border-zinc-200 dark:border-zinc-800 bg-white dark:bg-zinc-900 p-4"
+          >
+            <div class="flex items-start gap-3">
+              <div
+                class="shrink-0 mt-0.5 w-8 h-8 rounded-md bg-zinc-100 dark:bg-zinc-800 flex items-center justify-center"
+              >
+                <i
+                  data-lucide="file-text"
+                  class="w-4 h-4 text-zinc-700 dark:text-zinc-300"
+                ></i>
+              </div>
+              <div>
+                <p class="font-medium text-zinc-900 dark:text-zinc-100">
+                  Deal activity log
+                </p>
+                <p
+                  class="mt-1 text-sm text-zinc-600 dark:text-zinc-400 leading-relaxed"
+                >
+                  Newest-first history on the deal: created, moved, follow-up
+                  added or completed, plus manual notes you type. Lines are not
+                  edited later.
+                </p>
+              </div>
+            </div>
+          </li>
+          <li
+            class="print-card rounded-lg border border-zinc-200 dark:border-zinc-800 bg-white dark:bg-zinc-900 p-4"
+          >
+            <div class="flex items-start gap-3">
+              <div
+                class="shrink-0 mt-0.5 w-8 h-8 rounded-md bg-zinc-100 dark:bg-zinc-800 flex items-center justify-center"
+              >
+                <i
+                  data-lucide="calendar"
+                  class="w-4 h-4 text-zinc-700 dark:text-zinc-300"
+                ></i>
+              </div>
+              <div>
+                <p class="font-medium text-zinc-900 dark:text-zinc-100">
+                  Next actions
+                </p>
+                <p
+                  class="mt-1 text-sm text-zinc-600 dark:text-zinc-400 leading-relaxed"
+                >
+                  Schedule a follow-up on a deal (description + due date,
+                  optional time). Incomplete items appear on a global To-do
+                  list, soonest first, overdue called out. Mark done from the
+                  deal or the list.
+                </p>
+              </div>
+            </div>
+          </li>
+        </ul>
+      </section>
+
+      <section>
+        <h2
+          class="text-xs font-semibold uppercase tracking-[0.18em] text-zinc-500 dark:text-zinc-400 flex items-center gap-2"
+        >
+          <i data-lucide="package-check" class="w-3.5 h-3.5"></i>Already
+          provided by the existing codebase
+        </h2>
+        <ul class="mt-5 flex flex-wrap gap-2 list-none p-0">
+          <li
+            class="inline-flex items-center gap-1.5 px-3 py-1.5 rounded-md bg-white dark:bg-zinc-900 border border-zinc-200 dark:border-zinc-800 text-sm text-zinc-700 dark:text-zinc-300"
+          >
+            <i
+              data-lucide="check"
+              class="w-3.5 h-3.5 text-emerald-600 dark:text-emerald-400"
+            ></i
+            >Nix dev shell (Elixir 1.20, OTP 27, SQLite, Node)
+          </li>
+          <li
+            class="inline-flex items-center gap-1.5 px-3 py-1.5 rounded-md bg-white dark:bg-zinc-900 border border-zinc-200 dark:border-zinc-800 text-sm text-zinc-700 dark:text-zinc-300"
+          >
+            <i
+              data-lucide="check"
+              class="w-3.5 h-3.5 text-emerald-600 dark:text-emerald-400"
+            ></i
+            >Credo / editorconfig / Reach config
+          </li>
+        </ul>
+        <p class="mt-4 text-sm text-zinc-500 dark:text-zinc-400">
+          No Phoenix app, pages, or login exist yet. Milestone 1 creates the
+          app. Login, layout, and every CRM feature are in v1 — nothing of the
+          product is pre-built.
+        </p>
+      </section>
+
+      <section>
+        <h2
+          class="text-xs font-semibold uppercase tracking-[0.18em] text-zinc-500 dark:text-zinc-400 flex items-center gap-2"
+        >
+          <i data-lucide="minus-circle" class="w-3.5 h-3.5"></i>Out of scope
+          (v1)
+        </h2>
+        <ul class="mt-5 space-y-2.5 list-none p-0">
+          <li class="flex items-start gap-3">
+            <i
+              data-lucide="x"
+              class="w-4 h-4 mt-1 shrink-0 text-zinc-400 dark:text-zinc-600"
+            ></i>
+            <span class="text-zinc-700 dark:text-zinc-300"
+              ><span class="font-medium">Teams, roles, and sharing</span
+              ><span class="text-zinc-500 dark:text-zinc-400">
+                — this is your pipeline, not a company-wide CRM. Extra accounts
+                do not share data.</span
+              ></span
+            >
+          </li>
+          <li class="flex items-start gap-3">
+            <i
+              data-lucide="x"
+              class="w-4 h-4 mt-1 shrink-0 text-zinc-400 dark:text-zinc-600"
+            ></i>
+            <span class="text-zinc-700 dark:text-zinc-300"
+              ><span class="font-medium">Email and calendar sync</span
+              ><span class="text-zinc-500 dark:text-zinc-400">
+                — no Gmail, Outlook, or Google Calendar. Reminders live in the
+                app.</span
+              ></span
+            >
+          </li>
+          <li class="flex items-start gap-3">
+            <i
+              data-lucide="x"
+              class="w-4 h-4 mt-1 shrink-0 text-zinc-400 dark:text-zinc-600"
+            ></i>
+            <span class="text-zinc-700 dark:text-zinc-300"
+              ><span class="font-medium">Native mobile app</span
+              ><span class="text-zinc-500 dark:text-zinc-400">
+                — phone browser is enough.</span
+              ></span
+            >
+          </li>
+          <li class="flex items-start gap-3">
+            <i
+              data-lucide="x"
+              class="w-4 h-4 mt-1 shrink-0 text-zinc-400 dark:text-zinc-600"
+            ></i>
+            <span class="text-zinc-700 dark:text-zinc-300"
+              ><span class="font-medium">Import/export</span
+              ><span class="text-zinc-500 dark:text-zinc-400">
+                — no HubSpot, Salesforce, or CSV. You add contacts
+                yourself.</span
+              ></span
+            >
+          </li>
+          <li class="flex items-start gap-3">
+            <i
+              data-lucide="x"
+              class="w-4 h-4 mt-1 shrink-0 text-zinc-400 dark:text-zinc-600"
+            ></i>
+            <span class="text-zinc-700 dark:text-zinc-300"
+              ><span class="font-medium">Invoices, quotes, payments</span
+              ><span class="text-zinc-500 dark:text-zinc-400">
+                — deals have an IDR value; money does not move through the
+                app.</span
+              ></span
+            >
+          </li>
+          <li class="flex items-start gap-3">
+            <i
+              data-lucide="x"
+              class="w-4 h-4 mt-1 shrink-0 text-zinc-400 dark:text-zinc-600"
+            ></i>
+            <span class="text-zinc-700 dark:text-zinc-300"
+              ><span class="font-medium"
+                >Multiple pipelines, currencies, custom fields</span
+              ><span class="text-zinc-500 dark:text-zinc-400">
+                — one IDR pipeline, fixed fields and columns.</span
+              ></span
+            >
+          </li>
+          <li class="flex items-start gap-3">
+            <i
+              data-lucide="x"
+              class="w-4 h-4 mt-1 shrink-0 text-zinc-400 dark:text-zinc-600"
+            ></i>
+            <span class="text-zinc-700 dark:text-zinc-300"
+              ><span class="font-medium">Reports and forecasts</span
+              ><span class="text-zinc-500 dark:text-zinc-400">
+                — Kanban, activity, and to-dos are the views. No charts or
+                win-rate dashboards.</span
+              ></span
+            >
+          </li>
+          <li class="flex items-start gap-3">
+            <i
+              data-lucide="x"
+              class="w-4 h-4 mt-1 shrink-0 text-zinc-400 dark:text-zinc-600"
+            ></i>
+            <span class="text-zinc-700 dark:text-zinc-300"
+              ><span class="font-medium">Automation and email sequences</span
+              ><span class="text-zinc-500 dark:text-zinc-400">
+                — next actions are something you schedule, not a drip
+                campaign.</span
+              ></span
+            >
+          </li>
+          <li class="flex items-start gap-3">
+            <i
+              data-lucide="x"
+              class="w-4 h-4 mt-1 shrink-0 text-zinc-400 dark:text-zinc-600"
+            ></i>
+            <span class="text-zinc-700 dark:text-zinc-300"
+              ><span class="font-medium"
+                >Google/GitHub login, magic links, 2FA, email password
+                reset</span
+              ><span class="text-zinc-500 dark:text-zinc-400">
+                — email/password only. No mail provider in v1.</span
+              ></span
+            >
+          </li>
+        </ul>
+      </section>
+
+      <section>
+        <h2
+          class="text-xs font-semibold uppercase tracking-[0.18em] text-zinc-500 dark:text-zinc-400 flex items-center gap-2"
+        >
+          <i data-lucide="database" class="w-3.5 h-3.5"></i>Data model
+        </h2>
+        <p class="mt-3 text-sm text-zinc-500 dark:text-zinc-400">
+          What the app needs to remember.
+        </p>
+        <div class="mt-5 grid grid-cols-1 sm:grid-cols-2 gap-3">
+          <div
+            class="print-card rounded-lg border border-zinc-200 dark:border-zinc-800 bg-white dark:bg-zinc-900 p-5"
+          >
+            <div class="flex items-center gap-2">
+              <i
+                data-lucide="box"
+                class="w-4 h-4 text-zinc-500 dark:text-zinc-400"
+              ></i>
+              <h3 class="font-semibold text-zinc-900 dark:text-zinc-100">
+                Account
+              </h3>
+            </div>
+            <table class="mt-4 w-full text-sm">
+              <tbody class="divide-y divide-zinc-100 dark:divide-zinc-800">
+                <tr>
+                  <td
+                    class="py-2 pr-4 font-mono text-xs font-medium text-zinc-700 dark:text-zinc-300 align-top whitespace-nowrap"
+                  >
+                    email
+                  </td>
+                  <td
+                    class="py-2 text-zinc-600 dark:text-zinc-400 leading-relaxed"
+                  >
+                    Login email
+                  </td>
+                </tr>
+                <tr>
+                  <td
+                    class="py-2 pr-4 font-mono text-xs font-medium text-zinc-700 dark:text-zinc-300 align-top whitespace-nowrap"
+                  >
+                    password
+                  </td>
+                  <td
+                    class="py-2 text-zinc-600 dark:text-zinc-400 leading-relaxed"
+                  >
+                    Login password
+                  </td>
+                </tr>
+              </tbody>
+            </table>
+            <p class="mt-4 text-xs text-zinc-500 dark:text-zinc-400">
+              <span
+                class="font-semibold uppercase tracking-[0.14em] text-[11px]"
+                >Related to</span
+              >
+              · Contact, Deal (everything you create belongs to your account)
+            </p>
+          </div>
+          <div
+            class="print-card rounded-lg border border-zinc-200 dark:border-zinc-800 bg-white dark:bg-zinc-900 p-5"
+          >
+            <div class="flex items-center gap-2">
+              <i
+                data-lucide="box"
+                class="w-4 h-4 text-zinc-500 dark:text-zinc-400"
+              ></i>
+              <h3 class="font-semibold text-zinc-900 dark:text-zinc-100">
+                Contact
+              </h3>
+            </div>
+            <table class="mt-4 w-full text-sm">
+              <tbody class="divide-y divide-zinc-100 dark:divide-zinc-800">
+                <tr>
+                  <td
+                    class="py-2 pr-4 font-mono text-xs font-medium text-zinc-700 dark:text-zinc-300 align-top whitespace-nowrap"
+                  >
+                    name
+                  </td>
+                  <td
+                    class="py-2 text-zinc-600 dark:text-zinc-400 leading-relaxed"
+                  >
+                    Required display name
+                  </td>
+                </tr>
+                <tr>
+                  <td
+                    class="py-2 pr-4 font-mono text-xs font-medium text-zinc-700 dark:text-zinc-300 align-top whitespace-nowrap"
+                  >
+                    email
+                  </td>
+                  <td
+                    class="py-2 text-zinc-600 dark:text-zinc-400 leading-relaxed"
+                  >
+                    Optional
+                  </td>
+                </tr>
+                <tr>
+                  <td
+                    class="py-2 pr-4 font-mono text-xs font-medium text-zinc-700 dark:text-zinc-300 align-top whitespace-nowrap"
+                  >
+                    phone
+                  </td>
+                  <td
+                    class="py-2 text-zinc-600 dark:text-zinc-400 leading-relaxed"
+                  >
+                    Optional
+                  </td>
+                </tr>
+                <tr>
+                  <td
+                    class="py-2 pr-4 font-mono text-xs font-medium text-zinc-700 dark:text-zinc-300 align-top whitespace-nowrap"
+                  >
+                    company
+                  </td>
+                  <td
+                    class="py-2 text-zinc-600 dark:text-zinc-400 leading-relaxed"
+                  >
+                    Optional text field — not a separate company record
+                  </td>
+                </tr>
+                <tr>
+                  <td
+                    class="py-2 pr-4 font-mono text-xs font-medium text-zinc-700 dark:text-zinc-300 align-top whitespace-nowrap"
+                  >
+                    notes
+                  </td>
+                  <td
+                    class="py-2 text-zinc-600 dark:text-zinc-400 leading-relaxed"
+                  >
+                    Optional free text
+                  </td>
+                </tr>
+              </tbody>
+            </table>
+            <p class="mt-4 text-xs text-zinc-500 dark:text-zinc-400">
+              <span
+                class="font-semibold uppercase tracking-[0.14em] text-[11px]"
+                >Related to</span
+              >
+              · Account · Deal
+            </p>
+          </div>
+          <div
+            class="print-card rounded-lg border border-zinc-200 dark:border-zinc-800 bg-white dark:bg-zinc-900 p-5"
+          >
+            <div class="flex items-center gap-2">
+              <i
+                data-lucide="box"
+                class="w-4 h-4 text-zinc-500 dark:text-zinc-400"
+              ></i>
+              <h3 class="font-semibold text-zinc-900 dark:text-zinc-100">
+                Deal
+              </h3>
+            </div>
+            <table class="mt-4 w-full text-sm">
+              <tbody class="divide-y divide-zinc-100 dark:divide-zinc-800">
+                <tr>
+                  <td
+                    class="py-2 pr-4 font-mono text-xs font-medium text-zinc-700 dark:text-zinc-300 align-top whitespace-nowrap"
+                  >
+                    title
+                  </td>
+                  <td
+                    class="py-2 text-zinc-600 dark:text-zinc-400 leading-relaxed"
+                  >
+                    Name of the opportunity
+                  </td>
+                </tr>
+                <tr>
+                  <td
+                    class="py-2 pr-4 font-mono text-xs font-medium text-zinc-700 dark:text-zinc-300 align-top whitespace-nowrap"
+                  >
+                    amount
+                  </td>
+                  <td
+                    class="py-2 text-zinc-600 dark:text-zinc-400 leading-relaxed"
+                  >
+                    Value in Indonesian Rupiah
+                  </td>
+                </tr>
+                <tr>
+                  <td
+                    class="py-2 pr-4 font-mono text-xs font-medium text-zinc-700 dark:text-zinc-300 align-top whitespace-nowrap"
+                  >
+                    notes
+                  </td>
+                  <td
+                    class="py-2 text-zinc-600 dark:text-zinc-400 leading-relaxed"
+                  >
+                    Optional
+                  </td>
+                </tr>
+              </tbody>
+            </table>
+            <p class="mt-4 text-xs text-zinc-500 dark:text-zinc-400">
+              <span
+                class="font-semibold uppercase tracking-[0.14em] text-[11px]"
+                >Related to</span
+              >
+              · Account · Contact (required) · Pipeline column · Activity · Next
+              action
+            </p>
+          </div>
+          <div
+            class="print-card rounded-lg border border-zinc-200 dark:border-zinc-800 bg-white dark:bg-zinc-900 p-5"
+          >
+            <div class="flex items-center gap-2">
+              <i
+                data-lucide="box"
+                class="w-4 h-4 text-zinc-500 dark:text-zinc-400"
+              ></i>
+              <h3 class="font-semibold text-zinc-900 dark:text-zinc-100">
+                Pipeline column
+              </h3>
+            </div>
+            <table class="mt-4 w-full text-sm">
+              <tbody class="divide-y divide-zinc-100 dark:divide-zinc-800">
+                <tr>
+                  <td
+                    class="py-2 pr-4 font-mono text-xs font-medium text-zinc-700 dark:text-zinc-300 align-top whitespace-nowrap"
+                  >
+                    name
+                  </td>
+                  <td
+                    class="py-2 text-zinc-600 dark:text-zinc-400 leading-relaxed"
+                  >
+                    Column label
+                  </td>
+                </tr>
+                <tr>
+                  <td
+                    class="py-2 pr-4 font-mono text-xs font-medium text-zinc-700 dark:text-zinc-300 align-top whitespace-nowrap"
+                  >
+                    order
+                  </td>
+                  <td
+                    class="py-2 text-zinc-600 dark:text-zinc-400 leading-relaxed"
+                  >
+                    Left-to-right position
+                  </td>
+                </tr>
+              </tbody>
+            </table>
+            <p class="mt-4 text-xs text-zinc-500 dark:text-zinc-400">
+              Starting set, in order: Lead, Meeting, Proposal, Won, Lost. v1
+              does not let you add, rename, reorder, or delete columns.
+            </p>
+            <p class="mt-2 text-xs text-zinc-500 dark:text-zinc-400">
+              <span
+                class="font-semibold uppercase tracking-[0.14em] text-[11px]"
+                >Related to</span
+              >
+              · Deal
+            </p>
+          </div>
+          <div
+            class="print-card rounded-lg border border-zinc-200 dark:border-zinc-800 bg-white dark:bg-zinc-900 p-5"
+          >
+            <div class="flex items-center gap-2">
+              <i
+                data-lucide="box"
+                class="w-4 h-4 text-zinc-500 dark:text-zinc-400"
+              ></i>
+              <h3 class="font-semibold text-zinc-900 dark:text-zinc-100">
+                Activity
+              </h3>
+            </div>
+            <table class="mt-4 w-full text-sm">
+              <tbody class="divide-y divide-zinc-100 dark:divide-zinc-800">
+                <tr>
+                  <td
+                    class="py-2 pr-4 font-mono text-xs font-medium text-zinc-700 dark:text-zinc-300 align-top whitespace-nowrap"
+                  >
+                    when
+                  </td>
+                  <td
+                    class="py-2 text-zinc-600 dark:text-zinc-400 leading-relaxed"
+                  >
+                    Date and time it happened
+                  </td>
+                </tr>
+                <tr>
+                  <td
+                    class="py-2 pr-4 font-mono text-xs font-medium text-zinc-700 dark:text-zinc-300 align-top whitespace-nowrap"
+                  >
+                    description
+                  </td>
+                  <td
+                    class="py-2 text-zinc-600 dark:text-zinc-400 leading-relaxed"
+                  >
+                    Short line: created, moved, follow-up logged, or a manual
+                    note
+                  </td>
+                </tr>
+              </tbody>
+            </table>
+            <p class="mt-4 text-xs text-zinc-500 dark:text-zinc-400">
+              <span
+                class="font-semibold uppercase tracking-[0.14em] text-[11px]"
+                >Related to</span
+              >
+              · Deal. Not edited or deleted after it is written.
+            </p>
+          </div>
+          <div
+            class="print-card rounded-lg border border-zinc-200 dark:border-zinc-800 bg-white dark:bg-zinc-900 p-5"
+          >
+            <div class="flex items-center gap-2">
+              <i
+                data-lucide="box"
+                class="w-4 h-4 text-zinc-500 dark:text-zinc-400"
+              ></i>
+              <h3 class="font-semibold text-zinc-900 dark:text-zinc-100">
+                Next action
+              </h3>
+            </div>
+            <table class="mt-4 w-full text-sm">
+              <tbody class="divide-y divide-zinc-100 dark:divide-zinc-800">
+                <tr>
+                  <td
+                    class="py-2 pr-4 font-mono text-xs font-medium text-zinc-700 dark:text-zinc-300 align-top whitespace-nowrap"
+                  >
+                    what
+                  </td>
+                  <td
+                    class="py-2 text-zinc-600 dark:text-zinc-400 leading-relaxed"
+                  >
+                    What to do
+                  </td>
+                </tr>
+                <tr>
+                  <td
+                    class="py-2 pr-4 font-mono text-xs font-medium text-zinc-700 dark:text-zinc-300 align-top whitespace-nowrap"
+                  >
+                    due
+                  </td>
+                  <td
+                    class="py-2 text-zinc-600 dark:text-zinc-400 leading-relaxed"
+                  >
+                    Due date, optional time
+                  </td>
+                </tr>
+                <tr>
+                  <td
+                    class="py-2 pr-4 font-mono text-xs font-medium text-zinc-700 dark:text-zinc-300 align-top whitespace-nowrap"
+                  >
+                    done
+                  </td>
+                  <td
+                    class="py-2 text-zinc-600 dark:text-zinc-400 leading-relaxed"
+                  >
+                    Whether it is completed. Incomplete items show on the To-do
+                    page.
+                  </td>
+                </tr>
+              </tbody>
+            </table>
+            <p class="mt-4 text-xs text-zinc-500 dark:text-zinc-400">
+              <span
+                class="font-semibold uppercase tracking-[0.14em] text-[11px]"
+                >Related to</span
+              >
+              · Deal
+            </p>
+          </div>
+        </div>
+      </section>
+
+      <section>
+        <h2
+          class="text-xs font-semibold uppercase tracking-[0.18em] text-zinc-500 dark:text-zinc-400 flex items-center gap-2"
+        >
+          <i data-lucide="route" class="w-3.5 h-3.5"></i>Milestones
+        </h2>
+        <div class="mt-5 space-y-5">
+          <article
+            class="print-card rounded-lg border border-zinc-200 dark:border-zinc-800 bg-white dark:bg-zinc-900 overflow-hidden"
+          >
+            <header
+              class="flex items-center gap-3 p-5 border-b border-zinc-100 dark:border-zinc-800"
+            >
+              <span
+                class="shrink-0 w-8 h-8 rounded-full bg-zinc-900 dark:bg-zinc-100 text-zinc-50 dark:text-zinc-900 flex items-center justify-center text-sm font-semibold"
+                >1</span
+              >
+              <h3
+                class="font-semibold text-lg text-zinc-900 dark:text-zinc-100"
+              >
+                Login and shell
+              </h3>
+            </header>
+            <div class="p-5">
+              <p class="text-zinc-600 dark:text-zinc-400 leading-relaxed">
+                Stand up the Phoenix app and the signed-in chrome. You can
+                register, log in, and move between empty placeholder pages.
+              </p>
+              <div class="mt-5 grid grid-cols-1 md:grid-cols-2 gap-5">
+                <div>
+                  <h4
+                    class="text-[11px] font-semibold uppercase tracking-[0.16em] text-zinc-500 dark:text-zinc-400 flex items-center gap-1.5"
+                  >
+                    <i
+                      data-lucide="check-circle-2"
+                      class="w-3.5 h-3.5 text-emerald-600 dark:text-emerald-400"
+                    ></i
+                    >What gets built
+                  </h4>
+                  <ul
+                    class="mt-3 space-y-2 text-sm text-zinc-700 dark:text-zinc-300 list-none p-0"
+                  >
+                    <li class="flex items-start gap-2">
+                      <i
+                        data-lucide="check"
+                        class="w-3.5 h-3.5 mt-0.5 shrink-0 text-emerald-600 dark:text-emerald-400"
+                      ></i
+                      ><span
+                        >Phoenix + LiveView app using SQLite, runnable from the
+                        existing Nix shell</span
+                      >
+                    </li>
+                    <li class="flex items-start gap-2">
+                      <i
+                        data-lucide="check"
+                        class="w-3.5 h-3.5 mt-0.5 shrink-0 text-emerald-600 dark:text-emerald-400"
+                      ></i
+                      ><span
+                        >Register with email and password; log in and log
+                        out</span
+                      >
+                    </li>
+                    <li class="flex items-start gap-2">
+                      <i
+                        data-lucide="check"
+                        class="w-3.5 h-3.5 mt-0.5 shrink-0 text-emerald-600 dark:text-emerald-400"
+                      ></i
+                      ><span
+                        >Logged-out visitors only see sign-in / register</span
+                      >
+                    </li>
+                    <li class="flex items-start gap-2">
+                      <i
+                        data-lucide="check"
+                        class="w-3.5 h-3.5 mt-0.5 shrink-0 text-emerald-600 dark:text-emerald-400"
+                      ></i
+                      ><span
+                        >After login: nav — Pipeline, Contacts, To-dos — plus
+                        log out. Pipeline is home</span
+                      >
+                    </li>
+                    <li class="flex items-start gap-2">
+                      <i
+                        data-lucide="check"
+                        class="w-3.5 h-3.5 mt-0.5 shrink-0 text-emerald-600 dark:text-emerald-400"
+                      ></i
+                      ><span
+                        >Pipeline and To-dos may be empty placeholders</span
+                      >
+                    </li>
+                  </ul>
+                </div>
+                <div>
+                  <h4
+                    class="text-[11px] font-semibold uppercase tracking-[0.16em] text-zinc-500 dark:text-zinc-400 flex items-center gap-1.5"
+                  >
+                    <i
+                      data-lucide="x-circle"
+                      class="w-3.5 h-3.5 text-zinc-400 dark:text-zinc-500"
+                    ></i
+                    >Not in this milestone
+                  </h4>
+                  <ul
+                    class="mt-3 space-y-2 text-sm text-zinc-500 dark:text-zinc-400 list-none p-0"
+                  >
+                    <li class="flex items-start gap-2">
+                      <i
+                        data-lucide="minus"
+                        class="w-3.5 h-3.5 mt-0.5 shrink-0"
+                      ></i
+                      ><span
+                        >Contacts, deals, Kanban, activity, or next
+                        actions</span
+                      >
+                    </li>
+                    <li class="flex items-start gap-2">
+                      <i
+                        data-lucide="minus"
+                        class="w-3.5 h-3.5 mt-0.5 shrink-0"
+                      ></i
+                      ><span
+                        >OAuth, magic links, 2FA, or email password reset</span
+                      >
+                    </li>
+                  </ul>
+                </div>
+              </div>
+              <div
+                class="mt-5 rounded-md border-l-4 border-emerald-500 bg-emerald-50 dark:bg-emerald-950/30 p-4 text-sm text-emerald-900 dark:text-emerald-200"
+              >
+                <p class="flex items-start gap-2">
+                  <i data-lucide="flag" class="w-4 h-4 mt-0.5 shrink-0"></i
+                  ><span
+                    ><span class="font-semibold">Done when:</span> In the
+                    browser you can create an account, log in, see the nav, open
+                    the three sections, and log out. A logged-out visit cannot
+                    see the app.</span
+                  >
+                </p>
+              </div>
+            </div>
+          </article>
+
+          <article
+            class="print-card rounded-lg border border-zinc-200 dark:border-zinc-800 bg-white dark:bg-zinc-900 overflow-hidden"
+          >
+            <header
+              class="flex items-center gap-3 p-5 border-b border-zinc-100 dark:border-zinc-800"
+            >
+              <span
+                class="shrink-0 w-8 h-8 rounded-full bg-zinc-900 dark:bg-zinc-100 text-zinc-50 dark:text-zinc-900 flex items-center justify-center text-sm font-semibold"
+                >2</span
+              >
+              <h3
+                class="font-semibold text-lg text-zinc-900 dark:text-zinc-100"
+              >
+                Contacts
+              </h3>
+            </header>
+            <div class="p-5">
+              <p class="text-zinc-600 dark:text-zinc-400 leading-relaxed">
+                You can keep a real contact list and open each person.
+              </p>
+              <div class="mt-5 grid grid-cols-1 md:grid-cols-2 gap-5">
+                <div>
+                  <h4
+                    class="text-[11px] font-semibold uppercase tracking-[0.16em] text-zinc-500 dark:text-zinc-400 flex items-center gap-1.5"
+                  >
+                    <i
+                      data-lucide="check-circle-2"
+                      class="w-3.5 h-3.5 text-emerald-600 dark:text-emerald-400"
+                    ></i
+                    >What gets built
+                  </h4>
+                  <ul
+                    class="mt-3 space-y-2 text-sm text-zinc-700 dark:text-zinc-300 list-none p-0"
+                  >
+                    <li class="flex items-start gap-2">
+                      <i
+                        data-lucide="check"
+                        class="w-3.5 h-3.5 mt-0.5 shrink-0 text-emerald-600 dark:text-emerald-400"
+                      ></i
+                      ><span
+                        >Contacts page listing name, company, and email</span
+                      >
+                    </li>
+                    <li class="flex items-start gap-2">
+                      <i
+                        data-lucide="check"
+                        class="w-3.5 h-3.5 mt-0.5 shrink-0 text-emerald-600 dark:text-emerald-400"
+                      ></i
+                      ><span>Search/filter the list by name</span>
+                    </li>
+                    <li class="flex items-start gap-2">
+                      <i
+                        data-lucide="check"
+                        class="w-3.5 h-3.5 mt-0.5 shrink-0 text-emerald-600 dark:text-emerald-400"
+                      ></i
+                      ><span
+                        >Add, edit, and delete (name required; email, phone,
+                        company, notes optional)</span
+                      >
+                    </li>
+                    <li class="flex items-start gap-2">
+                      <i
+                        data-lucide="check"
+                        class="w-3.5 h-3.5 mt-0.5 shrink-0 text-emerald-600 dark:text-emerald-400"
+                      ></i
+                      ><span>Contact detail page with those fields</span>
+                    </li>
+                    <li class="flex items-start gap-2">
+                      <i
+                        data-lucide="check"
+                        class="w-3.5 h-3.5 mt-0.5 shrink-0 text-emerald-600 dark:text-emerald-400"
+                      ></i
+                      ><span>You only see your own contacts</span>
+                    </li>
+                  </ul>
+                </div>
+                <div>
+                  <h4
+                    class="text-[11px] font-semibold uppercase tracking-[0.16em] text-zinc-500 dark:text-zinc-400 flex items-center gap-1.5"
+                  >
+                    <i
+                      data-lucide="x-circle"
+                      class="w-3.5 h-3.5 text-zinc-400 dark:text-zinc-500"
+                    ></i
+                    >Not in this milestone
+                  </h4>
+                  <ul
+                    class="mt-3 space-y-2 text-sm text-zinc-500 dark:text-zinc-400 list-none p-0"
+                  >
+                    <li class="flex items-start gap-2">
+                      <i
+                        data-lucide="minus"
+                        class="w-3.5 h-3.5 mt-0.5 shrink-0"
+                      ></i
+                      ><span
+                        >Deals on the contact, or a “new deal” button that
+                        works</span
+                      >
+                    </li>
+                    <li class="flex items-start gap-2">
+                      <i
+                        data-lucide="minus"
+                        class="w-3.5 h-3.5 mt-0.5 shrink-0"
+                      ></i
+                      ><span
+                        >Import, tags, bulk edit, photos, companies as their own
+                        records</span
+                      >
+                    </li>
+                  </ul>
+                </div>
+              </div>
+              <div
+                class="mt-5 rounded-md border-l-4 border-emerald-500 bg-emerald-50 dark:bg-emerald-950/30 p-4 text-sm text-emerald-900 dark:text-emerald-200"
+              >
+                <p class="flex items-start gap-2">
+                  <i data-lucide="flag" class="w-4 h-4 mt-0.5 shrink-0"></i
+                  ><span
+                    ><span class="font-semibold">Done when:</span> Logged in,
+                    you can add a contact, find them by name, edit, open their
+                    page, and delete them. Another account does not see that
+                    contact.</span
+                  >
+                </p>
+              </div>
+            </div>
+          </article>
+
+          <article
+            class="print-card rounded-lg border border-zinc-200 dark:border-zinc-800 bg-white dark:bg-zinc-900 overflow-hidden"
+          >
+            <header
+              class="flex items-center gap-3 p-5 border-b border-zinc-100 dark:border-zinc-800"
+            >
+              <span
+                class="shrink-0 w-8 h-8 rounded-full bg-zinc-900 dark:bg-zinc-100 text-zinc-50 dark:text-zinc-900 flex items-center justify-center text-sm font-semibold"
+                >3</span
+              >
+              <h3
+                class="font-semibold text-lg text-zinc-900 dark:text-zinc-100"
+              >
+                Deals
+              </h3>
+            </header>
+            <div class="p-5">
+              <p class="text-zinc-600 dark:text-zinc-400 leading-relaxed">
+                Deals exist with an IDR value and a contact. You manage them
+                from the contact and a deal page — not yet from a board.
+              </p>
+              <div class="mt-5 grid grid-cols-1 md:grid-cols-2 gap-5">
+                <div>
+                  <h4
+                    class="text-[11px] font-semibold uppercase tracking-[0.16em] text-zinc-500 dark:text-zinc-400 flex items-center gap-1.5"
+                  >
+                    <i
+                      data-lucide="check-circle-2"
+                      class="w-3.5 h-3.5 text-emerald-600 dark:text-emerald-400"
+                    ></i
+                    >What gets built
+                  </h4>
+                  <ul
+                    class="mt-3 space-y-2 text-sm text-zinc-700 dark:text-zinc-300 list-none p-0"
+                  >
+                    <li class="flex items-start gap-2">
+                      <i
+                        data-lucide="check"
+                        class="w-3.5 h-3.5 mt-0.5 shrink-0 text-emerald-600 dark:text-emerald-400"
+                      ></i
+                      ><span
+                        >Create a deal from a contact: title, IDR amount,
+                        starting column, optional notes. Contact is
+                        required</span
+                      >
+                    </li>
+                    <li class="flex items-start gap-2">
+                      <i
+                        data-lucide="check"
+                        class="w-3.5 h-3.5 mt-0.5 shrink-0 text-emerald-600 dark:text-emerald-400"
+                      ></i
+                      ><span
+                        >IDR shown as rupiah everywhere (e.g. Rp
+                        15.000.000)</span
+                      >
+                    </li>
+                    <li class="flex items-start gap-2">
+                      <i
+                        data-lucide="check"
+                        class="w-3.5 h-3.5 mt-0.5 shrink-0 text-emerald-600 dark:text-emerald-400"
+                      ></i
+                      ><span
+                        >Deal page: title, value, contact, column, notes</span
+                      >
+                    </li>
+                    <li class="flex items-start gap-2">
+                      <i
+                        data-lucide="check"
+                        class="w-3.5 h-3.5 mt-0.5 shrink-0 text-emerald-600 dark:text-emerald-400"
+                      ></i
+                      ><span>Edit those fields; delete the deal</span>
+                    </li>
+                    <li class="flex items-start gap-2">
+                      <i
+                        data-lucide="check"
+                        class="w-3.5 h-3.5 mt-0.5 shrink-0 text-emerald-600 dark:text-emerald-400"
+                      ></i
+                      ><span>Contact detail lists that contact’s deals</span>
+                    </li>
+                    <li class="flex items-start gap-2">
+                      <i
+                        data-lucide="check"
+                        class="w-3.5 h-3.5 mt-0.5 shrink-0 text-emerald-600 dark:text-emerald-400"
+                      ></i
+                      ><span
+                        >Five columns exist as data (Lead → Lost) even if the
+                        Kanban UI is not built yet; new deals pick a starting
+                        column</span
+                      >
+                    </li>
+                  </ul>
+                </div>
+                <div>
+                  <h4
+                    class="text-[11px] font-semibold uppercase tracking-[0.16em] text-zinc-500 dark:text-zinc-400 flex items-center gap-1.5"
+                  >
+                    <i
+                      data-lucide="x-circle"
+                      class="w-3.5 h-3.5 text-zinc-400 dark:text-zinc-500"
+                    ></i
+                    >Not in this milestone
+                  </h4>
+                  <ul
+                    class="mt-3 space-y-2 text-sm text-zinc-500 dark:text-zinc-400 list-none p-0"
+                  >
+                    <li class="flex items-start gap-2">
+                      <i
+                        data-lucide="minus"
+                        class="w-3.5 h-3.5 mt-0.5 shrink-0"
+                      ></i
+                      ><span>Kanban drag-and-drop or column totals</span>
+                    </li>
+                    <li class="flex items-start gap-2">
+                      <i
+                        data-lucide="minus"
+                        class="w-3.5 h-3.5 mt-0.5 shrink-0"
+                      ></i
+                      ><span
+                        >Activity log or next actions on the deal page</span
+                      >
+                    </li>
+                    <li class="flex items-start gap-2">
+                      <i
+                        data-lucide="minus"
+                        class="w-3.5 h-3.5 mt-0.5 shrink-0"
+                      ></i
+                      ><span>Multiple currencies, line items, quotes</span>
+                    </li>
+                  </ul>
+                </div>
+              </div>
+              <div
+                class="mt-5 rounded-md border-l-4 border-emerald-500 bg-emerald-50 dark:bg-emerald-950/30 p-4 text-sm text-emerald-900 dark:text-emerald-200"
+              >
+                <p class="flex items-start gap-2">
+                  <i data-lucide="flag" class="w-4 h-4 mt-0.5 shrink-0"></i
+                  ><span
+                    ><span class="font-semibold">Done when:</span> From a
+                    contact you create a deal with an IDR value, open it, see
+                    rupiah formatting, change the column on the deal page, and
+                    delete it. The contact shows the deal in its list.</span
+                  >
+                </p>
+              </div>
+            </div>
+          </article>
+
+          <article
+            class="print-card rounded-lg border border-zinc-200 dark:border-zinc-800 bg-white dark:bg-zinc-900 overflow-hidden"
+          >
+            <header
+              class="flex items-center gap-3 p-5 border-b border-zinc-100 dark:border-zinc-800"
+            >
+              <span
+                class="shrink-0 w-8 h-8 rounded-full bg-zinc-900 dark:bg-zinc-100 text-zinc-50 dark:text-zinc-900 flex items-center justify-center text-sm font-semibold"
+                >4</span
+              >
+              <h3
+                class="font-semibold text-lg text-zinc-900 dark:text-zinc-100"
+              >
+                Kanban pipeline
+              </h3>
+            </header>
+            <div class="p-5">
+              <p class="text-zinc-600 dark:text-zinc-400 leading-relaxed">
+                The Pipeline page becomes the working board. Dragging a card is
+                how you change status.
+              </p>
+              <div class="mt-5 grid grid-cols-1 md:grid-cols-2 gap-5">
+                <div>
+                  <h4
+                    class="text-[11px] font-semibold uppercase tracking-[0.16em] text-zinc-500 dark:text-zinc-400 flex items-center gap-1.5"
+                  >
+                    <i
+                      data-lucide="check-circle-2"
+                      class="w-3.5 h-3.5 text-emerald-600 dark:text-emerald-400"
+                    ></i
+                    >What gets built
+                  </h4>
+                  <ul
+                    class="mt-3 space-y-2 text-sm text-zinc-700 dark:text-zinc-300 list-none p-0"
+                  >
+                    <li class="flex items-start gap-2">
+                      <i
+                        data-lucide="check"
+                        class="w-3.5 h-3.5 mt-0.5 shrink-0 text-emerald-600 dark:text-emerald-400"
+                      ></i
+                      ><span
+                        >Pipeline page: columns Lead, Meeting, Proposal, Won,
+                        Lost in that order</span
+                      >
+                    </li>
+                    <li class="flex items-start gap-2">
+                      <i
+                        data-lucide="check"
+                        class="w-3.5 h-3.5 mt-0.5 shrink-0 text-emerald-600 dark:text-emerald-400"
+                      ></i
+                      ><span
+                        >Each card: deal title, contact name, IDR value</span
+                      >
+                    </li>
+                    <li class="flex items-start gap-2">
+                      <i
+                        data-lucide="check"
+                        class="w-3.5 h-3.5 mt-0.5 shrink-0 text-emerald-600 dark:text-emerald-400"
+                      ></i
+                      ><span
+                        >Drag a card to another column; that is the deal’s new
+                        status</span
+                      >
+                    </li>
+                    <li class="flex items-start gap-2">
+                      <i
+                        data-lucide="check"
+                        class="w-3.5 h-3.5 mt-0.5 shrink-0 text-emerald-600 dark:text-emerald-400"
+                      ></i
+                      ><span>Click a card to open the deal</span>
+                    </li>
+                    <li class="flex items-start gap-2">
+                      <i
+                        data-lucide="check"
+                        class="w-3.5 h-3.5 mt-0.5 shrink-0 text-emerald-600 dark:text-emerald-400"
+                      ></i
+                      ><span>IDR total per column</span>
+                    </li>
+                  </ul>
+                </div>
+                <div>
+                  <h4
+                    class="text-[11px] font-semibold uppercase tracking-[0.16em] text-zinc-500 dark:text-zinc-400 flex items-center gap-1.5"
+                  >
+                    <i
+                      data-lucide="x-circle"
+                      class="w-3.5 h-3.5 text-zinc-400 dark:text-zinc-500"
+                    ></i
+                    >Not in this milestone
+                  </h4>
+                  <ul
+                    class="mt-3 space-y-2 text-sm text-zinc-500 dark:text-zinc-400 list-none p-0"
+                  >
+                    <li class="flex items-start gap-2">
+                      <i
+                        data-lucide="minus"
+                        class="w-3.5 h-3.5 mt-0.5 shrink-0"
+                      ></i
+                      ><span
+                        >Adding, renaming, reordering, or deleting columns</span
+                      >
+                    </li>
+                    <li class="flex items-start gap-2">
+                      <i
+                        data-lucide="minus"
+                        class="w-3.5 h-3.5 mt-0.5 shrink-0"
+                      ></i
+                      ><span>Filters, swimlanes, WIP limits, card colors</span>
+                    </li>
+                    <li class="flex items-start gap-2">
+                      <i
+                        data-lucide="minus"
+                        class="w-3.5 h-3.5 mt-0.5 shrink-0"
+                      ></i
+                      ><span
+                        >Activity log entries for a move (that is milestone
+                        5)</span
+                      >
+                    </li>
+                  </ul>
+                </div>
+              </div>
+              <div
+                class="mt-5 rounded-md border-l-4 border-emerald-500 bg-emerald-50 dark:bg-emerald-950/30 p-4 text-sm text-emerald-900 dark:text-emerald-200"
+              >
+                <p class="flex items-start gap-2">
+                  <i data-lucide="flag" class="w-4 h-4 mt-0.5 shrink-0"></i
+                  ><span
+                    ><span class="font-semibold">Done when:</span> Existing
+                    deals appear on the board in the right columns. You can drag
+                    one from Lead to Meeting, refresh, and it stays there.
+                    Column totals match the cards. Clicking a card opens the
+                    deal.</span
+                  >
+                </p>
+              </div>
+            </div>
+          </article>
+
+          <article
+            class="print-card rounded-lg border border-zinc-200 dark:border-zinc-800 bg-white dark:bg-zinc-900 overflow-hidden"
+          >
+            <header
+              class="flex items-center gap-3 p-5 border-b border-zinc-100 dark:border-zinc-800"
+            >
+              <span
+                class="shrink-0 w-8 h-8 rounded-full bg-zinc-900 dark:bg-zinc-100 text-zinc-50 dark:text-zinc-900 flex items-center justify-center text-sm font-semibold"
+                >5</span
+              >
+              <h3
+                class="font-semibold text-lg text-zinc-900 dark:text-zinc-100"
+              >
+                Activity log
+              </h3>
+            </header>
+            <div class="p-5">
+              <p class="text-zinc-600 dark:text-zinc-400 leading-relaxed">
+                Each deal keeps a timestamped history of what happened, plus
+                notes you write yourself.
+              </p>
+              <div class="mt-5 grid grid-cols-1 md:grid-cols-2 gap-5">
+                <div>
+                  <h4
+                    class="text-[11px] font-semibold uppercase tracking-[0.16em] text-zinc-500 dark:text-zinc-400 flex items-center gap-1.5"
+                  >
+                    <i
+                      data-lucide="check-circle-2"
+                      class="w-3.5 h-3.5 text-emerald-600 dark:text-emerald-400"
+                    ></i
+                    >What gets built
+                  </h4>
+                  <ul
+                    class="mt-3 space-y-2 text-sm text-zinc-700 dark:text-zinc-300 list-none p-0"
+                  >
+                    <li class="flex items-start gap-2">
+                      <i
+                        data-lucide="check"
+                        class="w-3.5 h-3.5 mt-0.5 shrink-0 text-emerald-600 dark:text-emerald-400"
+                      ></i
+                      ><span
+                        >On the deal page, a log newest-first with date/time and
+                        a short description</span
+                      >
+                    </li>
+                    <li class="flex items-start gap-2">
+                      <i
+                        data-lucide="check"
+                        class="w-3.5 h-3.5 mt-0.5 shrink-0 text-emerald-600 dark:text-emerald-400"
+                      ></i
+                      ><span
+                        >A line when the deal is created and when it moves
+                        column (including Kanban drags)</span
+                      >
+                    </li>
+                    <li class="flex items-start gap-2">
+                      <i
+                        data-lucide="check"
+                        class="w-3.5 h-3.5 mt-0.5 shrink-0 text-emerald-600 dark:text-emerald-400"
+                      ></i
+                      ><span>You can add a free-text note to the log</span>
+                    </li>
+                    <li class="flex items-start gap-2">
+                      <i
+                        data-lucide="check"
+                        class="w-3.5 h-3.5 mt-0.5 shrink-0 text-emerald-600 dark:text-emerald-400"
+                      ></i
+                      ><span
+                        >Hook points ready for next-action add/complete lines in
+                        milestone 6</span
+                      >
+                    </li>
+                  </ul>
+                </div>
+                <div>
+                  <h4
+                    class="text-[11px] font-semibold uppercase tracking-[0.16em] text-zinc-500 dark:text-zinc-400 flex items-center gap-1.5"
+                  >
+                    <i
+                      data-lucide="x-circle"
+                      class="w-3.5 h-3.5 text-zinc-400 dark:text-zinc-500"
+                    ></i
+                    >Not in this milestone
+                  </h4>
+                  <ul
+                    class="mt-3 space-y-2 text-sm text-zinc-500 dark:text-zinc-400 list-none p-0"
+                  >
+                    <li class="flex items-start gap-2">
+                      <i
+                        data-lucide="minus"
+                        class="w-3.5 h-3.5 mt-0.5 shrink-0"
+                      ></i
+                      ><span>Editing or deleting log lines</span>
+                    </li>
+                    <li class="flex items-start gap-2">
+                      <i
+                        data-lucide="minus"
+                        class="w-3.5 h-3.5 mt-0.5 shrink-0"
+                      ></i
+                      ><span>A global activity feed across all deals</span>
+                    </li>
+                    <li class="flex items-start gap-2">
+                      <i
+                        data-lucide="minus"
+                        class="w-3.5 h-3.5 mt-0.5 shrink-0"
+                      ></i
+                      ><span>Attachments, call recording, comment threads</span>
+                    </li>
+                    <li class="flex items-start gap-2">
+                      <i
+                        data-lucide="minus"
+                        class="w-3.5 h-3.5 mt-0.5 shrink-0"
+                      ></i
+                      ><span>Follow-up add/complete events (milestone 6)</span>
+                    </li>
+                  </ul>
+                </div>
+              </div>
+              <div
+                class="mt-5 rounded-md border-l-4 border-emerald-500 bg-emerald-50 dark:bg-emerald-950/30 p-4 text-sm text-emerald-900 dark:text-emerald-200"
+              >
+                <p class="flex items-start gap-2">
+                  <i data-lucide="flag" class="w-4 h-4 mt-0.5 shrink-0"></i
+                  ><span
+                    ><span class="font-semibold">Done when:</span> Opening a
+                    deal shows a created line. Dragging it on the board (or
+                    changing column on the deal page) adds a move line with a
+                    timestamp. You can type a note and see it in the log. You
+                    cannot edit or delete a line.</span
+                  >
+                </p>
+              </div>
+            </div>
+          </article>
+
+          <article
+            class="print-card rounded-lg border border-zinc-200 dark:border-zinc-800 bg-white dark:bg-zinc-900 overflow-hidden"
+          >
+            <header
+              class="flex items-center gap-3 p-5 border-b border-zinc-100 dark:border-zinc-800"
+            >
+              <span
+                class="shrink-0 w-8 h-8 rounded-full bg-zinc-900 dark:bg-zinc-100 text-zinc-50 dark:text-zinc-900 flex items-center justify-center text-sm font-semibold"
+                >6</span
+              >
+              <h3
+                class="font-semibold text-lg text-zinc-900 dark:text-zinc-100"
+              >
+                Next actions
+              </h3>
+            </header>
+            <div class="p-5">
+              <p class="text-zinc-600 dark:text-zinc-400 leading-relaxed">
+                Follow-ups live on the deal and on one To-do page for everything
+                still open.
+              </p>
+              <div class="mt-5 grid grid-cols-1 md:grid-cols-2 gap-5">
+                <div>
+                  <h4
+                    class="text-[11px] font-semibold uppercase tracking-[0.16em] text-zinc-500 dark:text-zinc-400 flex items-center gap-1.5"
+                  >
+                    <i
+                      data-lucide="check-circle-2"
+                      class="w-3.5 h-3.5 text-emerald-600 dark:text-emerald-400"
+                    ></i
+                    >What gets built
+                  </h4>
+                  <ul
+                    class="mt-3 space-y-2 text-sm text-zinc-700 dark:text-zinc-300 list-none p-0"
+                  >
+                    <li class="flex items-start gap-2">
+                      <i
+                        data-lucide="check"
+                        class="w-3.5 h-3.5 mt-0.5 shrink-0 text-emerald-600 dark:text-emerald-400"
+                      ></i
+                      ><span
+                        >On a deal: add a follow-up with description and due
+                        date (optional time)</span
+                      >
+                    </li>
+                    <li class="flex items-start gap-2">
+                      <i
+                        data-lucide="check"
+                        class="w-3.5 h-3.5 mt-0.5 shrink-0 text-emerald-600 dark:text-emerald-400"
+                      ></i
+                      ><span
+                        >Incomplete actions are obvious on the deal; completed
+                        ones stay visible on the deal</span
+                      >
+                    </li>
+                    <li class="flex items-start gap-2">
+                      <i
+                        data-lucide="check"
+                        class="w-3.5 h-3.5 mt-0.5 shrink-0 text-emerald-600 dark:text-emerald-400"
+                      ></i
+                      ><span>Mark done from the deal page</span>
+                    </li>
+                    <li class="flex items-start gap-2">
+                      <i
+                        data-lucide="check"
+                        class="w-3.5 h-3.5 mt-0.5 shrink-0 text-emerald-600 dark:text-emerald-400"
+                      ></i
+                      ><span
+                        >To-do page: all incomplete actions across deals,
+                        soonest due first; row shows what, when, and which deal;
+                        click through to the deal</span
+                      >
+                    </li>
+                    <li class="flex items-start gap-2">
+                      <i
+                        data-lucide="check"
+                        class="w-3.5 h-3.5 mt-0.5 shrink-0 text-emerald-600 dark:text-emerald-400"
+                      ></i
+                      ><span>Mark done from the To-do page</span>
+                    </li>
+                    <li class="flex items-start gap-2">
+                      <i
+                        data-lucide="check"
+                        class="w-3.5 h-3.5 mt-0.5 shrink-0 text-emerald-600 dark:text-emerald-400"
+                      ></i
+                      ><span>Overdue items are visually distinct</span>
+                    </li>
+                    <li class="flex items-start gap-2">
+                      <i
+                        data-lucide="check"
+                        class="w-3.5 h-3.5 mt-0.5 shrink-0 text-emerald-600 dark:text-emerald-400"
+                      ></i
+                      ><span
+                        >Adding or completing a follow-up writes an activity log
+                        line on the deal</span
+                      >
+                    </li>
+                  </ul>
+                </div>
+                <div>
+                  <h4
+                    class="text-[11px] font-semibold uppercase tracking-[0.16em] text-zinc-500 dark:text-zinc-400 flex items-center gap-1.5"
+                  >
+                    <i
+                      data-lucide="x-circle"
+                      class="w-3.5 h-3.5 text-zinc-400 dark:text-zinc-500"
+                    ></i
+                    >Not in this milestone
+                  </h4>
+                  <ul
+                    class="mt-3 space-y-2 text-sm text-zinc-500 dark:text-zinc-400 list-none p-0"
+                  >
+                    <li class="flex items-start gap-2">
+                      <i
+                        data-lucide="minus"
+                        class="w-3.5 h-3.5 mt-0.5 shrink-0"
+                      ></i
+                      ><span>Email, push, SMS, or calendar reminders</span>
+                    </li>
+                    <li class="flex items-start gap-2">
+                      <i
+                        data-lucide="minus"
+                        class="w-3.5 h-3.5 mt-0.5 shrink-0"
+                      ></i
+                      ><span
+                        >Recurring tasks, subtasks, assignees, extra priority
+                        fields, a calendar view</span
+                      >
+                    </li>
+                  </ul>
+                </div>
+              </div>
+              <div
+                class="mt-5 rounded-md border-l-4 border-emerald-500 bg-emerald-50 dark:bg-emerald-950/30 p-4 text-sm text-emerald-900 dark:text-emerald-200"
+              >
+                <p class="flex items-start gap-2">
+                  <i data-lucide="flag" class="w-4 h-4 mt-0.5 shrink-0"></i
+                  ><span
+                    ><span class="font-semibold">Done when:</span> You add a
+                    follow-up on a deal, see it on the To-do page with the deal
+                    name, see an overdue item called out if the due date is in
+                    the past, mark it done from either place, and see matching
+                    lines in the deal’s activity log.</span
+                  >
+                </p>
+              </div>
+            </div>
+          </article>
+
+          <article
+            class="print-card rounded-lg border border-zinc-200 dark:border-zinc-800 bg-white dark:bg-zinc-900 overflow-hidden"
+          >
+            <header
+              class="flex items-center gap-3 p-5 border-b border-zinc-100 dark:border-zinc-800"
+            >
+              <span
+                class="shrink-0 w-8 h-8 rounded-full bg-zinc-900 dark:bg-zinc-100 text-zinc-50 dark:text-zinc-900 flex items-center justify-center text-sm font-semibold"
+                >7</span
+              >
+              <h3
+                class="font-semibold text-lg text-zinc-900 dark:text-zinc-100"
+              >
+                API health and Vue scaffold
+              </h3>
+            </header>
+            <div class="p-5">
+              <p class="text-zinc-600 dark:text-zinc-400 leading-relaxed">
+                Stand up the JSON API surface and the Vue frontend toolchain so
+                milestone 8 can put a Kanban at
+                <code class="font-mono text-xs">/app</code> without inventing
+                plumbing. Do not change the LiveView Pipeline at
+                <code class="font-mono text-xs">/</code>.
+              </p>
+              <div class="mt-5 grid grid-cols-1 md:grid-cols-2 gap-5">
+                <div>
+                  <h4
+                    class="text-[11px] font-semibold uppercase tracking-[0.16em] text-zinc-500 dark:text-zinc-400 flex items-center gap-1.5"
+                  >
+                    <i
+                      data-lucide="check-circle-2"
+                      class="w-3.5 h-3.5 text-emerald-600 dark:text-emerald-400"
+                    ></i
+                    >What gets built
+                  </h4>
+                  <ul
+                    class="mt-3 space-y-2 text-sm text-zinc-700 dark:text-zinc-300 list-none p-0"
+                  >
+                    <li class="flex items-start gap-2">
+                      <i
+                        data-lucide="check"
+                        class="w-3.5 h-3.5 mt-0.5 shrink-0 text-emerald-600 dark:text-emerald-400"
+                      ></i
+                      ><span
+                        ><code class="font-mono text-xs">GET /api/health</code>
+                        — unauthenticated, returns
+                        <code class="font-mono text-xs"
+                          >{"status":"ok"}</code
+                        ></span
+                      >
+                    </li>
+                    <li class="flex items-start gap-2">
+                      <i
+                        data-lucide="check"
+                        class="w-3.5 h-3.5 mt-0.5 shrink-0 text-emerald-600 dark:text-emerald-400"
+                      ></i
+                      ><span
+                        >Vue 3 + TypeScript + Vite + Vitest inside Phoenix
+                        <code class="font-mono text-xs">assets/</code></span
+                      >
+                    </li>
+                    <li class="flex items-start gap-2">
+                      <i
+                        data-lucide="check"
+                        class="w-3.5 h-3.5 mt-0.5 shrink-0 text-emerald-600 dark:text-emerald-400"
+                      ></i
+                      ><span
+                        >Phoenix serves authenticated
+                        <code class="font-mono text-xs">GET /app</code> as a
+                        controller HTML page (not LiveView). Empty mount node;
+                        Vue boots (Vue 3 sets
+                        <code class="font-mono text-xs">data-v-app</code>). Stub
+                        is enough: can show health
+                        <code class="font-mono text-xs">ok</code>. No extra nav
+                        item.</span
+                      >
+                    </li>
+                  </ul>
+                </div>
+                <div>
+                  <h4
+                    class="text-[11px] font-semibold uppercase tracking-[0.16em] text-zinc-500 dark:text-zinc-400 flex items-center gap-1.5"
+                  >
+                    <i
+                      data-lucide="x-circle"
+                      class="w-3.5 h-3.5 text-zinc-400 dark:text-zinc-500"
+                    ></i
+                    >Not in this milestone
+                  </h4>
+                  <ul
+                    class="mt-3 space-y-2 text-sm text-zinc-500 dark:text-zinc-400 list-none p-0"
+                  >
+                    <li class="flex items-start gap-2">
+                      <i
+                        data-lucide="minus"
+                        class="w-3.5 h-3.5 mt-0.5 shrink-0"
+                      ></i
+                      ><span>Kanban REST endpoints or drag-and-drop</span>
+                    </li>
+                    <li class="flex items-start gap-2">
+                      <i
+                        data-lucide="minus"
+                        class="w-3.5 h-3.5 mt-0.5 shrink-0"
+                      ></i
+                      ><span
+                        >Changing
+                        <code class="font-mono text-xs">PipelineLive</code>,
+                        wrapping Vue inside it, or adding a fourth nav
+                        item</span
+                      >
+                    </li>
+                    <li class="flex items-start gap-2">
+                      <i
+                        data-lucide="minus"
+                        class="w-3.5 h-3.5 mt-0.5 shrink-0"
+                      ></i
+                      ><span
+                        >Extra
+                        <code class="font-mono text-xs">/api</code> resources
+                        beyond health</span
+                      >
+                    </li>
+                  </ul>
+                </div>
+              </div>
+              <div
+                class="mt-5 rounded-md border-l-4 border-emerald-500 bg-emerald-50 dark:bg-emerald-950/30 p-4 text-sm text-emerald-900 dark:text-emerald-200"
+              >
+                <p class="flex items-start gap-2">
+                  <i data-lucide="flag" class="w-4 h-4 mt-0.5 shrink-0"></i
+                  ><span
+                    ><span class="font-semibold">Done when:</span> An
+                    unauthenticated
+                    <code class="font-mono text-xs">GET /api/health</code>
+                    returns
+                    <code class="font-mono text-xs">{"status":"ok"}</code>. A
+                    signed-in user opening
+                    <code class="font-mono text-xs">/app</code> sees a Vue app
+                    that has mounted.
+                    <code class="font-mono text-xs">mix test</code> and Vitest
+                    both pass.</span
+                  >
+                </p>
+              </div>
+            </div>
+          </article>
+
+          <article
+            class="print-card rounded-lg border border-zinc-200 dark:border-zinc-800 bg-white dark:bg-zinc-900 overflow-hidden"
+          >
+            <header
+              class="flex items-center gap-3 p-5 border-b border-zinc-100 dark:border-zinc-800"
+            >
+              <span
+                class="shrink-0 w-8 h-8 rounded-full bg-zinc-900 dark:bg-zinc-100 text-zinc-50 dark:text-zinc-900 flex items-center justify-center text-sm font-semibold"
+                >8</span
+              >
+              <h3
+                class="font-semibold text-lg text-zinc-900 dark:text-zinc-100"
+              >
+                Vue Kanban over REST
+              </h3>
+            </header>
+            <div class="p-5">
+              <p class="text-zinc-600 dark:text-zinc-400 leading-relaxed">
+                Grow <code class="font-mono text-xs">/app</code> into a Vue
+                Kanban that loads and updates deals through the JSON API. Same
+                UX as milestone 4. LiveView Pipeline at
+                <code class="font-mono text-xs">/</code> stays. Contacts, deal
+                pages, activity, and to-dos stay LiveView.
+              </p>
+              <div class="mt-5 grid grid-cols-1 md:grid-cols-2 gap-5">
+                <div>
+                  <h4
+                    class="text-[11px] font-semibold uppercase tracking-[0.16em] text-zinc-500 dark:text-zinc-400 flex items-center gap-1.5"
+                  >
+                    <i
+                      data-lucide="check-circle-2"
+                      class="w-3.5 h-3.5 text-emerald-600 dark:text-emerald-400"
+                    ></i
+                    >What gets built
+                  </h4>
+                  <ul
+                    class="mt-3 space-y-2 text-sm text-zinc-700 dark:text-zinc-300 list-none p-0"
+                  >
+                    <li class="flex items-start gap-2">
+                      <i
+                        data-lucide="check"
+                        class="w-3.5 h-3.5 mt-0.5 shrink-0 text-emerald-600 dark:text-emerald-400"
+                      ></i
+                      ><span
+                        >JSON:
+                        <code class="font-mono text-xs">GET /api/deals</code>,
+                        <code class="font-mono text-xs">GET /api/deals/:id</code
+                        >,
+                        <code class="font-mono text-xs"
+                          >PATCH /api/deals/:id</code
+                        >
+                        with
+                        <code class="font-mono text-xs"
+                          >pipeline_column_id</code
+                        >
+                        (session cookies; unauthenticated → 401). Optional
+                        <code class="font-mono text-xs">GET /api/pipeline</code>
+                        for the board aggregate.</span
+                      >
+                    </li>
+                    <li class="flex items-start gap-2">
+                      <i
+                        data-lucide="check"
+                        class="w-3.5 h-3.5 mt-0.5 shrink-0 text-emerald-600 dark:text-emerald-400"
+                      ></i
+                      ><span
+                        >Vue board at
+                        <code class="font-mono text-xs">/app</code> (not
+                        Pipeline nav): five columns, card title/contact/IDR,
+                        column totals, click-through to the existing LiveView
+                        deal page</span
+                      >
+                    </li>
+                    <li class="flex items-start gap-2">
+                      <i
+                        data-lucide="check"
+                        class="w-3.5 h-3.5 mt-0.5 shrink-0 text-emerald-600 dark:text-emerald-400"
+                      ></i
+                      ><span
+                        >Drag to another column persists; refresh keeps the new
+                        column; activity-log move lines from milestone 5 still
+                        fire</span
+                      >
+                    </li>
+                  </ul>
+                </div>
+                <div>
+                  <h4
+                    class="text-[11px] font-semibold uppercase tracking-[0.16em] text-zinc-500 dark:text-zinc-400 flex items-center gap-1.5"
+                  >
+                    <i
+                      data-lucide="x-circle"
+                      class="w-3.5 h-3.5 text-zinc-400 dark:text-zinc-500"
+                    ></i
+                    >Not in this milestone
+                  </h4>
+                  <ul
+                    class="mt-3 space-y-2 text-sm text-zinc-500 dark:text-zinc-400 list-none p-0"
+                  >
+                    <li class="flex items-start gap-2">
+                      <i
+                        data-lucide="minus"
+                        class="w-3.5 h-3.5 mt-0.5 shrink-0"
+                      ></i
+                      ><span
+                        >Replacing or wrapping
+                        <code class="font-mono text-xs">PipelineLive</code>;
+                        rewriting contacts, deal pages, activity, or to-dos to
+                        Vue; a fourth nav item</span
+                      >
+                    </li>
+                    <li class="flex items-start gap-2">
+                      <i
+                        data-lucide="minus"
+                        class="w-3.5 h-3.5 mt-0.5 shrink-0"
+                      ></i
+                      ><span
+                        >JWT or token auth; CORS; a separate frontend app</span
+                      >
+                    </li>
+                    <li class="flex items-start gap-2">
+                      <i
+                        data-lucide="minus"
+                        class="w-3.5 h-3.5 mt-0.5 shrink-0"
+                      ></i
+                      ><span
+                        >Adding, renaming, reordering, or deleting columns</span
+                      >
+                    </li>
+                  </ul>
+                </div>
+              </div>
+              <div
+                class="mt-5 rounded-md border-l-4 border-emerald-500 bg-emerald-50 dark:bg-emerald-950/30 p-4 text-sm text-emerald-900 dark:text-emerald-200"
+              >
+                <p class="flex items-start gap-2">
+                  <i data-lucide="flag" class="w-4 h-4 mt-0.5 shrink-0"></i
+                  ><span
+                    ><span class="font-semibold">Done when:</span> Signed-in
+                    <code class="font-mono text-xs">/app</code> shows existing
+                    deals on the Vue board in the right columns. You can drag
+                    one from Lead to Meeting, refresh, and it stays there.
+                    Column totals match the cards. Clicking a card opens the
+                    LiveView deal page. Drag issues
+                    <code class="font-mono text-xs">PATCH /api/deals/:id</code>,
+                    not LiveView events.</span
+                  >
+                </p>
+              </div>
+            </div>
+          </article>
+        </div>
+      </section>
+
+      <footer
+        class="pt-8 border-t border-zinc-200 dark:border-zinc-800 text-xs text-zinc-500 dark:text-zinc-400"
+      >
+        Generated by <span class="font-medium">bm-prd-creator</span>. Open the
+        milestone-1 <code class="font-mono">prompt.md</code> to start building.
+      </footer>
+    </main>
+
+    <script>
+      (function () {
+        var html = document.documentElement;
+        var stored = localStorage.getItem("prd-theme");
+        var prefersDark =
+          window.matchMedia &&
+          window.matchMedia("(prefers-color-scheme: dark)").matches;
+        var initial = stored ? stored : prefersDark ? "dark" : "light";
+        if (initial === "dark") html.classList.add("dark");
+        var btn = document.getElementById("theme-toggle");
+        if (btn) {
+          btn.addEventListener("click", function () {
+            var isDark = html.classList.toggle("dark");
+            localStorage.setItem("prd-theme", isDark ? "dark" : "light");
+          });
+        }
+        if (window.lucide) window.lucide.createIcons();
+      })();
+    </script>
+  </body>
 </html>
