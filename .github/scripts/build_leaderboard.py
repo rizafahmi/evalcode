@@ -1,0 +1,1361 @@
+#!/usr/bin/env python3
+"""
+Personal Coding Agent Benchmark Leaderboard Builder
+Generates a static Depot-styled leaderboard site for GitHub Pages by dynamically
+discovering and parsing benchmark reports from git branches (evalcode_*).
+"""
+
+import argparse
+import datetime
+import html
+import json
+import os
+from pathlib import Path
+import re
+import subprocess
+import sys
+
+
+def run_cmd(cmd, cwd=None):
+    """Run a shell command and return stdout as string."""
+    try:
+        res = subprocess.run(
+            cmd,
+            cwd=cwd,
+            stdout=subprocess.PIPE,
+            stderr=subprocess.PIPE,
+            text=True,
+            check=True
+        )
+        return res.stdout
+    except subprocess.CalledProcessError:
+        return ""
+
+
+def get_git_file(ref, filepath, cwd=None):
+    """Retrieve file content from a specific git ref."""
+    return run_cmd(["git", "show", f"{ref}:{filepath}"], cwd=cwd)
+
+
+def discover_evaluation_branches(cwd=None, include_all_evalcode=False):
+    """
+    Find all local and remote branches that contain benchmark reports.
+    Matches any branch starting with evalcode_ or having a report/ directory.
+    """
+    raw_refs = run_cmd(
+        ["git", "for-each-ref", "--format=%(refname:short)", "refs/heads/", "refs/remotes/origin/"],
+        cwd=cwd
+    )
+    all_refs = [r.strip() for r in raw_refs.splitlines() if r.strip()]
+    
+    seen_branches = set()
+    candidate_refs = []
+
+    for ref in all_refs:
+        branch_name = ref
+        if branch_name.startswith("origin/"):
+            branch_name = branch_name[len("origin/"):]
+        
+        if branch_name in ["HEAD", "main"]:
+            continue
+            
+        if branch_name in seen_branches:
+            continue
+
+        has_perf = bool(get_git_file(ref, "report/perf.md", cwd=cwd))
+        has_exec = bool(get_git_file(ref, "report/execution.md", cwd=cwd))
+        has_score = bool(get_git_file(ref, "report/score.md", cwd=cwd))
+        
+        has_reports = has_perf or has_exec or has_score
+        
+        if has_reports or (include_all_evalcode and branch_name.startswith("evalcode_")):
+            seen_branches.add(branch_name)
+            candidate_refs.append({
+                "ref": ref,
+                "name": branch_name,
+                "has_reports": has_reports
+            })
+
+    # Sort branches
+    candidate_refs.sort(key=lambda x: x["name"])
+    return candidate_refs
+
+
+def parse_perf_report(raw_md):
+    """Parse report/perf.md into scenario records."""
+    if not raw_md:
+        return {"scenarios": {}, "wall_time": "—", "mean_ready_ms": None}
+
+    scenarios = {}
+    wall_time = "—"
+    wt_match = re.search(r"Wall time:\s*([\d\.]+s)", raw_md)
+    if wt_match:
+        wall_time = wt_match.group(1)
+
+    lines = raw_md.splitlines()
+    ready_values = []
+
+    for line in lines:
+        if line.startswith("|") and not line.startswith("| Scenario") and not line.startswith("| ---"):
+            parts = [p.strip() for p in line.split("|")[1:-1]]
+            if len(parts) >= 10:
+                scenario, status, n, ready, ttfb, lcp, dcl, load, doc_bytes, js_css = parts[:10]
+                ready_ms = None
+                ms_match = re.search(r"(\d+)ms", ready)
+                if ms_match:
+                    ready_ms = int(ms_match.group(1))
+                    ready_values.append(ready_ms)
+
+                scenarios[scenario] = {
+                    "scenario": scenario,
+                    "status": status,
+                    "n": n,
+                    "ready": ready,
+                    "ready_ms": ready_ms,
+                    "ttfb": ttfb,
+                    "lcp": lcp,
+                    "dcl": dcl,
+                    "load": load,
+                    "doc_bytes": doc_bytes,
+                    "js_css_bytes": js_css
+                }
+
+    mean_ready_ms = round(sum(ready_values) / len(ready_values), 1) if ready_values else None
+
+    return {
+        "scenarios": scenarios,
+        "wall_time": wall_time,
+        "mean_ready_ms": mean_ready_ms
+    }
+
+
+def parse_a11y_report(raw_md):
+    """Parse report/a11y.md into accessibility audit records."""
+    if not raw_md:
+        return {
+            "screens": {},
+            "total_violations": 0,
+            "total_affected_nodes": 0,
+            "clean_screens": 0,
+            "screen_count": 0,
+            "clean_percentage": 0,
+            "wall_time": "—"
+        }
+
+    screens = {}
+    total_violations = 0
+    clean_screens = 0
+    wall_time = "—"
+
+    wt_match = re.search(r"Wall time:\s*([\d\.]+s)", raw_md)
+    if wt_match:
+        wall_time = wt_match.group(1)
+
+    for line in raw_md.splitlines():
+        if line.startswith("|") and not line.startswith("| Screen") and not line.startswith("| ---"):
+            parts = [p.strip() for p in line.split("|")[1:-1]]
+            if len(parts) >= 8:
+                screen, status, viols, crit, serious, mod, minor, rules = parts[:8]
+                v_count = int(viols) if viols.isdigit() else 0
+                total_violations += v_count
+                if v_count == 0:
+                    clean_screens += 1
+
+                screens[screen] = {
+                    "screen": screen,
+                    "status": status,
+                    "violations": v_count,
+                    "critical": int(crit) if crit.isdigit() else 0,
+                    "serious": int(serious) if serious.isdigit() else 0,
+                    "moderate": int(mod) if mod.isdigit() else 0,
+                    "minor": int(minor) if minor.isdigit() else 0,
+                    "rules": rules
+                }
+
+    node_matches = re.findall(r"\(serious,\s*(\d+)\s*nodes\)", raw_md)
+    total_affected_nodes = sum(int(n) for n in node_matches) if node_matches else 0
+
+    screen_count = len(screens)
+    clean_pct = round((clean_screens / screen_count) * 100, 1) if screen_count > 0 else 0
+
+    return {
+        "screens": screens,
+        "total_violations": total_violations,
+        "total_affected_nodes": total_affected_nodes,
+        "clean_screens": clean_screens,
+        "screen_count": screen_count,
+        "clean_percentage": clean_pct,
+        "wall_time": wall_time
+    }
+
+
+def parse_execution_report(raw_md, branch_name):
+    """Parse report/execution.md for agent metadata, milestones, test counts, and coverage."""
+    agent_name = branch_name
+    model_name = "Unknown Model"
+    harness_name = "Harness"
+
+    if raw_md:
+        headings = re.findall(r"^#\s+(.*)", raw_md, re.MULTILINE)
+        for h in headings:
+            h_clean = h.strip()
+            if h_clean != "Getting Started":
+                agent_name = h_clean
+                break
+
+    if " - " in agent_name:
+        parts = agent_name.split(" - ", 1)
+        harness_name = parts[0].strip()
+        model_name = parts[1].strip()
+    else:
+        harness_name = agent_name
+
+    milestones = []
+    if raw_md:
+        m_matches = re.findall(r"## (M[0-9])\s*(.*?)(?=\n## |\n# Notes|\Z)", raw_md, re.DOTALL)
+        for m_id, m_body in m_matches:
+            test_match = re.search(r"Result:\s*(\d+)\s*passed", m_body)
+            cov_match = re.search(r"Total\s*\|\s*\n\|\s*([\d\.]+)%", m_body) or re.search(r"Coverage:\s*([\d\.]+)%", m_body)
+            cost_match = re.search(r"Cost:\s*(\$[0-9\.]+)", m_body)
+            time_match = re.search(r"total time:\s*([^\n]+)", m_body)
+
+            milestones.append({
+                "milestone": m_id,
+                "tests_passed": int(test_match.group(1)) if test_match else None,
+                "coverage": float(cov_match.group(1)) if cov_match else None,
+                "cost": cost_match.group(1) if cost_match else None,
+                "time": time_match.group(1) if time_match else None
+            })
+
+    total_milestones = 8
+    completed_milestones = len(milestones) if milestones else 0
+    final_tests = milestones[-1]["tests_passed"] if (milestones and milestones[-1]["tests_passed"] is not None) else 0
+    final_coverage = milestones[-1]["coverage"] if (milestones and milestones[-1]["coverage"] is not None) else 0.0
+
+    return {
+        "agent_name": agent_name,
+        "harness_name": harness_name,
+        "model_name": model_name,
+        "milestones": milestones,
+        "completed_milestones": completed_milestones,
+        "total_milestones": total_milestones,
+        "completion_rate": round((completed_milestones / total_milestones) * 100, 1),
+        "final_tests": final_tests,
+        "final_coverage": final_coverage
+    }
+
+
+def parse_score_report(raw_md):
+    """Parse report/score.md for rubric test results."""
+    if not raw_md:
+        return {"pass": 0, "fail": 0, "skip": 0}
+
+    pass_count = 0
+    fail_count = 0
+    skip_count = 0
+
+    p_match = re.search(r"pass:\s*(\d+)", raw_md)
+    if p_match:
+        pass_count = int(p_match.group(1))
+
+    f_match = re.search(r"fail:\s*(\d+)", raw_md)
+    if f_match:
+        fail_count = int(f_match.group(1))
+
+    s_match = re.search(r"skip:\s*(\d+)", raw_md)
+    if s_match:
+        skip_count = int(s_match.group(1))
+
+    return {
+        "pass": pass_count,
+        "fail": fail_count,
+        "skip": skip_count
+    }
+
+
+def get_git_metadata(ref, cwd=None):
+    """Extract commit metadata and test file density directly from git."""
+    commit_log = run_cmd(["git", "log", "-n", "1", "--format=%H|%an|%cI|%s", ref], cwd=cwd)
+    commit_hash, author, commit_date, commit_msg = ("", "", "", "")
+    if commit_log and "|" in commit_log:
+        parts = commit_log.strip().split("|", 3)
+        if len(parts) == 4:
+            commit_hash, author, commit_date, commit_msg = parts
+
+    tree_out = run_cmd(["git", "ls-tree", "-r", "--name-only", ref, "test"], cwd=cwd)
+    test_files = [f for f in tree_out.splitlines() if f.endswith("_test.exs")]
+    test_file_count = len(test_files)
+
+    has_scope = bool(get_git_file(ref, "lib/alur/accounts/scope.ex", cwd=cwd))
+
+    return {
+        "commit_hash": commit_hash[:7] if commit_hash else "",
+        "author": author,
+        "commit_date": commit_date,
+        "commit_msg": commit_msg,
+        "test_file_count": test_file_count,
+        "has_phx_18_scope": has_scope
+    }
+
+
+def collect_branch_data(branch_info, cwd=None):
+    """Collect and synthesize all metrics for a given branch."""
+    ref = branch_info["ref"]
+    branch_name = branch_info["name"]
+    has_reports = branch_info.get("has_reports", True)
+
+    perf_raw = get_git_file(ref, "report/perf.md", cwd=cwd)
+    a11y_raw = get_git_file(ref, "report/a11y.md", cwd=cwd)
+    exec_raw = get_git_file(ref, "report/execution.md", cwd=cwd)
+    score_raw = get_git_file(ref, "report/score.md", cwd=cwd)
+
+    perf_data = parse_perf_report(perf_raw)
+    a11y_data = parse_a11y_report(a11y_raw)
+    exec_data = parse_execution_report(exec_raw, branch_name)
+    score_data = parse_score_report(score_raw)
+    git_meta = get_git_metadata(ref, cwd=cwd)
+
+    display_title = exec_data["agent_name"]
+    if display_title == branch_name:
+        if "agy" in branch_name:
+            display_title = "Antigravity CLI (Gemini 3.8 Flash High)"
+        elif "dsh" in branch_name:
+            display_title = "DeepSeek Harness (DeepSeek V4 Flash High)"
+        elif "cursor" in branch_name:
+            display_title = "Cursor Agent (Claude 3.7 Sonnet)"
+        elif "zcode" in branch_name:
+            display_title = "ZCode Agent"
+
+    return {
+        "branch": branch_name,
+        "ref": ref,
+        "has_reports": has_reports,
+        "title": display_title,
+        "harness": exec_data["harness_name"],
+        "model": exec_data["model_name"],
+        "perf": perf_data,
+        "a11y": a11y_data,
+        "execution": exec_data,
+        "score": score_data,
+        "git": git_meta,
+        "badges": []
+    }
+
+
+def compute_ranks_and_badges(runs):
+    """Sort and assign badges (Fastest UI, Cleanest A11y, etc.) across all runs."""
+    if not runs:
+        return runs
+
+    def sort_key(run):
+        has_rep = 1 if run.get("has_reports", True) else 0
+        comp = run["execution"]["completion_rate"]
+        mean_ready = run["perf"]["mean_ready_ms"] or 9999.0
+        a11y_v = run["a11y"]["total_violations"]
+        return (-has_rep, -comp, mean_ready, a11y_v)
+
+    runs.sort(key=sort_key)
+
+    for i, run in enumerate(runs, start=1):
+        run["rank"] = i
+
+    runs_with_perf = [r for r in runs if r["perf"]["mean_ready_ms"] is not None]
+    if runs_with_perf:
+        fastest_run = min(runs_with_perf, key=lambda r: r["perf"]["mean_ready_ms"])
+        fastest_run["badges"].append({"type": "green", "text": "⚡ Fastest UI"})
+
+    runs_with_a11y = [r for r in runs if r["a11y"]["screen_count"] > 0]
+    if runs_with_a11y:
+        cleanest_a11y = min(runs_with_a11y, key=lambda r: (r["a11y"]["total_violations"], r["a11y"]["total_affected_nodes"]))
+        cleanest_a11y["badges"].append({"type": "violet", "text": "🛡️ Cleanest A11y"})
+
+    for r in runs:
+        if r["git"]["has_phx_18_scope"]:
+            r["badges"].append({"type": "blue", "text": "🔥 Phx 1.8 Scoped"})
+        if r["git"]["test_file_count"] >= 30:
+            r["badges"].append({"type": "neutral", "text": "📦 Modular Tests"})
+        if r["execution"]["completion_rate"] == 100.0:
+            r["badges"].append({"type": "green-outline", "text": "✓ 100% PRD"})
+        if not r.get("has_reports", True):
+            r["badges"].append({"type": "neutral", "text": "⏳ Pending Report"})
+
+    return runs
+
+
+# Helper rendering functions
+def render_badges_html(badges):
+    out = []
+    for b in badges:
+        cls_type = b.get("type", "")
+        tag_cls = "tag"
+        if cls_type in ["blue", "violet", "neutral"]:
+            tag_cls += f" tag-{cls_type}"
+        out.append(f'<span class="{tag_cls}">{html.escape(b["text"])}</span>')
+    return "".join(out)
+
+
+def render_scenario_bars_html(runs, scenario_id, is_key=False):
+    out = []
+    for r in runs:
+        scenarios = r["perf"].get("scenarios", {})
+        sc_info = scenarios.get(scenario_id, {})
+        ready_str = sc_info.get("ready", "—")
+        ready_ms = sc_info.get("ready_ms")
+
+        is_highlight = ready_ms is not None and ready_ms < 30
+        green_cls = 'text-green' if is_highlight else ''
+        bar_fill_cls = 'bar-fill' if is_highlight else 'bar-fill bar-fill-secondary'
+        pct = min(100, int((ready_ms or 50) * 1.8))
+
+        harness_label = html.escape(r["harness"])
+        out.append(f'''
+        <div class="bar-row">
+          <div class="bar-label">
+            <span>{harness_label}</span>
+            <span class="mono-cell {green_cls}">{ready_str}</span>
+          </div>
+          <div class="bar-track">
+            <div class="{bar_fill_cls}" style="width: {pct}%;"></div>
+          </div>
+        </div>''')
+    return "".join(out)
+
+
+def render_html_page(runs, generated_at):
+    """Generate a self-contained Depot Design System HTML dashboard."""
+    runs_json = json.dumps(runs, indent=2)
+    total_runs = len(runs)
+    
+    avg_ready = "—"
+    valid_readys = [r["perf"]["mean_ready_ms"] for r in runs if r["perf"]["mean_ready_ms"]]
+    if valid_readys:
+        avg_ready = f"{round(sum(valid_readys) / len(valid_readys), 1)} ms"
+
+    best_ready = min(valid_readys) if valid_readys else "—"
+    if best_ready != "—":
+        best_ready = f"{best_ready} ms"
+
+    full_completed_count = sum(1 for r in runs if r["execution"]["completion_rate"] == 100.0)
+
+    # Pre-render rows
+    scorecard_rows = []
+    for r in runs:
+        rank_val = r.get("rank", "-")
+        rank_cls = "rank-pill rank-1" if rank_val == 1 else "rank-pill"
+        title_esc = html.escape(r["title"])
+        branch_esc = html.escape(r["branch"])
+        comp_str = f"{r['execution']['completed_milestones']}/{r['execution']['total_milestones']}"
+        comp_pct_str = f"({r['execution']['completion_rate']}%)"
+        
+        ready_cell = f"{r['perf']['mean_ready_ms']} ms" if r['perf']['mean_ready_ms'] else "—"
+        ready_cls = "mono-cell text-green" if (r.get("rank") == 1 and r['perf']['mean_ready_ms']) else "mono-cell"
+
+        a11y_str = f"{r['a11y']['total_violations']} viols" if r.get("has_reports", True) else "—"
+        a11y_sub = f"({r['a11y']['total_affected_nodes']} nodes)" if r.get("has_reports", True) else ""
+
+        tests_str = f"{r['execution']['final_tests']} passed" if r['execution']['final_tests'] else "—"
+        tests_sub = f"({r['git']['test_file_count']} files)"
+        cov_str = f"{r['execution']['final_coverage']}%" if r['execution']['final_coverage'] else "—"
+        badges_html = render_badges_html(r["badges"])
+
+        scorecard_rows.append(f'''
+        <tr data-name="{title_esc.lower()} {branch_esc.lower()}">
+          <td><span class="{rank_cls}">{rank_val}</span></td>
+          <td>
+            <div style="font-weight: 600; color: var(--color-chalk);">{title_esc}</div>
+            <div class="mono-cell text-fog" style="font-size: 11px;">branch: {branch_esc}</div>
+          </td>
+          <td>
+            <span class="mono-cell text-green">{comp_str}</span>
+            <span class="mono-cell text-fog" style="font-size: 11px;">{comp_pct_str}</span>
+          </td>
+          <td class="{ready_cls}" style="font-size: 14px; font-weight: 500;">{ready_cell}</td>
+          <td class="mono-cell">
+            <span>{a11y_str}</span>
+            <span class="text-fog" style="font-size: 11px;">{a11y_sub}</span>
+          </td>
+          <td class="mono-cell">
+            <span>{tests_str}</span>
+            <span class="text-fog" style="font-size: 11px;">{tests_sub}</span>
+          </td>
+          <td class="mono-cell"><span>{cov_str}</span></td>
+          <td><div style="display: flex; flex-wrap: wrap; gap: 4px;">{badges_html}</div></td>
+        </tr>''')
+
+    # A11y rows
+    a11y_rows = []
+    for r in runs:
+        harness_esc = html.escape(r["harness"])
+        screens = r["a11y"].get("screens", {})
+        clean_cell = f"{r['a11y']['clean_screens']}/{r['a11y']['screen_count']} ({r['a11y']['clean_percentage']}%)" if r['a11y']['screen_count'] else "—"
+        deal_show_rules = html.escape(screens.get("deal-show", {}).get("rules", "—"))
+        
+        a11y_rows.append(f'''
+        <tr>
+          <td style="font-weight: 600; color: var(--color-chalk);">{harness_esc}</td>
+          <td class="mono-cell text-green">{clean_cell}</td>
+          <td class="mono-cell text-green">{screens.get("register", {}).get("violations", "0")}</td>
+          <td class="mono-cell text-green">{screens.get("login", {}).get("violations", "0")}</td>
+          <td class="mono-cell">{screens.get("pipeline", {}).get("violations", "—")}</td>
+          <td class="mono-cell">{screens.get("contacts", {}).get("violations", "—")}</td>
+          <td class="mono-cell">{screens.get("todos", {}).get("violations", "—")}</td>
+          <td class="mono-cell">{screens.get("vue-app", {}).get("violations", "—")}</td>
+          <td class="mono-cell">{screens.get("deal-show", {}).get("violations", "—")}</td>
+          <td class="mono-cell text-fog" style="font-size: 11px;">{deal_show_rules}</td>
+        </tr>''')
+
+    # Milestone progression rows
+    milestone_rows = []
+    for r in runs:
+        harness_esc = html.escape(r["harness"])
+        m_list = r["execution"].get("milestones", [])
+        m_dict = {m["milestone"]: m for m in m_list}
+        
+        def m_test_str(m_id):
+            m_item = m_dict.get(m_id)
+            return f"{m_item['tests_passed']} passed" if (m_item and m_item['tests_passed']) else "—"
+
+        cov_str = f"{r['execution']['final_coverage']}%" if r['execution']['final_coverage'] else "—"
+
+        milestone_rows.append(f'''
+        <tr>
+          <td style="font-weight: 600; color: var(--color-chalk);">{harness_esc}</td>
+          <td class="mono-cell">{m_test_str("M1")}</td>
+          <td class="mono-cell">{m_test_str("M2")}</td>
+          <td class="mono-cell">{m_test_str("M3")}</td>
+          <td class="mono-cell">{m_test_str("M4")}</td>
+          <td class="mono-cell">{m_test_str("M5")}</td>
+          <td class="mono-cell">{m_test_str("M6")}</td>
+          <td class="mono-cell">{m_test_str("M7")}</td>
+          <td class="mono-cell text-green" style="font-weight: 600;">{m_test_str("M8")}</td>
+          <td class="mono-cell">{cov_str}</td>
+        </tr>''')
+
+    # Provenance rows
+    provenance_rows = []
+    for r in runs:
+        branch_esc = html.escape(r["branch"])
+        commit_h = r["git"].get("commit_hash", "—")
+        author_esc = html.escape(r["git"].get("author", "—"))
+        date_esc = html.escape(r["git"].get("commit_date", "—")[:10])
+        files_cnt = r["git"].get("test_file_count", 0)
+        arch_badge = '<span class="tag tag-blue">Phoenix 1.8 Scoped (Modern)</span>' if r["git"]["has_phx_18_scope"] else '<span class="tag tag-neutral">Phoenix 1.7 Controller Plugs</span>'
+
+        provenance_rows.append(f'''
+        <tr>
+          <td><span class="mono-cell text-chalk" style="font-weight: 600;">{branch_esc}</span></td>
+          <td class="mono-cell text-fog"><code>{commit_h}</code></td>
+          <td>{author_esc}</td>
+          <td class="mono-cell text-fog" style="font-size: 11px;">{date_esc}</td>
+          <td class="mono-cell text-chalk">{files_cnt} files</td>
+          <td>{arch_badge}</td>
+        </tr>''')
+
+    # Scenario blocks
+    deal_open_bars = render_scenario_bars_html(runs, "deal-open", is_key=True)
+    cold_app_bars = render_scenario_bars_html(runs, "cold-app")
+    cold_home_bars = render_scenario_bars_html(runs, "cold-home")
+    nav_contacts_bars = render_scenario_bars_html(runs, "nav-contacts")
+
+    scorecard_tbody = "\n".join(scorecard_rows)
+    a11y_tbody = "\n".join(a11y_rows)
+    milestones_tbody = "\n".join(milestone_rows)
+    provenance_tbody = "\n".join(provenance_rows)
+
+    return f"""<!DOCTYPE html>
+<html lang="en" class="dark">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Evalcode // Coding Agent Leaderboard</title>
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=Red+Hat+Display:wght@600;700&family=Red+Hat+Mono:wght@400;500&family=Red+Hat+Text:wght@400;500;600&display=swap" rel="stylesheet">
+  <style>
+    :root {{
+      --color-carbon: #04040b;
+      --color-graphite: #121113;
+      --color-obsidian: #1a191b;
+      --color-slate: #232225;
+      --color-basalt: #2b292d;
+      --color-iron: #323035;
+      --color-pewter: #3c393f;
+      --color-steel: #49474e;
+      --color-fog: #7c7a85;
+      --color-silver: #b5b2bc;
+      --color-ash: #eeeef0;
+      --color-chalk: #e5e5e5;
+      --color-signal-green: #71d083;
+      --color-led-green: #366740;
+      --color-moss-border: #2d5736;
+      --color-forest-wash: #1d3a24;
+      --color-fern-ground: #1b2a1e;
+      --color-link-blue: #70b8ff;
+      --color-lilac-accent: #baa7ff;
+      --color-plum-edge: #291f43;
+      --font-display: 'Red Hat Display', -apple-system, BlinkMacSystemFont, sans-serif;
+      --font-text: 'Red Hat Text', -apple-system, BlinkMacSystemFont, sans-serif;
+      --font-mono: 'Red Hat Mono', monospace;
+      --shadow-subtle: rgba(255, 255, 255, 0.06) 0px 1px 0px 0px inset;
+    }}
+
+    * {{
+      box-sizing: border-box;
+      margin: 0;
+      padding: 0;
+    }}
+
+    body {{
+      background-color: var(--color-carbon);
+      color: var(--color-ash);
+      font-family: var(--font-text);
+      letter-spacing: 0.025em;
+      line-height: 1.5;
+      -webkit-font-smoothing: antialiased;
+      padding-bottom: 80px;
+    }}
+
+    .top-banner {{
+      width: 100%;
+      background: var(--color-carbon);
+      border-bottom: 1px solid var(--color-moss-border);
+      padding: 8px 16px;
+      text-align: center;
+      font-size: 13px;
+      color: var(--color-ash);
+    }}
+    .top-banner a {{
+      color: var(--color-link-blue);
+      text-decoration: none;
+      margin-left: 6px;
+    }}
+    .top-banner a:hover {{
+      text-decoration: underline;
+    }}
+
+    header.depot-nav {{
+      position: sticky;
+      top: 0;
+      z-index: 40;
+      background: rgba(4, 4, 11, 0.92);
+      backdrop-filter: blur(8px);
+      border-bottom: 1px solid var(--color-basalt);
+      padding: 14px 24px;
+    }}
+    .nav-inner {{
+      max-width: 1200px;
+      margin: 0 auto;
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+    }}
+    .brand-group {{
+      display: flex;
+      align-items: center;
+      gap: 12px;
+    }}
+    .brand-logo {{
+      font-family: var(--font-display);
+      font-weight: 700;
+      letter-spacing: -0.025em;
+      font-size: 18px;
+      color: var(--color-chalk);
+      text-decoration: none;
+      display: flex;
+      align-items: center;
+      gap: 8px;
+    }}
+    .led-dot {{
+      width: 8px;
+      height: 8px;
+      border-radius: 50%;
+      background: var(--color-signal-green);
+      box-shadow: 0 0 6px rgba(113, 208, 131, 0.4);
+    }}
+    .tag {{
+      display: inline-flex;
+      align-items: center;
+      padding: 2px 8px;
+      font-family: var(--font-mono);
+      font-size: 11px;
+      text-transform: uppercase;
+      letter-spacing: 0.025em;
+      border-radius: 2px;
+      border: 1px solid var(--color-moss-border);
+      background: var(--color-fern-ground);
+      color: var(--color-signal-green);
+    }}
+    .tag-blue {{
+      border-color: #2b3d54;
+      background: #101c2a;
+      color: var(--color-link-blue);
+    }}
+    .tag-violet {{
+      border-color: var(--color-plum-edge);
+      background: #181324;
+      color: var(--color-lilac-accent);
+    }}
+    .tag-neutral {{
+      border-color: var(--color-basalt);
+      background: var(--color-obsidian);
+      color: var(--color-silver);
+    }}
+
+    .container {{
+      max-width: 1200px;
+      margin: 0 auto;
+      padding: 40px 24px;
+    }}
+
+    .hero {{
+      margin-bottom: 36px;
+    }}
+    .hero-eyebrow {{
+      font-family: var(--font-mono);
+      font-size: 12px;
+      color: var(--color-signal-green);
+      text-transform: uppercase;
+      letter-spacing: 0.05em;
+      margin-bottom: 8px;
+    }}
+    .hero h1 {{
+      font-family: var(--font-display);
+      font-size: 38px;
+      font-weight: 700;
+      letter-spacing: -0.025em;
+      color: var(--color-chalk);
+      line-height: 1.15;
+    }}
+    .hero p {{
+      color: var(--color-silver);
+      font-size: 16px;
+      margin-top: 12px;
+      max-width: 780px;
+    }}
+
+    .kpi-grid {{
+      display: grid;
+      grid-template-columns: repeat(auto-fit, minmax(220px, 1fr));
+      gap: 16px;
+      margin-bottom: 32px;
+    }}
+    .kpi-card {{
+      background: var(--color-graphite);
+      border: 1px solid var(--color-basalt);
+      border-radius: 6px;
+      padding: 20px;
+      box-shadow: var(--shadow-subtle);
+    }}
+    .kpi-label {{
+      font-family: var(--font-mono);
+      font-size: 11px;
+      text-transform: uppercase;
+      color: var(--color-fog);
+      letter-spacing: 0.05em;
+    }}
+    .kpi-value {{
+      font-family: var(--font-mono);
+      font-size: 26px;
+      font-weight: 500;
+      color: var(--color-chalk);
+      margin-top: 6px;
+    }}
+    .kpi-subtext {{
+      font-size: 12px;
+      color: var(--color-silver);
+      margin-top: 4px;
+    }}
+
+    .tabs-bar {{
+      display: flex;
+      align-items: center;
+      gap: 8px;
+      border-bottom: 1px solid var(--color-basalt);
+      margin-bottom: 24px;
+      overflow-x: auto;
+    }}
+    .tab-button {{
+      background: none;
+      border: none;
+      outline: none;
+      color: var(--color-fog);
+      font-family: var(--font-text);
+      font-size: 14px;
+      font-weight: 500;
+      letter-spacing: 0.025em;
+      padding: 10px 16px;
+      cursor: pointer;
+      position: relative;
+      white-space: nowrap;
+      transition: color 0.15s;
+    }}
+    .tab-button:hover {{
+      color: var(--color-ash);
+    }}
+    .tab-button.active {{
+      color: var(--color-chalk);
+      font-weight: 600;
+    }}
+    .tab-button.active::after {{
+      content: '';
+      position: absolute;
+      bottom: -1px;
+      left: 0;
+      right: 0;
+      height: 2px;
+      background: var(--color-signal-green);
+    }}
+
+    .filter-bar {{
+      display: flex;
+      flex-wrap: wrap;
+      align-items: center;
+      justify-content: space-between;
+      gap: 16px;
+      margin-bottom: 16px;
+    }}
+    .search-input {{
+      background: var(--color-obsidian);
+      border: 1px solid var(--color-basalt);
+      border-radius: 6px;
+      padding: 8px 14px;
+      color: var(--color-ash);
+      font-family: var(--font-text);
+      font-size: 13px;
+      min-width: 260px;
+      outline: none;
+    }}
+    .search-input:focus {{
+      border-color: var(--color-pewter);
+    }}
+    .filter-meta {{
+      font-family: var(--font-mono);
+      font-size: 12px;
+      color: var(--color-fog);
+    }}
+
+    .panel {{
+      background: var(--color-graphite);
+      border: 1px solid var(--color-basalt);
+      border-radius: 6px;
+      box-shadow: var(--shadow-subtle);
+      overflow: hidden;
+      margin-bottom: 32px;
+    }}
+    .panel-header {{
+      background: var(--color-obsidian);
+      border-bottom: 1px solid var(--color-basalt);
+      padding: 12px 20px;
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+    }}
+    .panel-title {{
+      font-family: var(--font-mono);
+      font-size: 12px;
+      text-transform: uppercase;
+      letter-spacing: 0.05em;
+      color: var(--color-silver);
+    }}
+
+    .table-responsive {{
+      width: 100%;
+      overflow-x: auto;
+    }}
+    table.depot-table {{
+      width: 100%;
+      border-collapse: collapse;
+      text-align: left;
+      font-size: 13px;
+    }}
+    table.depot-table th {{
+      background: var(--color-obsidian);
+      color: var(--color-fog);
+      font-family: var(--font-mono);
+      font-size: 11px;
+      text-transform: uppercase;
+      letter-spacing: 0.05em;
+      padding: 12px 18px;
+      border-bottom: 1px solid var(--color-basalt);
+      cursor: pointer;
+      user-select: none;
+    }}
+    table.depot-table th:hover {{
+      color: var(--color-chalk);
+    }}
+    table.depot-table td {{
+      padding: 16px 18px;
+      border-bottom: 1px solid var(--color-basalt);
+      vertical-align: middle;
+    }}
+    table.depot-table tr:last-child td {{
+      border-bottom: none;
+    }}
+    table.depot-table tr:hover td {{
+      background: rgba(255, 255, 255, 0.015);
+    }}
+
+    .mono-cell {{
+      font-family: var(--font-mono);
+    }}
+    .text-green {{
+      color: var(--color-signal-green);
+    }}
+    .text-blue {{
+      color: var(--color-link-blue);
+    }}
+    .text-violet {{
+      color: var(--color-lilac-accent);
+    }}
+    .text-fog {{
+      color: var(--color-fog);
+    }}
+
+    .rank-pill {{
+      display: inline-flex;
+      align-items: center;
+      justify-content: center;
+      width: 26px;
+      height: 26px;
+      border-radius: 4px;
+      font-family: var(--font-mono);
+      font-weight: 600;
+      font-size: 13px;
+      background: var(--color-obsidian);
+      border: 1px solid var(--color-basalt);
+      color: var(--color-silver);
+    }}
+    .rank-1 {{
+      border-color: var(--color-moss-border);
+      background: var(--color-fern-ground);
+      color: var(--color-signal-green);
+    }}
+
+    .scenario-grid {{
+      display: grid;
+      grid-template-columns: repeat(auto-fit, minmax(260px, 1fr));
+      gap: 16px;
+      padding: 20px;
+    }}
+    .scenario-card {{
+      background: var(--color-obsidian);
+      border: 1px solid var(--color-basalt);
+      border-radius: 6px;
+      padding: 16px;
+    }}
+    .scenario-title {{
+      font-family: var(--font-mono);
+      font-size: 13px;
+      color: var(--color-chalk);
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      margin-bottom: 12px;
+    }}
+    .bar-row {{
+      display: flex;
+      flex-direction: column;
+      gap: 6px;
+      margin-bottom: 12px;
+    }}
+    .bar-label {{
+      font-size: 12px;
+      color: var(--color-silver);
+      display: flex;
+      justify-content: space-between;
+    }}
+    .bar-track {{
+      width: 100%;
+      height: 8px;
+      background: var(--color-slate);
+      border-radius: 2px;
+      overflow: hidden;
+    }}
+    .bar-fill {{
+      height: 100%;
+      background: var(--color-signal-green);
+      border-radius: 2px;
+    }}
+    .bar-fill-secondary {{
+      background: var(--color-steel);
+    }}
+
+    .btn-outline {{
+      display: inline-flex;
+      align-items: center;
+      gap: 8px;
+      background: transparent;
+      border: 1px solid var(--color-basalt);
+      border-radius: 6px;
+      padding: 8px 16px;
+      color: var(--color-ash);
+      font-size: 13px;
+      font-family: var(--font-text);
+      text-decoration: none;
+      cursor: pointer;
+      transition: all 0.15s;
+    }}
+    .btn-outline:hover {{
+      border-color: var(--color-pewter);
+      background: var(--color-obsidian);
+    }}
+
+    .tab-content {{
+      display: none;
+    }}
+    .tab-content.active {{
+      display: block;
+    }}
+
+    footer {{
+      max-width: 1200px;
+      margin: 40px auto 0;
+      padding: 24px;
+      border-top: 1px solid var(--color-basalt);
+      display: flex;
+      flex-wrap: wrap;
+      align-items: center;
+      justify-content: space-between;
+      color: var(--color-fog);
+      font-size: 12px;
+      font-family: var(--font-mono);
+    }}
+  </style>
+</head>
+<body>
+
+  <aside class="top-banner">
+    <span>✨ Continuous benchmark evaluation registry across autonomous coding agent branches</span>
+    <a href="https://github.com/rizafahmi/evalcode" target="_blank" rel="noreferrer">View Repository on GitHub &rarr;</a>
+  </aside>
+
+  <header class="depot-nav">
+    <div class="nav-inner">
+      <div class="brand-group">
+        <a href="#" class="brand-logo">
+          <span class="led-dot"></span> Evalcode
+        </a>
+        <span class="tag">LEADERBOARD</span>
+      </div>
+      <div>
+        <a href="data/runs.json" class="btn-outline" download>
+          <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"/><polyline points="7 10 12 15 17 10"/><line x1="12" y1="15" x2="12" y2="3"/></svg>
+          Export runs.json
+        </a>
+      </div>
+    </div>
+  </header>
+
+  <main class="container">
+    
+    <section class="hero">
+      <div class="hero-eyebrow">Autonomous Coding Agent Benchmark</div>
+      <h1>Personal Benchmark Leaderboard</h1>
+      <p>
+        Evaluating AI coding agents on full-stack Phoenix 1.8 + Vue 3 CRM synthesis across 8 milestones (M1–M8).
+        Every row represents an isolated autonomous run with measured UI latency, accessibility audits, and test coverage.
+      </p>
+    </section>
+
+    <section class="kpi-grid">
+      <div class="kpi-card">
+        <div class="kpi-label">Discovered Agent Runs</div>
+        <div class="kpi-value">{total_runs}</div>
+        <div class="kpi-subtext">Dynamic git branches scanned</div>
+      </div>
+      <div class="kpi-card">
+        <div class="kpi-label">Fastest UI Ready</div>
+        <div class="kpi-value text-green">{best_ready}</div>
+        <div class="kpi-subtext">deal-open scenario median</div>
+      </div>
+      <div class="kpi-card">
+        <div class="kpi-label">Average Ready Latency</div>
+        <div class="kpi-value">{avg_ready}</div>
+        <div class="kpi-subtext">Across all probe scenarios</div>
+      </div>
+      <div class="kpi-card">
+        <div class="kpi-label">100% PRD Completion</div>
+        <div class="kpi-value">{full_completed_count} / {total_runs}</div>
+        <div class="kpi-subtext">M1 → M8 full autonomous passes</div>
+      </div>
+    </section>
+
+    <nav class="tabs-bar">
+      <button class="tab-button active" onclick="switchTab('overview', this)">Overview Scorecard</button>
+      <button class="tab-button" onclick="switchTab('perf', this)">Performance Arena</button>
+      <button class="tab-button" onclick="switchTab('a11y', this)">Accessibility Matrix</button>
+      <button class="tab-button" onclick="switchTab('milestones', this)">Milestone Progression</button>
+      <button class="tab-button" onclick="switchTab('provenance', this)">Branch Provenance</button>
+    </nav>
+
+    <div class="filter-bar">
+      <input type="text" id="agentFilter" class="search-input" placeholder="Search by agent, model, or branch..." oninput="filterTable()">
+      <div class="filter-meta">Auto-updated: {generated_at} UTC</div>
+    </div>
+
+    <!-- TAB 1: OVERVIEW SCORECARD -->
+    <div id="tab-overview" class="tab-content active">
+      <div class="panel">
+        <div class="panel-header">
+          <span class="panel-title">Overall Agent Rankings &amp; Metrics</span>
+          <span class="font-mono text-xs text-fog">Click headers to sort</span>
+        </div>
+        <div class="table-responsive">
+          <table class="depot-table" id="leaderboardTable">
+            <thead>
+              <tr>
+                <th onclick="sortTable(0)">Rank</th>
+                <th onclick="sortTable(1)">Agent / Model</th>
+                <th onclick="sortTable(2)">Milestones</th>
+                <th onclick="sortTable(3)">Mean Ready (ms)</th>
+                <th onclick="sortTable(4)">A11y Violations</th>
+                <th onclick="sortTable(5)">Tests (Passed)</th>
+                <th onclick="sortTable(6)">Coverage</th>
+                <th>Badges</th>
+              </tr>
+            </thead>
+            <tbody>
+              {scorecard_tbody}
+            </tbody>
+          </table>
+        </div>
+      </div>
+    </div>
+
+    <!-- TAB 2: PERFORMANCE ARENA -->
+    <div id="tab-perf" class="tab-content">
+      <div class="panel">
+        <div class="panel-header">
+          <span class="panel-title">End-User UI Latency Probes (Median Time to Ready Locator)</span>
+          <span class="font-mono text-xs text-fog">Playwright measured</span>
+        </div>
+        <div class="scenario-grid">
+          <div class="scenario-card">
+            <div class="scenario-title">
+              <span>deal-open (Drawer)</span>
+              <span class="tag">KEY SIGNAL</span>
+            </div>
+            {deal_open_bars}
+          </div>
+
+          <div class="scenario-card">
+            <div class="scenario-title">
+              <span>cold-app (Vue Mount)</span>
+              <span class="mono-cell text-fog text-xs">/app</span>
+            </div>
+            {cold_app_bars}
+          </div>
+
+          <div class="scenario-card">
+            <div class="scenario-title">
+              <span>cold-home (LiveView)</span>
+              <span class="mono-cell text-fog text-xs">/</span>
+            </div>
+            {cold_home_bars}
+          </div>
+
+          <div class="scenario-card">
+            <div class="scenario-title">
+              <span>nav-contacts (LiveNav)</span>
+              <span class="mono-cell text-fog text-xs">/contacts</span>
+            </div>
+            {nav_contacts_bars}
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <!-- TAB 3: ACCESSIBILITY MATRIX -->
+    <div id="tab-a11y" class="tab-content">
+      <div class="panel">
+        <div class="panel-header">
+          <span class="panel-title">Axe-Core WCAG 2.2 AA Audited Screens</span>
+          <span class="font-mono text-xs text-fog">Lower violations is better</span>
+        </div>
+        <div class="table-responsive">
+          <table class="depot-table">
+            <thead>
+              <tr>
+                <th>Agent Run</th>
+                <th>Clean Screens</th>
+                <th>register</th>
+                <th>login</th>
+                <th>pipeline</th>
+                <th>contacts</th>
+                <th>todos</th>
+                <th>vue-app</th>
+                <th>deal-show</th>
+                <th>Rules Triggered</th>
+              </tr>
+            </thead>
+            <tbody>
+              {a11y_tbody}
+            </tbody>
+          </table>
+        </div>
+      </div>
+    </div>
+
+    <!-- TAB 4: MILESTONE PROGRESSION -->
+    <div id="tab-milestones" class="tab-content">
+      <div class="panel">
+        <div class="panel-header">
+          <span class="panel-title">Milestone Test Accumulation Curve (M1 to M8)</span>
+          <span class="font-mono text-xs text-fog">Continuous verification</span>
+        </div>
+        <div class="table-responsive">
+          <table class="depot-table">
+            <thead>
+              <tr>
+                <th>Agent Run</th>
+                <th>M1 (Auth)</th>
+                <th>M2 (Contacts)</th>
+                <th>M3 (Deals)</th>
+                <th>M4 (Kanban)</th>
+                <th>M5 (Activity)</th>
+                <th>M6 (Todos)</th>
+                <th>M7 (Vue setup)</th>
+                <th>M8 (Vue Board)</th>
+                <th>Final Coverage</th>
+              </tr>
+            </thead>
+            <tbody>
+              {milestones_tbody}
+            </tbody>
+          </table>
+        </div>
+      </div>
+    </div>
+
+    <!-- TAB 5: BRANCH PROVENANCE -->
+    <div id="tab-provenance" class="tab-content">
+      <div class="panel">
+        <div class="panel-header">
+          <span class="panel-title">Git Branch Provenance &amp; Implementation Artifacts</span>
+          <span class="font-mono text-xs text-fog">Reproducible benchmark audit</span>
+        </div>
+        <div class="table-responsive">
+          <table class="depot-table">
+            <thead>
+              <tr>
+                <th>Branch</th>
+                <th>Commit</th>
+                <th>Author</th>
+                <th>Date</th>
+                <th>Test Files</th>
+                <th>Architecture Pattern</th>
+              </tr>
+            </thead>
+            <tbody>
+              {provenance_tbody}
+            </tbody>
+          </table>
+        </div>
+      </div>
+    </div>
+
+  </main>
+
+  <footer>
+    <div>Evalcode Benchmark &bull; Built with Depot developer-console aesthetic</div>
+    <div>Static deployment via GitHub Actions &bull; {generated_at} UTC</div>
+  </footer>
+
+  <script>
+    const RUNS_DATA = {runs_json};
+
+    function switchTab(tabId, el) {{
+      document.querySelectorAll('.tab-content').forEach(tc => tc.classList.remove('active'));
+      document.querySelectorAll('.tab-button').forEach(tb => tb.classList.remove('active'));
+      
+      const target = document.getElementById('tab-' + tabId);
+      if (target) target.classList.add('active');
+      if (el) el.classList.add('active');
+    }}
+
+    function filterTable() {{
+      const query = document.getElementById('agentFilter').value.toLowerCase();
+      const rows = document.querySelectorAll('#leaderboardTable tbody tr');
+      rows.forEach(row => {{
+        const searchKey = row.getAttribute('data-name') || '';
+        if (searchKey.includes(query)) {{
+          row.style.display = '';
+        }} else {{
+          row.style.display = 'none';
+        }}
+      }});
+    }}
+
+    let sortAsc = true;
+    function sortTable(colIndex) {{
+      const table = document.getElementById('leaderboardTable');
+      const tbody = table.querySelector('tbody');
+      const rows = Array.from(tbody.querySelectorAll('tr'));
+
+      rows.sort((a, b) => {{
+        const aVal = a.children[colIndex].innerText.trim();
+        const bVal = b.children[colIndex].innerText.trim();
+        const aNum = parseFloat(aVal.replace(/[^0-9.-]/g, ''));
+        const bNum = parseFloat(bVal.replace(/[^0-9.-]/g, ''));
+
+        if (!isNaN(aNum) && !isNaN(bNum)) {{
+          return sortAsc ? aNum - bNum : bNum - aNum;
+        }}
+        return sortAsc ? aVal.localeCompare(bVal) : bVal.localeCompare(aVal);
+      }});
+
+      sortAsc = !sortAsc;
+      rows.forEach(r => tbody.appendChild(r));
+    }}
+  </script>
+</body>
+</html>
+"""
+
+
+def main():
+    parser = argparse.ArgumentParser(description="Build Evalcode Leaderboard for GitHub Pages")
+    parser.add_argument("--output-dir", default="_site", help="Destination folder for static site files")
+    parser.add_argument("--repo-root", default=".", help="Root directory of the git repository")
+    parser.add_argument("--include-all", action="store_true", help="Include all evalcode_* branches even if reports are missing")
+    args = parser.parse_args()
+
+    repo_root = Path(args.repo_root).resolve()
+    output_dir = Path(args.output_dir).resolve()
+    data_dir = output_dir / "data"
+
+    print(f"[*] Scanning git repository at: {repo_root}")
+    branches = discover_evaluation_branches(cwd=repo_root, include_all_evalcode=args.include_all)
+    print(f"[*] Found {len(branches)} candidate benchmark branch(es): {[b['name'] for b in branches]}")
+
+    runs = []
+    for b in branches:
+        print(f"    - Processing {b['name']} (ref: {b['ref']})...")
+        run_data = collect_branch_data(b, cwd=repo_root)
+        runs.append(run_data)
+
+    runs = compute_ranks_and_badges(runs)
+    print(f"[*] Aggregated {len(runs)} benchmark runs")
+
+    output_dir.mkdir(parents=True, exist_ok=True)
+    data_dir.mkdir(parents=True, exist_ok=True)
+
+    runs_json_path = data_dir / "runs.json"
+    with open(runs_json_path, "w", encoding="utf-8") as f:
+        json.dump(runs, f, indent=2)
+    print(f"[*] Wrote JSON data to: {runs_json_path}")
+
+    nojekyll_path = output_dir / ".nojekyll"
+    nojekyll_path.touch()
+
+    generated_at = datetime.datetime.now(datetime.timezone.utc).strftime("%Y-%m-%d %H:%M:%S")
+    html_content = render_html_page(runs, generated_at)
+    index_path = output_dir / "index.html"
+    with open(index_path, "w", encoding="utf-8") as f:
+        f.write(html_content)
+    print(f"[*] Wrote static HTML dashboard to: {index_path}")
+    print("[*] Leaderboard build completed successfully!")
+
+
+if __name__ == "__main__":
+    main()
