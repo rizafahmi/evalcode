@@ -1,0 +1,63 @@
+defmodule AlurWeb.UserLive.LoginTest do
+  use AlurWeb.ConnCase
+
+  import Phoenix.LiveViewTest
+  import Alur.AccountsFixtures
+
+  describe "login page" do
+    test "renders login page", %{conn: conn} do
+      {:ok, _lv, html} = live(conn, ~p"/users/log-in")
+
+      assert html =~ "Log in"
+      assert html =~ "Sign up"
+    end
+  end
+
+  describe "user login - password" do
+    test "redirects if user logs in with valid credentials", %{conn: conn} do
+      user = user_fixture()
+
+      {:ok, lv, _html} = live(conn, ~p"/users/log-in")
+
+      form =
+        form(lv, "#login_form_password",
+          user: %{email: user.email, password: valid_user_password()}
+        )
+
+      conn = submit_form(form, conn)
+
+      assert redirected_to(conn) == ~p"/"
+    end
+
+    test "redirects to login page with a flash error if credentials are invalid", %{
+      conn: conn
+    } do
+      {:ok, lv, _html} = live(conn, ~p"/users/log-in")
+
+      form =
+        form(lv, "#login_form_password",
+          user: %{email: "test@email.com", password: "invalid_password"}
+        )
+
+      render_submit(form)
+
+      conn = follow_trigger_action(form, conn)
+      assert Phoenix.Flash.get(conn.assigns.flash, :error) == "Invalid email or password"
+      assert redirected_to(conn) == ~p"/users/log-in"
+    end
+  end
+
+  describe "login navigation" do
+    test "redirects to registration page when the Sign up link is clicked", %{conn: conn} do
+      {:ok, lv, _html} = live(conn, ~p"/users/log-in")
+
+      {:ok, _login_live, login_html} =
+        lv
+        |> element("main a", "Sign up")
+        |> render_click()
+        |> follow_redirect(conn, ~p"/users/register")
+
+      assert login_html =~ "Register"
+    end
+  end
+end

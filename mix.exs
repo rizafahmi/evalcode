@@ -41,6 +41,7 @@ defmodule Alur.MixProject do
   # Type `mix help deps` for examples and options.
   defp deps do
     [
+      {:bcrypt_elixir, "~> 3.0"},
       {:reach, "~> 2.0"},
       {:ex_dna, "~> 1.0"},
       {:igniter, "~> 0.6"},
@@ -88,9 +89,14 @@ defmodule Alur.MixProject do
       "ecto.setup": ["ecto.create", "ecto.migrate", "run priv/repo/seeds.exs"],
       "ecto.reset": ["ecto.drop", "ecto.setup"],
       test: ["ecto.create --quiet", "ecto.migrate --quiet", "test"],
-      "assets.setup": ["tailwind.install --if-missing", "esbuild.install --if-missing"],
-      "assets.build": ["tailwind alur", "esbuild alur"],
+      "assets.setup": [
+        "tailwind.install --if-missing",
+        "esbuild.install --if-missing",
+        "cmd --cd assets npm install"
+      ],
+      "assets.build": ["tailwind alur", "esbuild alur", "cmd --cd assets npm run build"],
       "assets.deploy": [
+        "cmd --cd assets npm run build",
         "tailwind alur --minify",
         "esbuild alur --minify",
         "phx.digest"
@@ -100,6 +106,7 @@ defmodule Alur.MixProject do
         "deps.unlock --unused",
         "format --check-formatted",
         "test",
+        "cmd --cd assets npm run test",
         "credo --strict",
         "dialyzer",
         "ex_dna --max-clones 0",

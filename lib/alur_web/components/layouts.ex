@@ -31,58 +31,98 @@ defmodule AlurWeb.Layouts do
     default: nil,
     doc: "the current [scope](https://hexdocs.pm/phoenix/scopes.html)"
 
+  attr :active_tab, :atom,
+    default: nil,
+    doc: "the currently active navigation section (:pipeline, :contacts, :todos)"
+
   slot :inner_block, required: true
 
   def app(assigns) do
     ~H"""
-    <header class="flex items-center justify-between border-b border-basalt bg-graphite/80 backdrop-blur px-4 py-3 sm:px-6 lg:px-8">
-      <div class="flex-1">
-        <a href="/" class="flex w-fit items-center gap-3">
-          <span class="font-display text-sm font-semibold tracking-[-0.025em] text-chalk">
-            Depot
-          </span>
-          <span class="rounded-xs bg-fern-ground border border-moss-border px-1.5 py-0.5 font-mono text-xs uppercase text-signal-green">
-            v{Application.spec(:phoenix, :vsn)}
-          </span>
-        </a>
-      </div>
-      <div class="flex-none">
-        <ul class="flex items-center space-x-3">
-          <li>
-            <a
-              href="https://phoenixframework.org/"
-              class="inline-flex items-center rounded-xs px-3 py-1.5 text-sm font-medium font-text tracking-[0.025em] text-fog hover:text-ash transition-colors"
+    <header class="border-b border-basalt bg-graphite/90 backdrop-blur sticky top-0 z-40">
+      <div class="mx-auto max-w-7xl px-4 sm:px-6 lg:px-8">
+        <div class="flex h-14 items-center justify-between gap-4">
+          <div class="flex items-center gap-6">
+            <.link
+              navigate={~p"/"}
+              class="flex items-center gap-2 font-display text-base font-semibold tracking-[-0.025em] text-chalk hover:text-ash transition-colors"
             >
-              Website
-            </a>
-          </li>
-          <li>
-            <a
-              href="https://github.com/phoenixframework/phoenix"
-              class="inline-flex items-center rounded-xs px-3 py-1.5 text-sm font-medium font-text tracking-[0.025em] text-fog hover:text-ash transition-colors"
-            >
-              GitHub
-            </a>
-          </li>
-          <li>
+              Alur
+            </.link>
+
+            <%= if @current_scope && @current_scope.user do %>
+              <nav class="flex items-center space-x-1" aria-label="Main Navigation">
+                <.link
+                  navigate={~p"/"}
+                  class={[
+                    "px-3 py-1.5 rounded-xs text-sm font-medium font-text tracking-[0.025em] transition-colors",
+                    @active_tab == :pipeline &&
+                      "text-chalk bg-obsidian border border-basalt shadow-subtle",
+                    @active_tab != :pipeline && "text-fog hover:text-ash hover:bg-obsidian/50"
+                  ]}
+                >
+                  Pipeline
+                </.link>
+                <.link
+                  navigate={~p"/contacts"}
+                  class={[
+                    "px-3 py-1.5 rounded-xs text-sm font-medium font-text tracking-[0.025em] transition-colors",
+                    @active_tab == :contacts &&
+                      "text-chalk bg-obsidian border border-basalt shadow-subtle",
+                    @active_tab != :contacts && "text-fog hover:text-ash hover:bg-obsidian/50"
+                  ]}
+                >
+                  Contacts
+                </.link>
+                <.link
+                  navigate={~p"/todos"}
+                  class={[
+                    "px-3 py-1.5 rounded-xs text-sm font-medium font-text tracking-[0.025em] transition-colors",
+                    @active_tab == :todos &&
+                      "text-chalk bg-obsidian border border-basalt shadow-subtle",
+                    @active_tab != :todos && "text-fog hover:text-ash hover:bg-obsidian/50"
+                  ]}
+                >
+                  To-dos
+                </.link>
+              </nav>
+            <% end %>
+          </div>
+
+          <div class="flex items-center gap-3">
+            <%= if @current_scope && @current_scope.user do %>
+              <span class="font-mono text-xs text-silver hidden sm:inline-block">
+                {@current_scope.user.email}
+              </span>
+              <.link
+                href={~p"/users/log-out"}
+                method="delete"
+                class="inline-flex items-center justify-center rounded-md bg-transparent px-3 py-1.5 text-xs font-medium font-text tracking-[0.025em] text-ash border border-basalt hover:border-pewter hover:text-chalk transition-all shadow-subtle"
+              >
+                Log out
+              </.link>
+            <% else %>
+              <.link
+                navigate={~p"/users/log-in"}
+                class="inline-flex items-center justify-center rounded-md bg-transparent px-3 py-1.5 text-xs font-medium font-text tracking-[0.025em] text-ash border border-basalt hover:border-pewter hover:text-chalk transition-all shadow-subtle"
+              >
+                Log in
+              </.link>
+              <.link
+                navigate={~p"/users/register"}
+                class="inline-flex items-center justify-center rounded-md bg-signal-green px-3.5 py-1.5 text-xs font-medium font-text tracking-[0.025em] text-carbon border border-led-green hover:brightness-105 transition-all shadow-subtle"
+              >
+                Register
+              </.link>
+            <% end %>
             <.theme_toggle />
-          </li>
-          <li>
-            <a
-              href="https://hexdocs.pm/phoenix/overview.html"
-              class="inline-flex items-center rounded-md bg-signal-green px-3.5 py-1.5 text-sm font-medium font-text tracking-[0.025em] text-carbon border border-led-green hover:brightness-105 transition-all shadow-subtle"
-            >
-              Get Started <span aria-hidden="true">&rarr;</span>
-            </a>
-          </li>
-        </ul>
+          </div>
+        </div>
       </div>
     </header>
 
-    <main class="px-4 py-16 sm:px-6 lg:px-8">
-      <div class="mx-auto max-w-6xl space-y-4">
-        {render_slot(@inner_block)}
-      </div>
+    <main class="mx-auto max-w-7xl px-4 py-8 sm:px-6 lg:px-8">
+      {render_slot(@inner_block)}
     </main>
 
     <.flash_group flash={@flash} />
