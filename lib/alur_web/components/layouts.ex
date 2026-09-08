@@ -35,52 +35,61 @@ defmodule AlurWeb.Layouts do
 
   def app(assigns) do
     ~H"""
-    <header class="flex items-center justify-between border-b border-basalt bg-graphite/80 backdrop-blur px-4 py-3 sm:px-6 lg:px-8">
-      <div class="flex-1">
-        <a href="/" class="flex w-fit items-center gap-3">
-          <span class="font-display text-sm font-semibold tracking-[-0.025em] text-chalk">
-            Depot
-          </span>
-          <span class="rounded-xs bg-fern-ground border border-moss-border px-1.5 py-0.5 font-mono text-xs uppercase text-signal-green">
-            v{Application.spec(:phoenix, :vsn)}
-          </span>
-        </a>
-      </div>
-      <div class="flex-none">
-        <ul class="flex items-center space-x-3">
-          <li>
-            <a
-              href="https://phoenixframework.org/"
-              class="inline-flex items-center rounded-xs px-3 py-1.5 text-sm font-medium font-text tracking-[0.025em] text-fog hover:text-ash transition-colors"
+    <header class="border-b border-basalt bg-graphite/90 backdrop-blur">
+      <div class="mx-auto flex max-w-6xl flex-wrap items-center gap-4 px-4 py-3 sm:px-6 lg:px-8">
+        <.link navigate={~p"/"} class="flex items-center gap-2">
+          <span class="h-2 w-2 rounded-full bg-signal-green"></span>
+          <span class="font-display text-lg font-semibold tracking-[-0.025em] text-chalk">Alur</span>
+        </.link>
+
+        <nav
+          :if={@current_scope && @current_scope.user}
+          class="flex flex-1 items-center gap-1 text-sm font-text tracking-[0.025em]"
+          aria-label="Primary"
+        >
+          <.link
+            navigate={~p"/"}
+            class="rounded-xs px-3 py-1.5 text-fog hover:bg-slate hover:text-ash"
+          >
+            Pipeline
+          </.link>
+          <.link
+            navigate={~p"/contacts"}
+            class="rounded-xs px-3 py-1.5 text-fog hover:bg-slate hover:text-ash"
+          >
+            Contacts
+          </.link>
+          <.link
+            navigate={~p"/todos"}
+            class="rounded-xs px-3 py-1.5 text-fog hover:bg-slate hover:text-ash"
+          >
+            To-dos
+          </.link>
+        </nav>
+
+        <div class="ml-auto flex items-center gap-3">
+          <.theme_toggle />
+          <%= if @current_scope && @current_scope.user do %>
+            <span class="hidden text-sm text-fog sm:inline">{@current_scope.user.email}</span>
+            <.link
+              href={~p"/users/log-out"}
+              method="delete"
+              class="rounded-md border border-basalt px-3 py-1.5 text-sm font-medium font-text tracking-[0.025em] text-ash hover:border-pewter hover:text-chalk"
             >
-              Website
-            </a>
-          </li>
-          <li>
-            <a
-              href="https://github.com/phoenixframework/phoenix"
-              class="inline-flex items-center rounded-xs px-3 py-1.5 text-sm font-medium font-text tracking-[0.025em] text-fog hover:text-ash transition-colors"
-            >
-              GitHub
-            </a>
-          </li>
-          <li>
-            <.theme_toggle />
-          </li>
-          <li>
-            <a
-              href="https://hexdocs.pm/phoenix/overview.html"
-              class="inline-flex items-center rounded-md bg-signal-green px-3.5 py-1.5 text-sm font-medium font-text tracking-[0.025em] text-carbon border border-led-green hover:brightness-105 transition-all shadow-subtle"
-            >
-              Get Started <span aria-hidden="true">&rarr;</span>
-            </a>
-          </li>
-        </ul>
+              Log out
+            </.link>
+          <% else %>
+            <.link navigate={~p"/users/log-in"} class="text-sm font-medium text-fog hover:text-ash">
+              Log in
+            </.link>
+            <.button variant="primary" navigate={~p"/users/register"}>Register</.button>
+          <% end %>
+        </div>
       </div>
     </header>
 
-    <main class="px-4 py-16 sm:px-6 lg:px-8">
-      <div class="mx-auto max-w-6xl space-y-4">
+    <main class="px-4 py-10 sm:px-6 lg:px-8">
+      <div class="mx-auto max-w-6xl">
         {render_slot(@inner_block)}
       </div>
     </main>

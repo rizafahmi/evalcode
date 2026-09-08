@@ -41,6 +41,7 @@ defmodule Alur.MixProject do
   # Type `mix help deps` for examples and options.
   defp deps do
     [
+      {:bcrypt_elixir, "~> 3.0"},
       {:reach, "~> 2.0"},
       {:ex_dna, "~> 1.0"},
       {:igniter, "~> 0.6"},
