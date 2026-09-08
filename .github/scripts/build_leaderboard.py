@@ -219,8 +219,13 @@ def parse_execution_report(raw_md, branch_name):
     total_cost = 0.0
 
     if raw_md:
-        m_matches = re.findall(r"## (M[0-9])\s*(.*?)(?=\n## |\n# Notes|\Z)", raw_md, re.DOTALL)
-        for m_id, m_body in m_matches:
+        m_matches = re.findall(
+            r"^## (?:Milestone\s+([1-8])|M([1-8]))\b[^\n]*\n(.*?)(?=^## |\Z)",
+            raw_md,
+            re.DOTALL | re.MULTILINE,
+        )
+        for num_long, num_short, m_body in m_matches:
+            m_id = f"M{num_long or num_short}"
             test_match = re.search(r"Result:\s*(\d+)\s*passed", m_body)
             cov_match = re.search(r"Total\s*\|\s*\n\|\s*([\d\.]+)%", m_body) or re.search(r"Coverage:\s*([\d\.]+)%", m_body)
             cost_match = re.search(r"Cost:\s*\$([0-9\.]+)", m_body)

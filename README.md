@@ -171,7 +171,7 @@ Issues and pull requests are welcome.
 
    | File | Who writes it |
    | --- | --- |
-   | `report/execution.md` | You. First heading after any “Getting Started” notes must be `# Harness - Model` (the builder parses that). Per-milestone `## M1` … `## M8` sections with time, cost, and `Result: N passed` are useful. |
+   | `report/execution.md` | You. First heading after any “Getting Started” notes must be `# Harness - Model` (the builder parses that). Per-milestone `## Milestone 1` … `## Milestone 8` sections with time, cost, and `Result: N passed` are useful. Legacy `## M1` … `## M8` headings still parse. |
    | `report/perf.md`, `report/a11y.md` | Include them if you generated them. Omit rather than invent numbers. |
    | `report/score.md` | Held-out rubric. **You cannot produce an official score from this repo.** Leave it out; a maintainer can grade the branch after merge-to-branch. |
 
