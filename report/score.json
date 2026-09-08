@@ -1,0 +1,91 @@
+{
+  "generatedAt": "2026-09-08T22:39:22.531Z",
+  "rows": [
+    {
+      "milestone": "M1",
+      "bullet": "M1 create an account, log in, see nav, open three sections, log out",
+      "status": "pass",
+      "durationMs": 5109
+    },
+    {
+      "milestone": "M1",
+      "bullet": "M1 logged-out visit cannot see the app",
+      "status": "pass",
+      "durationMs": 606
+    },
+    {
+      "milestone": "M2",
+      "bullet": "M2 add, find by name, open, edit, delete contact",
+      "status": "pass",
+      "durationMs": 5247
+    },
+    {
+      "milestone": "M2",
+      "bullet": "M2 another account does not see that contact",
+      "status": "pass",
+      "durationMs": 9070
+    },
+    {
+      "milestone": "M3",
+      "bullet": "M3 create deal with IDR, open, format, change column, list on contact, delete",
+      "status": "pass",
+      "durationMs": 5600
+    },
+    {
+      "milestone": "M4",
+      "bullet": "M4 deals on board, drag Lead→Meeting persists, totals, click opens deal",
+      "status": "pass",
+      "durationMs": 5364
+    },
+    {
+      "milestone": "M5",
+      "bullet": "M5 created line, move line with timestamp, note, no edit/delete",
+      "status": "pass",
+      "durationMs": 5346
+    },
+    {
+      "milestone": "M6",
+      "bullet": "M6 add follow-up, see on To-dos with deal name, overdue, mark done, activity lines",
+      "status": "pass",
+      "durationMs": 5491
+    },
+    {
+      "milestone": "M7",
+      "bullet": "M7 GET /api/health returns {status:ok}",
+      "status": "pass",
+      "durationMs": 28
+    },
+    {
+      "milestone": "M7",
+      "bullet": "M7 signed-in /app is a mounted Vue app",
+      "status": "fail",
+      "durationMs": 19467,
+      "error": "Error: \u001b[2mexpect(\u001b[22m\u001b[31mlocator\u001b[39m\u001b[2m).\u001b[22mtoBeVisible\u001b[2m(\u001b[22m\u001b[2m)\u001b[22m failed"
+    },
+    {
+      "milestone": "M7",
+      "bullet": "M7 mix test and Vitest both pass",
+      "status": "skip",
+      "durationMs": 1
+    },
+    {
+      "milestone": "M8",
+      "bullet": "M8 unauthenticated /api/deals* returns 401",
+      "status": "pass",
+      "durationMs": 61
+    },
+    {
+      "milestone": "M8",
+      "bullet": "M8 signed-in GET/PATCH /api/deals persists move; other account isolated",
+      "status": "pass",
+      "durationMs": 10053
+    },
+    {
+      "milestone": "M8",
+      "bullet": "M8 /app Vue board drag via /api, totals, click opens LiveView deal",
+      "status": "fail",
+      "durationMs": 20059,
+      "error": "Error: \u001b[2mexpect(\u001b[22m\u001b[31mlocator\u001b[39m\u001b[2m).\u001b[22mtoBeVisible\u001b[2m(\u001b[22m\u001b[2m)\u001b[22m failed"
+    }
+  ]
+}

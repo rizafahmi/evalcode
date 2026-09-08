@@ -19,17 +19,45 @@
 
 // Include phoenix_html to handle method=PUT/DELETE in forms and buttons.
 import "phoenix_html"
+import "./vue/main.ts"
 // Establish Phoenix Socket and LiveView configuration.
 import {Socket} from "phoenix"
 import {LiveSocket} from "phoenix_live_view"
 import {hooks as colocatedHooks} from "phoenix-colocated/alur"
 import topbar from "../vendor/topbar"
 
+const PipelineBoard = {
+  mounted() {
+    this.draggedDealId = null
+
+    this.el.addEventListener("dragstart", event => {
+      const card = event.target.closest("[data-deal-id]")
+      if (!card) return
+      this.draggedDealId = card.dataset.dealId
+      event.dataTransfer.effectAllowed = "move"
+      event.dataTransfer.setData("text/plain", this.draggedDealId)
+    })
+
+    this.el.addEventListener("dragover", event => {
+      if (event.target.closest("[data-drop-target]")) event.preventDefault()
+    })
+
+    this.el.addEventListener("drop", event => {
+      const target = event.target.closest("[data-drop-target]")
+      if (!target) return
+      event.preventDefault()
+      const dealId = this.draggedDealId || event.dataTransfer.getData("text/plain")
+      if (dealId) this.pushEvent("move-deal", {deal_id: dealId, pipeline_column_id: target.dataset.dropTarget})
+      this.draggedDealId = null
+    })
+  },
+}
+
 const csrfToken = document.querySelector("meta[name='csrf-token']").getAttribute("content")
 const liveSocket = new LiveSocket("/live", Socket, {
   longPollFallbackMs: 2500,
   params: {_csrf_token: csrfToken},
-  hooks: {...colocatedHooks},
+  hooks: {...colocatedHooks, PipelineBoard},
 })
 
 // Show progress bar on live navigation and form submits
@@ -80,4 +108,3 @@ if (process.env.NODE_ENV === "development") {
     window.liveReloader = reloader
   })
 }
-

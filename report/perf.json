@@ -1,0 +1,51 @@
+{
+  "generatedAt": "2026-09-08T22:43:07.255Z",
+  "baseURL": "http://127.0.0.1:4000",
+  "scenarios": [
+    {
+      "scenario": "cold-home",
+      "status": "ok",
+      "samples": [
+        {
+          "scenario": "cold-home",
+          "readyMs": 39,
+          "ttfbMs": 12.400000035762787,
+          "dclMs": 23.600000023841858,
+          "loadMs": 120.90000003576279,
+          "documentTransferBytes": 4486,
+          "lcpMs": 32,
+          "scriptCssBytes": -743
+        },
+        {
+          "scenario": "cold-home",
+          "readyMs": 42,
+          "ttfbMs": 11.100000023841858,
+          "dclMs": 18.69999998807907,
+          "loadMs": 32.5,
+          "documentTransferBytes": 4483,
+          "lcpMs": 32,
+          "scriptCssBytes": -743
+        },
+        {
+          "scenario": "cold-home",
+          "readyMs": 40,
+          "ttfbMs": 12.400000035762787,
+          "dclMs": 21.5,
+          "loadMs": 37.69999998807907,
+          "documentTransferBytes": 4487,
+          "lcpMs": 32,
+          "scriptCssBytes": -743
+        }
+      ],
+      "median": {
+        "readyMs": 40,
+        "ttfbMs": 12.400000035762787,
+        "dclMs": 21.5,
+        "loadMs": 37.69999998807907,
+        "documentTransferBytes": 4486,
+        "lcpMs": 32,
+        "scriptCssBytes": -743
+      }
+    }
+  ]
+}

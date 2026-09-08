@@ -1,0 +1,211 @@
+{
+  "generatedAt": "2026-09-08T22:44:20.563Z",
+  "baseURL": "http://127.0.0.1:4000",
+  "screens": [
+    {
+      "screen": "register",
+      "status": "ok",
+      "url": "http://127.0.0.1:4000/users/register",
+      "counts": {
+        "total": 1,
+        "critical": 0,
+        "serious": 1,
+        "moderate": 0,
+        "minor": 0
+      },
+      "rules": [
+        {
+          "id": "color-contrast",
+          "impact": "serious",
+          "help": "Elements must meet minimum color contrast ratio thresholds",
+          "helpUrl": "https://dequeuniversity.com/rules/axe/4.13/color-contrast?application=playwright",
+          "nodes": 1,
+          "samples": [
+            {
+              "target": [
+                "a[data-phx-id=\"m6-phx-GNN51iPg2CTqZa1h\"]"
+              ],
+              "html": "<a data-phx-loc=\"3098\" href=\"/users/log-in\" data-phx-link=\"redirect\" data-phx-link-state=\"push\" class=\"text-sm font-medium text-fog hover:text-ash\" data-phx-id=\"m6-phx-GNN51iPg2CTq"
+            }
+          ]
+        }
+      ]
+    },
+    {
+      "screen": "login",
+      "status": "ok",
+      "url": "http://127.0.0.1:4000/users/log-in",
+      "counts": {
+        "total": 1,
+        "critical": 0,
+        "serious": 1,
+        "moderate": 0,
+        "minor": 0
+      },
+      "rules": [
+        {
+          "id": "color-contrast",
+          "impact": "serious",
+          "help": "Elements must meet minimum color contrast ratio thresholds",
+          "helpUrl": "https://dequeuniversity.com/rules/axe/4.13/color-contrast?application=playwright",
+          "nodes": 1,
+          "samples": [
+            {
+              "target": [
+                "a[data-phx-id=\"m6-phx-GNN51rD_Ib_qZRgi\"]"
+              ],
+              "html": "<a data-phx-loc=\"3098\" href=\"/users/log-in\" data-phx-link=\"redirect\" data-phx-link-state=\"push\" class=\"text-sm font-medium text-fog hover:text-ash\" data-phx-id=\"m6-phx-GNN51rD_Ib_q"
+            }
+          ]
+        }
+      ]
+    },
+    {
+      "screen": "pipeline",
+      "status": "ok",
+      "url": "http://127.0.0.1:4000/",
+      "counts": {
+        "total": 1,
+        "critical": 0,
+        "serious": 1,
+        "moderate": 0,
+        "minor": 0
+      },
+      "rules": [
+        {
+          "id": "color-contrast",
+          "impact": "serious",
+          "help": "Elements must meet minimum color contrast ratio thresholds",
+          "helpUrl": "https://dequeuniversity.com/rules/axe/4.13/color-contrast?application=playwright",
+          "nodes": 9,
+          "samples": [
+            {
+              "target": [
+                "a[data-phx-id=\"m2-phx-GNN517YNp3nqZbYB\"]"
+              ],
+              "html": "<a data-phx-loc=\"3098\" href=\"/\" data-phx-link=\"redirect\" data-phx-link-state=\"push\" class=\"rounded-xs px-3 py-1.5 text-fog hover:bg-slate hover:text-ash\" data-phx-id=\"m2-phx-GNN517"
+            },
+            {
+              "target": [
+                "a[href$=\"contacts\"]"
+              ],
+              "html": "<a data-phx-loc=\"3098\" href=\"/contacts\" data-phx-link=\"redirect\" data-phx-link-state=\"push\" class=\"rounded-xs px-3 py-1.5 text-fog hover:bg-slate hover:text-ash\" data-phx-id=\"m3-ph"
+            },
+            {
+              "target": [
+                "a[href$=\"todos\"]"
+              ],
+              "html": "<a data-phx-loc=\"3098\" href=\"/todos\" data-phx-link=\"redirect\" data-phx-link-state=\"push\" class=\"rounded-xs px-3 py-1.5 text-fog hover:bg-slate hover:text-ash\" data-phx-id=\"m4-phx-G"
+            },
+            {
+              "target": [
+                ".hidden"
+              ],
+              "html": "<span data-phx-loc=\"73\" class=\"hidden text-sm text-fog sm:inline\">a11y-1788907440406-770825@example.com</span>"
+            },
+            {
+              "target": [
+                "div[data-drop-target=\"lead\"] > .py-5.text-center[data-phx-loc=\"116\"]"
+              ],
+              "html": "<p data-phx-loc=\"116\" class=\"py-5 text-center font-mono text-xs tracking-[0.025em] text-fog\">\n            Drop deals here\n          </p>"
+            }
+          ]
+        }
+      ]
+    },
+    {
+      "screen": "contacts",
+      "status": "ok",
+      "url": "http://127.0.0.1:4000/contacts",
+      "counts": {
+        "total": 1,
+        "critical": 0,
+        "serious": 1,
+        "moderate": 0,
+        "minor": 0
+      },
+      "rules": [
+        {
+          "id": "color-contrast",
+          "impact": "serious",
+          "help": "Elements must meet minimum color contrast ratio thresholds",
+          "helpUrl": "https://dequeuniversity.com/rules/axe/4.13/color-contrast?application=playwright",
+          "nodes": 4,
+          "samples": [
+            {
+              "target": [
+                "a[data-phx-id=\"m2-phx-GNN517YNp3nqZbYB\"]"
+              ],
+              "html": "<a data-phx-id=\"m2-phx-GNN517YNp3nqZbYB\" data-phx-loc=\"3098\" href=\"/\" data-phx-link=\"redirect\" data-phx-link-state=\"push\" class=\"rounded-xs px-3 py-1.5 text-fog hover:bg-slate hove"
+            },
+            {
+              "target": [
+                "a[data-phx-id=\"m4-phx-GNN517YNp3nqZbYB\"]"
+              ],
+              "html": "<a data-phx-id=\"m4-phx-GNN517YNp3nqZbYB\" data-phx-loc=\"3098\" href=\"/todos\" data-phx-link=\"redirect\" data-phx-link-state=\"push\" class=\"rounded-xs px-3 py-1.5 text-fog hover:bg-slate"
+            },
+            {
+              "target": [
+                ".hidden"
+              ],
+              "html": "<span data-phx-loc=\"73\" class=\"hidden text-sm text-fog sm:inline\">a11y-1788907440406-770825@example.com</span>"
+            },
+            {
+              "target": [
+                "p[data-phx-loc=\"187\"]"
+              ],
+              "html": "<p data-phx-loc=\"187\" class=\"mt-2 text-sm leading-relaxed tracking-[0.025em] text-fog\">\n    Add a contact or change your search to get started.\n  </p>"
+            }
+          ]
+        }
+      ]
+    },
+    {
+      "screen": "todos",
+      "status": "ok",
+      "url": "http://127.0.0.1:4000/todos",
+      "counts": {
+        "total": 1,
+        "critical": 0,
+        "serious": 1,
+        "moderate": 0,
+        "minor": 0
+      },
+      "rules": [
+        {
+          "id": "color-contrast",
+          "impact": "serious",
+          "help": "Elements must meet minimum color contrast ratio thresholds",
+          "helpUrl": "https://dequeuniversity.com/rules/axe/4.13/color-contrast?application=playwright",
+          "nodes": 4,
+          "samples": [
+            {
+              "target": [
+                "a[data-phx-id=\"m2-phx-GNN517YNp3nqZbYB\"]"
+              ],
+              "html": "<a data-phx-id=\"m2-phx-GNN517YNp3nqZbYB\" data-phx-loc=\"3098\" href=\"/\" data-phx-link=\"redirect\" data-phx-link-state=\"push\" class=\"rounded-xs px-3 py-1.5 text-fog hover:bg-slate hove"
+            },
+            {
+              "target": [
+                "a[data-phx-id=\"m3-phx-GNN517YNp3nqZbYB\"]"
+              ],
+              "html": "<a data-phx-id=\"m3-phx-GNN517YNp3nqZbYB\" data-phx-loc=\"3098\" href=\"/contacts\" data-phx-link=\"redirect\" data-phx-link-state=\"push\" class=\"rounded-xs px-3 py-1.5 text-fog hover:bg-sl"
+            },
+            {
+              "target": [
+                ".hidden"
+              ],
+              "html": "<span data-phx-loc=\"73\" class=\"hidden text-sm text-fog sm:inline\">a11y-1788907440406-770825@example.com</span>"
+            },
+            {
+              "target": [
+                "p[data-phx-loc=\"50\"]"
+              ],
+              "html": "<p data-phx-loc=\"50\" class=\"mt-2 text-sm leading-relaxed tracking-[0.025em] text-fog\">\n        No open follow-ups are waiting.\n      </p>"
+            }
+          ]
+        }
+      ]
+    }
+  ]
+}
