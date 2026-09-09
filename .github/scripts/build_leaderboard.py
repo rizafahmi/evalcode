@@ -218,9 +218,19 @@ def parse_execution_report(raw_md, branch_name):
     total_reasoning = 0
     total_cost = 0.0
 
+    notes = ""
     if raw_md:
-        m_matches = re.findall(r"## (M[0-9])\s*(.*?)(?=\n## |\n# Notes|\Z)", raw_md, re.DOTALL)
-        for m_id, m_body in m_matches:
+        notes_match = re.search(r"^## Notes\s*\n(.*)\Z", raw_md, re.DOTALL | re.MULTILINE)
+        if notes_match:
+            notes = notes_match.group(1).strip()
+
+        m_matches = re.findall(
+            r"^## (?:Milestone\s+([1-8])|M([1-8]))\b[^\n]*\n(.*?)(?=^## |\Z)",
+            raw_md,
+            re.DOTALL | re.MULTILINE,
+        )
+        for num_long, num_short, m_body in m_matches:
+            m_id = f"M{num_long or num_short}"
             test_match = re.search(r"Result:\s*(\d+)\s*passed", m_body)
             cov_match = re.search(r"Total\s*\|\s*\n\|\s*([\d\.]+)%", m_body) or re.search(r"Coverage:\s*([\d\.]+)%", m_body)
             cost_match = re.search(r"Cost:\s*\$([0-9\.]+)", m_body)
@@ -232,6 +242,7 @@ def parse_execution_report(raw_md, branch_name):
             uncached_m = re.search(r"Uncached input\s*\n\s*([\d,]+)\s*tok", m_body)
             cached_m = re.search(r"Cached input\s*\n\s*([\d,]+)\s*tok", m_body)
             output_m = re.search(r"Output\s*\n\s*([\d,]+)\s*tok(?:\s*\(([\d,]+)\s*tok reasoning\))?", m_body)
+            ctx_m = re.search(r"([\d.]+)\s*K used\s*/\s*([\d.]+)\s*K", m_body, re.IGNORECASE)
 
             turn_val = int(tok_m.group(1).replace(',', '')) if tok_m else 0
             uncached_val = int(uncached_m.group(1).replace(',', '')) if uncached_m else 0
@@ -239,6 +250,7 @@ def parse_execution_report(raw_md, branch_name):
             out_val = int(output_m.group(1).replace(',', '')) if output_m else 0
             reason_val = int(output_m.group(2).replace(',', '')) if (output_m and output_m.group(2)) else 0
             cost_val = float(cost_match.group(1)) if cost_match else 0.0
+            context_used = f"{ctx_m.group(1)}K / {ctx_m.group(2)}K" if ctx_m else None
 
             total_turns += turn_val
             total_uncached += uncached_val
@@ -265,7 +277,8 @@ def parse_execution_report(raw_md, branch_name):
                 "uncached_tokens": uncached_val,
                 "cached_tokens": cached_val,
                 "output_tokens": out_val,
-                "reasoning_tokens": reason_val
+                "reasoning_tokens": reason_val,
+                "context_used": context_used
             })
 
     total_milestones = 8
@@ -288,12 +301,22 @@ def parse_execution_report(raw_md, branch_name):
         total_tokens_str = "—"
 
     is_gemini = "gemini" in model_name.lower() or "agy" in branch_name.lower()
-    cost_display = f"${gemini_total:.2f} (est)" if is_gemini else f"${total_cost:.2f}"
+    has_token_log = total_turns > 0
+    has_cost_log = total_cost > 0
+    if is_gemini and has_token_log:
+        cost_display = f"${gemini_total:.2f} (est)"
+    elif has_cost_log:
+        cost_display = f"${total_cost:.2f}"
+    else:
+        cost_display = "—"
+        gemini_total = 0.0
+        gemini_nocache_total = 0.0
 
     return {
         "agent_name": agent_name,
         "harness_name": harness_name,
         "model_name": model_name,
+        "notes": notes,
         "milestones": milestones,
         "completed_milestones": completed_milestones,
         "total_milestones": total_milestones,
@@ -311,6 +334,8 @@ def parse_execution_report(raw_md, branch_name):
         "gemini_total": gemini_total,
         "gemini_nocache_total": gemini_nocache_total,
         "cost_display": cost_display,
+        "has_token_log": has_token_log,
+        "has_cost_log": has_cost_log,
         "is_gemini": is_gemini
     }
 
@@ -393,6 +418,8 @@ def collect_branch_data(branch_info, cwd=None):
             display_title = "DeepSeek Harness (DeepSeek V4 Flash High)"
         elif "cursor" in branch_name:
             display_title = "Cursor Agent (Claude 3.7 Sonnet)"
+        elif "codex" in branch_name:
+            display_title = "Codex CLI (GPT 5.6-luna Medium)"
         elif "zcode" in branch_name:
             display_title = "ZCode Agent"
 
@@ -449,18 +476,321 @@ def render_badges_html(badges):
     return "".join(out)
 
 
+def screen_violation_cell(screens, name):
+    if name not in screens:
+        return "—"
+    return str(screens[name].get("violations", 0))
+
+
+def run_cost_parts(r):
+    """Return (cost_str, subtitle) from a run's own logs only."""
+    ex = r["execution"]
+    if ex.get("is_gemini") and ex.get("has_token_log"):
+        return f"${ex['gemini_total']:.2f}", "Gemini Flash est"
+    if ex.get("has_cost_log"):
+        return f"${ex['total_cost']:.2f}", ex.get("model_name") or r.get("harness") or "reported"
+    if any(m.get("context_used") for m in ex.get("milestones", [])):
+        return "—", "context window only"
+    return "—", "no billed log"
+
+
+def billed_cost_values(runs):
+    costs = []
+    for r in runs:
+        ex = r["execution"]
+        if ex.get("is_gemini") and ex.get("has_token_log"):
+            costs.append(ex["gemini_total"])
+        elif ex.get("has_cost_log"):
+            costs.append(ex["total_cost"])
+    return costs
+
+
+def render_insights_html(runs):
+    items = []
+    tests = [(r["execution"]["final_tests"], r) for r in runs if r["execution"].get("final_tests")]
+    if tests:
+        top_n, top_r = max(tests, key=lambda t: t[0])
+        others = [n for n, rr in tests if rr["branch"] != top_r["branch"]]
+        if others:
+            lo, hi = min(others), max(others)
+            other_str = f"{lo}" if lo == hi else f"{lo}–{hi}"
+            items.append(
+                f"{html.escape(top_r['harness'])} logged all 8 milestones with "
+                f"{top_n} in-tree tests vs {other_str} on the other runs."
+            )
+    for r in runs:
+        harness = html.escape(r["harness"])
+        scenarios = r["perf"].get("scenarios", {})
+        expected = ["deal-open", "cold-app", "nav-contacts"]
+        missing = [s for s in expected if s not in scenarios]
+        if missing and scenarios:
+            present = ", ".join(html.escape(k) for k in scenarios)
+            miss = " / ".join(html.escape(s) for s in missing)
+            items.append(
+                f"{harness} perf probe only recorded {present}; no {miss}."
+            )
+        a11y_screens = r["a11y"].get("screens", {})
+        if a11y_screens and ("vue-app" not in a11y_screens or "deal-show" not in a11y_screens):
+            items.append(
+                f"{harness} accessibility audit did not include vue-app and/or deal-show."
+            )
+        if not r["execution"].get("has_token_log"):
+            items.append(
+                f"{harness} has no billed token or dollar log; "
+                "context-window snapshots are not comparable to DeepSeek turn totals."
+            )
+        notes = (r["execution"].get("notes") or "").strip()
+        if notes:
+            first = notes.splitlines()[0].strip()
+            if first:
+                items.append(f"{harness} notes: {html.escape(first)}")
+
+    seen = set()
+    uniq = []
+    for item in items:
+        if item not in seen:
+            seen.add(item)
+            uniq.append(item)
+    if not uniq:
+        return ""
+    lis = "".join(f"<li>{item}</li>" for item in uniq)
+    return f'''
+    <section class="insight-panel">
+      <div class="panel-title" style="margin-bottom: 12px;">Run insights</div>
+      <ul>{lis}</ul>
+    </section>'''
+
+
+def render_token_run_section(r):
+    ex = r["execution"]
+    harness = html.escape(r["harness"])
+    total = ex["total_turns"]
+    cached = ex["total_cached"]
+    uncached = ex["total_uncached"]
+    output = ex["total_output"]
+    reasoning = ex["total_reasoning"]
+    denom = cached + uncached + output
+    pct_c = (cached / denom * 100) if denom else 0
+    pct_u = (uncached / denom * 100) if denom else 0
+    pct_o = (output / denom * 100) if denom else 0
+    cache_hit = ex.get("cache_hit_rate", 0.0)
+    cost_str, cost_sub = run_cost_parts(r)
+
+    m_names = {
+        "M1": "M1 (Auth & Session)",
+        "M2": "M2 (Contacts CRUD)",
+        "M3": "M3 (Deals Engine)",
+        "M4": "M4 (Kanban Pipeline)",
+        "M5": "M5 (Activity Timeline)",
+        "M6": "M6 (Todos & Notes)",
+        "M7": "M7 (Vue Setup & SPA)",
+        "M8": "M8 (Vue Kanban Integration)"
+    }
+    rows = []
+    for m in ex.get("milestones", []):
+        tot_in = m["uncached_tokens"] + m["cached_tokens"]
+        m_hit_rate = f"{(m['cached_tokens'] / tot_in * 100):.1f}%" if tot_in > 0 else "—"
+        rows.append(f'''
+            <tr>
+              <td style="font-weight: 600; color: var(--color-chalk);">{html.escape(m_names.get(m["milestone"], m["milestone"]))}</td>
+              <td class="mono-cell">{m["turn_tokens"]:,}</td>
+              <td class="mono-cell text-blue">{m["uncached_tokens"]:,}</td>
+              <td class="mono-cell text-green">{m["cached_tokens"]:,}</td>
+              <td class="mono-cell text-violet">{m["output_tokens"]:,}</td>
+              <td class="mono-cell text-fog" style="font-size: 11px;">{m["reasoning_tokens"]:,}</td>
+              <td class="mono-cell text-green">{m_hit_rate}</td>
+              <td class="mono-cell">{html.escape(m["cost"])}</td>
+              <td class="mono-cell text-green" style="font-weight: 600;">{html.escape(m["gemini_cost"])}</td>
+            </tr>''')
+    nocache = ex.get("gemini_nocache_total", 0)
+    gem = ex.get("gemini_total", 0)
+    savings_pct = "—"
+    savings_amt = "—"
+    if nocache > 0 and gem > 0 and nocache >= gem:
+        savings_pct = f"{-((nocache - gem) / nocache * 100):.1f}%"
+        savings_amt = f"${nocache - gem:.2f}"
+
+    return f'''
+        <div style="margin-bottom: 32px;">
+          <div style="font-family: var(--font-mono); font-size: 12px; text-transform: uppercase; color: var(--color-silver); margin-bottom: 12px;">
+            {harness} · {html.escape(ex.get("model_name", ""))}
+          </div>
+          <div class="cost-card-grid">
+            <div class="cost-card">
+              <div class="kpi-label">Reported run cost</div>
+              <div class="kpi-value">{html.escape(cost_str)}</div>
+              <div class="kpi-subtext">{html.escape(cost_sub)}</div>
+            </div>
+            <div class="cost-card">
+              <div class="kpi-label">Turn tokens</div>
+              <div class="kpi-value">{html.escape(ex.get("total_tokens_str", "—"))}</div>
+              <div class="kpi-subtext">{cache_hit}% prompt cache hit rate</div>
+            </div>
+            <div class="cost-card">
+              <div class="kpi-label">Gemini 3.8 Flash (est)</div>
+              <div class="kpi-value">${gem:.2f}</div>
+              <div class="kpi-subtext">With context caching; no-cache ${nocache:.2f}</div>
+            </div>
+            <div class="cost-card">
+              <div class="kpi-label">Prompt cache savings (est)</div>
+              <div class="kpi-value">{savings_pct}</div>
+              <div class="kpi-subtext">Saved {savings_amt} vs no-cache Gemini estimate</div>
+            </div>
+          </div>
+          <div style="background: var(--color-obsidian); border: 1px solid var(--color-basalt); border-radius: 6px; padding: 20px; margin-bottom: 16px;">
+            <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 8px;">
+              <span class="mono-cell text-chalk" style="font-size: 13px; font-weight: 600;">Token distribution ({total:,} total)</span>
+              <span class="tag">{cache_hit}% CACHE HIT</span>
+            </div>
+            <div class="token-dist-bar">
+              <div class="token-dist-seg seg-cached" style="width: {pct_c:.2f}%;" title="Cached Input"></div>
+              <div class="token-dist-seg seg-uncached" style="width: {pct_u:.2f}%;" title="Uncached Input"></div>
+              <div class="token-dist-seg seg-output" style="width: {pct_o:.2f}%;" title="Output"></div>
+            </div>
+            <div class="token-legend">
+              <div class="legend-item"><span class="legend-dot dot-cached"></span><span>Cached Input: <strong class="text-green">{cached:,}</strong></span></div>
+              <div class="legend-item"><span class="legend-dot dot-uncached"></span><span>Uncached Input: <strong class="text-blue">{uncached:,}</strong></span></div>
+              <div class="legend-item"><span class="legend-dot dot-output"></span><span>Output: <strong class="text-violet">{output:,}</strong></span></div>
+              <div class="legend-item text-fog"><span>(Includes {reasoning:,} reasoning tokens)</span></div>
+            </div>
+          </div>
+          <div class="table-responsive">
+            <table class="depot-table">
+              <thead>
+                <tr>
+                  <th>Milestone</th>
+                  <th>Turn Tokens</th>
+                  <th>Uncached Input</th>
+                  <th>Cached Input</th>
+                  <th>Output Tokens</th>
+                  <th>Reasoning Tokens</th>
+                  <th>Cache Hit %</th>
+                  <th>Reported Cost</th>
+                  <th>Gemini 3.8 Flash (Est)</th>
+                </tr>
+              </thead>
+              <tbody>
+                {"".join(rows)}
+              </tbody>
+              <tfoot>
+                <tr style="background: var(--color-obsidian); font-weight: 600;">
+                  <td class="text-chalk">TOTAL (M1–M8)</td>
+                  <td class="mono-cell text-chalk">{total:,}</td>
+                  <td class="mono-cell text-blue">{uncached:,}</td>
+                  <td class="mono-cell text-green">{cached:,}</td>
+                  <td class="mono-cell text-violet">{output:,}</td>
+                  <td class="mono-cell text-fog">{reasoning:,}</td>
+                  <td class="mono-cell text-green">{cache_hit}%</td>
+                  <td class="mono-cell text-chalk">{html.escape(f"${ex['total_cost']:.2f}" if ex.get("has_cost_log") else "—")}</td>
+                  <td class="mono-cell text-green">${gem:.2f}</td>
+                </tr>
+              </tfoot>
+            </table>
+          </div>
+        </div>'''
+
+
+def render_context_run_section(r):
+    ex = r["execution"]
+    harness = html.escape(r["harness"])
+    rows = []
+    for m in ex.get("milestones", []):
+        rows.append(f'''
+            <tr>
+              <td style="font-weight: 600; color: var(--color-chalk);">{html.escape(m["milestone"])}</td>
+              <td class="mono-cell">{html.escape(m.get("time") or "—")}</td>
+              <td class="mono-cell">{html.escape(m.get("context_used") or "—")}</td>
+              <td class="mono-cell">{m["tests_passed"] if m.get("tests_passed") is not None else "—"} passed</td>
+            </tr>''')
+    return f'''
+        <div style="margin-bottom: 32px;">
+          <div style="font-family: var(--font-mono); font-size: 12px; text-transform: uppercase; color: var(--color-silver); margin-bottom: 12px;">
+            {harness} · {html.escape(ex.get("model_name", ""))} · no billed token log
+          </div>
+          <div class="cost-card-grid">
+            <div class="cost-card">
+              <div class="kpi-label">Reported run cost</div>
+              <div class="kpi-value">—</div>
+              <div class="kpi-subtext">Context-window snapshots only; omit rather than invent dollars</div>
+            </div>
+          </div>
+          <div class="table-responsive">
+            <table class="depot-table">
+              <thead>
+                <tr>
+                  <th>Milestone</th>
+                  <th>Time</th>
+                  <th>Context window used</th>
+                  <th>In-tree tests</th>
+                </tr>
+              </thead>
+              <tbody>
+                {"".join(rows)}
+              </tbody>
+            </table>
+          </div>
+        </div>'''
+
+
+def render_cost_tab_inner(runs):
+    parts = []
+    token_runs = [r for r in runs if r["execution"].get("has_token_log")]
+    context_runs = [
+        r for r in runs
+        if not r["execution"].get("has_token_log")
+        and any(m.get("context_used") for m in r["execution"].get("milestones", []))
+    ]
+    other_runs = [
+        r for r in runs
+        if r not in token_runs and r not in context_runs
+    ]
+    for r in token_runs:
+        parts.append(render_token_run_section(r))
+    for r in context_runs:
+        parts.append(render_context_run_section(r))
+    for r in other_runs:
+        harness = html.escape(r["harness"])
+        parts.append(f'''
+        <div class="cost-card" style="margin-bottom: 16px;">
+          <div class="kpi-label">{harness}</div>
+          <div class="kpi-value">—</div>
+          <div class="kpi-subtext">No token or cost log on this branch</div>
+        </div>''')
+    parts.append('''
+          <div class="formula-grid">
+            <div class="formula-card">
+              <div class="panel-title" style="margin-bottom: 12px; color: var(--color-chalk);">Google Gemini 3.8 Flash pricing (estimates only)</div>
+              <ul style="list-style: none; display: flex; flex-direction: column; gap: 8px; font-size: 13px; color: var(--color-silver);">
+                <li>&bull; <strong class="text-chalk">Uncached Input:</strong> <span class="mono-cell">$0.075</span> per 1M tokens</li>
+                <li>&bull; <strong class="text-chalk">Context Caching Read:</strong> <span class="mono-cell">$0.01875</span> per 1M tokens (75% discount)</li>
+                <li>&bull; <strong class="text-chalk">Output Tokens:</strong> <span class="mono-cell">$0.30</span> per 1M tokens</li>
+                <li>&bull; <strong class="text-chalk">Formula:</strong> <code class="mono-cell text-fog">Cost = (Uncached / 1M &times; 0.075) + (Cached / 1M &times; 0.01875) + (Output / 1M &times; 0.30)</code></li>
+              </ul>
+            </div>
+            <div class="formula-card">
+              <div class="panel-title" style="margin-bottom: 12px; color: var(--color-chalk);">Why some runs look cheap at huge token volume</div>
+              <p style="font-size: 13px; color: var(--color-silver); line-height: 1.6;">
+                Harnesses that log billed turns often reuse a long conversation prefix. Cached input is billed at a discount, so tens of millions of tokens can still land near a couple of dollars.
+                Runs that only snapshot context-window fill (used / limit) are <strong class="text-chalk">not</strong> the same unit and are shown as em dashes instead of a fake dollar total.
+              </p>
+            </div>
+          </div>
+    ''')
+    return "".join(parts)
+
+
 def render_scenario_bars_html(runs, scenario_id, is_key=False):
     out = []
     for r in runs:
         scenarios = r["perf"].get("scenarios", {})
         sc_info = scenarios.get(scenario_id, {})
-        ready_str = sc_info.get("ready", "—")
+        ready_str = sc_info.get("ready") or "—"
         ready_ms = sc_info.get("ready_ms")
 
         is_highlight = ready_ms is not None and ready_ms < 30
         green_cls = 'text-green' if is_highlight else ''
         bar_fill_cls = 'bar-fill' if is_highlight else 'bar-fill bar-fill-secondary'
-        pct = min(100, int((ready_ms or 50) * 1.8))
+        pct = min(100, int(ready_ms * 1.8)) if ready_ms is not None else 0
 
         harness_label = html.escape(r["harness"])
         out.append(f'''
@@ -492,23 +822,39 @@ def render_html_page(runs, generated_at):
 
     full_completed_count = sum(1 for r in runs if r["execution"]["completion_rate"] == 100.0)
 
-    # Benchmark tokens & cost metrics across runs
-    benchmark_tokens = max((r["execution"]["total_turns"] for r in runs), default=86_705_402)
-    if benchmark_tokens >= 1_000_000:
-        benchmark_tokens_str = f"{benchmark_tokens / 1_000_000:.1f}M"
-    elif benchmark_tokens > 0:
-        benchmark_tokens_str = f"{benchmark_tokens / 1_000:.1f}K"
+    token_runs = [r for r in runs if r["execution"].get("has_token_log")]
+    token_strs = []
+    seen_tok = set()
+    for r in token_runs:
+        s = r["execution"].get("total_tokens_str", "—")
+        if s not in seen_tok:
+            seen_tok.add(s)
+            token_strs.append(s)
+    if not token_strs:
+        benchmark_tokens_str = "—"
+        tokens_sub = "No billed token logs"
+    elif len(token_strs) == 1:
+        benchmark_tokens_str = token_strs[0]
+        tokens_sub = f"{len(token_runs)} run(s) with billed turn tokens"
     else:
-        benchmark_tokens_str = "86.7M"
+        benchmark_tokens_str = " / ".join(token_strs)
+        tokens_sub = "Billed turn tokens (not all runs)"
 
-    cost_deepseek = "$1.37"
-    cost_gemini = "$1.92"
-    for r in runs:
-        if r["execution"].get("total_cost") and r["execution"]["total_cost"] > 0:
-            cost_deepseek = f"${r['execution']['total_cost']:.2f}"
-        if r["execution"].get("gemini_total") and r["execution"]["gemini_total"] > 0:
-            cost_gemini = f"${r['execution']['gemini_total']:.2f}"
-    cost_range_str = f"{cost_deepseek} – {cost_gemini}"
+    billed_costs = billed_cost_values(runs)
+    if not billed_costs:
+        cost_range_str = "—"
+        cost_subtext = "No billed or estimated costs logged"
+    elif min(billed_costs) == max(billed_costs):
+        cost_range_str = f"${min(billed_costs):.2f}"
+        cost_subtext = "Runs with billed or estimated cost"
+    else:
+        cost_range_str = f"${min(billed_costs):.2f} – ${max(billed_costs):.2f}"
+        cost_subtext = "Runs with billed or estimated cost"
+
+    insights_html = render_insights_html(runs)
+    cost_tab_inner = render_cost_tab_inner(runs)
+    insights_html = insights_html.replace("{", "{{").replace("}", "}}")
+    cost_tab_inner = cost_tab_inner.replace("{", "{{").replace("}", "}}")
 
     # Pre-render rows
     scorecard_rows = []
@@ -520,23 +866,17 @@ def render_html_page(runs, generated_at):
 
         tok_str = r["execution"].get("total_tokens_str", "—")
         cache_hit_pct = r["execution"].get("cache_hit_rate", 0.0)
-        cache_sub = f"({cache_hit_pct}% cached)" if r["execution"].get("total_turns", 0) > 0 else ""
+        cache_sub = f"({cache_hit_pct}% cached)" if r["execution"].get("has_token_log") else ""
 
-        if r["execution"].get("is_gemini"):
-            cost_str = f"${r['execution'].get('gemini_total', 1.92):.2f}"
-            cost_sub = "Gemini Flash est"
-        elif r["execution"].get("total_cost", 0) > 0:
-            cost_str = f"${r['execution']['total_cost']:.2f}"
-            cost_sub = "DeepSeek V4"
-        else:
-            cost_str = "—"
-            cost_sub = ""
+        cost_str, cost_sub = run_cost_parts(r)
+        cost_str_esc = html.escape(cost_str)
+        cost_sub_esc = html.escape(cost_sub)
         
         ready_cell = f"{r['perf']['mean_ready_ms']} ms" if r['perf']['mean_ready_ms'] else "—"
         ready_cls = "mono-cell"
 
-        a11y_str = f"{r['a11y']['total_violations']} viols" if r.get("has_reports", True) else "—"
-        a11y_sub = f"({r['a11y']['total_affected_nodes']} nodes)" if r.get("has_reports", True) else ""
+        a11y_str = f"{r['a11y']['total_violations']} viols" if r['a11y'].get("screen_count") else "—"
+        a11y_sub = f"({r['a11y']['total_affected_nodes']} nodes)" if r['a11y'].get("screen_count") else ""
 
         tests_str = f"{r['execution']['final_tests']} passed" if r['execution']['final_tests'] else "—"
         tests_sub = f"({r['git']['test_file_count']} files)"
@@ -558,8 +898,8 @@ def render_html_page(runs, generated_at):
             <div class="text-fog" style="font-size: 11px;">{cache_sub}</div>
           </td>
           <td class="mono-cell text-green" style="font-weight: 600;">
-            <span>{cost_str}</span>
-            <div class="text-fog" style="font-size: 11px; font-weight: 400;">{cost_sub}</div>
+            <span>{cost_str_esc}</span>
+            <div class="text-fog" style="font-size: 11px; font-weight: 400;">{cost_sub_esc}</div>
           </td>
           <td class="{ready_cls}" style="font-size: 14px; font-weight: 500;">{ready_cell}</td>
           <td class="mono-cell">
@@ -580,19 +920,23 @@ def render_html_page(runs, generated_at):
         harness_esc = html.escape(r["harness"])
         screens = r["a11y"].get("screens", {})
         clean_cell = f"{r['a11y']['clean_screens']}/{r['a11y']['screen_count']} ({r['a11y']['clean_percentage']}%)" if r['a11y']['screen_count'] else "—"
-        deal_show_rules = html.escape(screens.get("deal-show", {}).get("rules", "—"))
-        
+        deal_show_rules = html.escape(screens["deal-show"]["rules"]) if "deal-show" in screens else "—"
+        def viol_td(name):
+            val = screen_violation_cell(screens, name)
+            cls = "text-green" if val == "0" else ""
+            return f'<td class="mono-cell {cls}">{val}</td>'
+
         a11y_rows.append(f'''
         <tr>
           <td style="font-weight: 600; color: var(--color-chalk);">{harness_esc}</td>
           <td class="mono-cell text-green">{clean_cell}</td>
-          <td class="mono-cell text-green">{screens.get("register", {}).get("violations", "0")}</td>
-          <td class="mono-cell text-green">{screens.get("login", {}).get("violations", "0")}</td>
-          <td class="mono-cell">{screens.get("pipeline", {}).get("violations", "—")}</td>
-          <td class="mono-cell">{screens.get("contacts", {}).get("violations", "—")}</td>
-          <td class="mono-cell">{screens.get("todos", {}).get("violations", "—")}</td>
-          <td class="mono-cell">{screens.get("vue-app", {}).get("violations", "—")}</td>
-          <td class="mono-cell">{screens.get("deal-show", {}).get("violations", "—")}</td>
+          {viol_td("register")}
+          {viol_td("login")}
+          {viol_td("pipeline")}
+          {viol_td("contacts")}
+          {viol_td("todos")}
+          {viol_td("vue-app")}
+          {viol_td("deal-show")}
           <td class="mono-cell text-fog" style="font-size: 11px;">{deal_show_rules}</td>
         </tr>''')
 
@@ -643,48 +987,6 @@ def render_html_page(runs, generated_at):
           <td>{arch_badge}</td>
         </tr>''')
 
-    # Milestone cost rows for Tokens & Cost Arena
-    cost_milestone_rows = []
-    token_run = next((r for r in runs if r["execution"]["total_turns"] > 0), runs[0] if runs else None)
-    if token_run:
-        m_list = token_run["execution"].get("milestones", [])
-        m_names = {
-            "M1": "M1 (Auth & Session)",
-            "M2": "M2 (Contacts CRUD)",
-            "M3": "M3 (Deals Engine)",
-            "M4": "M4 (Kanban Pipeline)",
-            "M5": "M5 (Activity Timeline)",
-            "M6": "M6 (Todos & Notes)",
-            "M7": "M7 (Vue Setup & SPA)",
-            "M8": "M8 (Vue Kanban Integration)"
-        }
-        for m in m_list:
-            mid = m["milestone"]
-            m_label = m_names.get(mid, mid)
-            turns_str = f"{m['turn_tokens']:,}" if m['turn_tokens'] > 0 else "—"
-            uncached_str = f"{m['uncached_tokens']:,}" if m['uncached_tokens'] > 0 else "—"
-            cached_str = f"{m['cached_tokens']:,}" if m['cached_tokens'] > 0 else "—"
-            out_str = f"{m['output_tokens']:,}" if m['output_tokens'] > 0 else "—"
-            reason_str = f"{m['reasoning_tokens']:,}" if m['reasoning_tokens'] > 0 else "—"
-            
-            tot_in = m['uncached_tokens'] + m['cached_tokens']
-            m_hit_rate = f"{(m['cached_tokens'] / tot_in * 100):.1f}%" if tot_in > 0 else "—"
-            dsh_c = m['cost']
-            gem_c = m['gemini_cost']
-            
-            cost_milestone_rows.append(f'''
-            <tr>
-              <td style="font-weight: 600; color: var(--color-chalk);">{m_label}</td>
-              <td class="mono-cell">{turns_str}</td>
-              <td class="mono-cell text-blue">{uncached_str}</td>
-              <td class="mono-cell text-green">{cached_str}</td>
-              <td class="mono-cell text-violet">{out_str}</td>
-              <td class="mono-cell text-fog" style="font-size: 11px;">{reason_str}</td>
-              <td class="mono-cell text-green">{m_hit_rate}</td>
-              <td class="mono-cell">{dsh_c}</td>
-              <td class="mono-cell text-green" style="font-weight: 600;">{gem_c}</td>
-            </tr>''')
-
     # Scenario blocks
     deal_open_bars = render_scenario_bars_html(runs, "deal-open", is_key=True)
     cold_app_bars = render_scenario_bars_html(runs, "cold-app")
@@ -695,7 +997,6 @@ def render_html_page(runs, generated_at):
     a11y_tbody = "\n".join(a11y_rows)
     milestones_tbody = "\n".join(milestone_rows)
     provenance_tbody = "\n".join(provenance_rows)
-    cost_milestones_tbody = "\n".join(cost_milestone_rows)
 
     return f"""<!DOCTYPE html>
 <html lang="en" class="dark">
@@ -1201,7 +1502,27 @@ def render_html_page(runs, generated_at):
       padding: 20px;
     }}
 
-    footer {{
+    .insight-panel {{
+      background: var(--color-obsidian);
+      border: 1px solid var(--color-basalt);
+      border-radius: 6px;
+      padding: 20px 24px;
+      margin-bottom: 32px;
+      box-shadow: var(--shadow-subtle);
+    }}
+    .insight-panel ul {{
+      list-style: none;
+      display: flex;
+      flex-direction: column;
+      gap: 10px;
+      font-size: 14px;
+      color: var(--color-silver);
+      letter-spacing: 0.025em;
+    }}
+    .insight-panel li {{
+      padding-left: 14px;
+      border-left: 1px solid var(--color-basalt);
+    }}
       max-width: 1200px;
       margin: 40px auto 0;
       padding: 24px;
@@ -1258,19 +1579,19 @@ def render_html_page(runs, generated_at):
         <div class="kpi-subtext">Dynamic git branches scanned</div>
       </div>
       <div class="kpi-card">
-        <div class="kpi-label">Benchmark Total Tokens</div>
+        <div class="kpi-label">Billed Turn Tokens</div>
         <div class="kpi-value">{benchmark_tokens_str}</div>
-        <div class="kpi-subtext">99.2% prompt cache hit rate</div>
+        <div class="kpi-subtext">{tokens_sub}</div>
       </div>
       <div class="kpi-card">
-        <div class="kpi-label">Full Run Cost</div>
+        <div class="kpi-label">Logged Run Cost</div>
         <div class="kpi-value text-green">{cost_range_str}</div>
-        <div class="kpi-subtext">DeepSeek $1.37 &bull; Gemini $1.92 est</div>
+        <div class="kpi-subtext">{cost_subtext}</div>
       </div>
       <div class="kpi-card">
-        <div class="kpi-label">deal-open Ready Latency</div>
+        <div class="kpi-label">Lowest Mean Ready</div>
         <div class="kpi-value text-green">{best_ready}</div>
-        <div class="kpi-subtext">deal-open scenario median</div>
+        <div class="kpi-subtext">Among runs with UI probes</div>
       </div>
       <div class="kpi-card">
         <div class="kpi-label">Average Ready Latency</div>
@@ -1283,6 +1604,8 @@ def render_html_page(runs, generated_at):
         <div class="kpi-subtext">M1 &rarr; M8 full autonomous passes</div>
       </div>
     </section>
+
+    {insights_html}
 
     <nav class="tabs-bar">
       <button class="tab-button active" onclick="switchTab('overview', this)">Overview Matrix</button>
@@ -1333,142 +1656,11 @@ def render_html_page(runs, generated_at):
       <div class="panel">
         <div class="panel-header">
           <span class="panel-title">End-to-End Token Utilization &amp; Model Cost Estimation</span>
-          <span class="font-mono text-xs text-fog">M1–M8 Autonomous Execution Analysis</span>
+          <span class="font-mono text-xs text-fog">Per-run logs only &mdash; missing values are em dashes</span>
         </div>
         
         <div style="padding: 24px;">
-          <!-- 4 Summary KPI Cards -->
-          <div class="cost-card-grid">
-            <div class="cost-card">
-              <div class="kpi-label">Reported Run Cost (DeepSeek)</div>
-              <div class="kpi-value">$1.37</div>
-              <div class="kpi-subtext">Actual cost recorded across M1–M8 execution</div>
-              <div class="mono-cell text-fog" style="font-size: 11px; margin-top: 8px;">
-                Uncached $0.14/M &bull; Cache $0.014/M &bull; Out $0.28/M
-              </div>
-            </div>
-
-            <div class="cost-card" style="border-color: var(--color-moss-border);">
-              <div class="kpi-label">Antigravity Gemini 3.8 Flash (Est)</div>
-              <div class="kpi-value text-green">$1.92</div>
-              <div class="kpi-subtext">With Context Caching (75% read discount)</div>
-              <div class="mono-cell text-fog" style="font-size: 11px; margin-top: 8px;">
-                Uncached $0.075/M &bull; Cache $0.01875/M &bull; Out $0.30/M
-              </div>
-            </div>
-
-            <div class="cost-card">
-              <div class="kpi-label">Gemini 3.8 Flash (No Cache Baseline)</div>
-              <div class="kpi-value">$6.63</div>
-              <div class="kpi-subtext">Standard API cost if prompt caching disabled</div>
-              <div class="mono-cell text-fog" style="font-size: 11px; margin-top: 8px;">
-                All 86.1M inputs billed at base rate ($0.075/M)
-              </div>
-            </div>
-
-            <div class="cost-card">
-              <div class="kpi-label">Prompt Cache Savings</div>
-              <div class="kpi-value text-green">-71.0%</div>
-              <div class="kpi-subtext">Saved $4.71 via Google Context Caching</div>
-              <div class="mono-cell text-fog" style="font-size: 11px; margin-top: 8px;">
-                99.2% prompt prefix hit rate (85.5M cached tokens)
-              </div>
-            </div>
-          </div>
-
-          <!-- Token Composition Visual Bar -->
-          <div style="background: var(--color-obsidian); border: 1px solid var(--color-basalt); border-radius: 6px; padding: 20px; margin-bottom: 24px;">
-            <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 8px;">
-              <span class="mono-cell text-chalk" style="font-size: 13px; font-weight: 600;">Benchmark Token Distribution (86,705,402 Total Tokens)</span>
-              <span class="tag">99.2% CACHE HIT</span>
-            </div>
-            
-            <div class="token-dist-bar">
-              <div class="token-dist-seg seg-cached" style="width: 98.61%;" title="Cached Input: 85,496,704 tokens (98.61%)"></div>
-              <div class="token-dist-seg seg-uncached" style="width: 0.75%;" title="Uncached Input: 651,302 tokens (0.75%)"></div>
-              <div class="token-dist-seg seg-output" style="width: 0.64%;" title="Output / Reasoning: 557,396 tokens (0.64%)"></div>
-            </div>
-
-            <div class="token-legend">
-              <div class="legend-item">
-                <span class="legend-dot dot-cached"></span>
-                <span>Cached Input: <strong class="text-green">85,496,704</strong> (98.61%)</span>
-              </div>
-              <div class="legend-item">
-                <span class="legend-dot dot-uncached"></span>
-                <span>Uncached Input: <strong class="text-blue">651,302</strong> (0.75%)</span>
-              </div>
-              <div class="legend-item">
-                <span class="legend-dot dot-output"></span>
-                <span>Output &amp; Reasoning: <strong class="text-violet">557,396</strong> (0.64%)</span>
-              </div>
-              <div class="legend-item text-fog">
-                <span>(Includes 358,693 reasoning tokens)</span>
-              </div>
-            </div>
-          </div>
-
-          <!-- Milestone Breakdown Table -->
-          <div style="margin-bottom: 24px;">
-            <div style="font-family: var(--font-mono); font-size: 12px; text-transform: uppercase; color: var(--color-silver); margin-bottom: 12px;">
-              Milestone-by-Milestone Token &amp; Cost Breakdown
-            </div>
-            <div class="table-responsive">
-              <table class="depot-table">
-                <thead>
-                  <tr>
-                    <th>Milestone</th>
-                    <th>Turn Tokens</th>
-                    <th>Uncached Input</th>
-                    <th>Cached Input</th>
-                    <th>Output Tokens</th>
-                    <th>Reasoning Tokens</th>
-                    <th>Cache Hit %</th>
-                    <th>DeepSeek Cost</th>
-                    <th>Gemini 3.8 Flash (Est)</th>
-                  </tr>
-                </thead>
-                <tbody>
-                  {cost_milestones_tbody}
-                </tbody>
-                <tfoot>
-                  <tr style="background: var(--color-obsidian); font-weight: 600;">
-                    <td class="text-chalk">TOTAL (M1–M8)</td>
-                    <td class="mono-cell text-chalk">86,705,402</td>
-                    <td class="mono-cell text-blue">651,302</td>
-                    <td class="mono-cell text-green">85,496,704</td>
-                    <td class="mono-cell text-violet">557,396</td>
-                    <td class="mono-cell text-fog">358,693</td>
-                    <td class="mono-cell text-green">99.2%</td>
-                    <td class="mono-cell text-chalk">$1.37</td>
-                    <td class="mono-cell text-green">$1.92</td>
-                  </tr>
-                </tfoot>
-              </table>
-            </div>
-          </div>
-
-          <!-- Methodology & Rate Specifications -->
-          <div class="formula-grid">
-            <div class="formula-card">
-              <div class="panel-title" style="margin-bottom: 12px; color: var(--color-chalk);">Google Gemini 3.8 Flash Pricing Architecture</div>
-              <ul style="list-style: none; display: flex; flex-direction: column; gap: 8px; font-size: 13px; color: var(--color-silver);">
-                <li>&bull; <strong class="text-chalk">Uncached Input:</strong> <span class="mono-cell">$0.075</span> per 1M tokens ($0.000075 / 1K)</li>
-                <li>&bull; <strong class="text-chalk">Context Caching Read:</strong> <span class="mono-cell">$0.01875</span> per 1M tokens (75% discount on cached tokens)</li>
-                <li>&bull; <strong class="text-chalk">Output Tokens:</strong> <span class="mono-cell">$0.30</span> per 1M tokens (includes thinking/reasoning)</li>
-                <li>&bull; <strong class="text-chalk">Formula:</strong> <code class="mono-cell text-fog">Cost = (Uncached / 1M &times; 0.075) + (Cached / 1M &times; 0.01875) + (Output / 1M &times; 0.30)</code></li>
-              </ul>
-            </div>
-
-            <div class="formula-card">
-              <div class="panel-title" style="margin-bottom: 12px; color: var(--color-chalk);">Why Token Volume Is High Yet Cost Remains Low</div>
-              <p style="font-size: 13px; color: var(--color-silver); line-height: 1.6;">
-                Autonomous coding agents run iterative multi-turn loops where each turn passes conversation context and codebase diffs to verify compiler output and Playwright runs.
-                Because Google Gemini leverages automatic <strong>Context Caching</strong> across consecutive turns, 99.2% of all input tokens are served at the cached rate (<span class="mono-cell text-green">$0.01875/M</span>), keeping the entire 8-milestone Phoenix CRM build under <strong class="text-green">$2.00</strong>.
-              </p>
-            </div>
-          </div>
-
+          {cost_tab_inner}
         </div>
       </div>
     </div>
