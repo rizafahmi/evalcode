@@ -20,12 +20,12 @@ A worked example of a self-built LLM coding benchmark. Agents implement **Alur**
 | Agent / Harness | Model | Branch | PRD | Tokens | Cost | UI Ready | A11y | Tests | Coverage |
 | :--- | :--- | :--- | :---: | :---: | :---: | :---: | :---: | :---: | :---: |
 | Antigravity CLI | Gemini 3.8 Flash (High) | [`evalcode_agy`](https://github.com/rizafahmi/evalcode/tree/evalcode_agy) | 8/8 (100%) | 86.7M (99.2% cached) | $1.92 (est) | 40.0 ms | 6 viols (42 nodes) | 122 passed (31 files) | 88.5% |
-| Codex CLI | GPT 5.6-luna (Medium) | [`evalcode_codex_cli`](https://github.com/rizafahmi/evalcode/tree/evalcode_codex_cli) | 8/8 (100%) | — (context window only) | — | 40 ms (`cold-home` only) | 5 viols (19 nodes) | 136 passed (19 files) | 88.7% |
+| Codex CLI | GPT 5.6-luna (Medium) | [`evalcode_codex_cli`](https://github.com/rizafahmi/evalcode/tree/evalcode_codex_cli) | 6/8 held-out (M7–M8 fail) | — (context window only) | — | 40 ms (`cold-home` only) | 5 viols (19 nodes) | 136 passed (19 files) | 88.7% |
 | DeepSeek Harness | DeepSeek V4 Flash (High) | [`evalcode_dsh`](https://github.com/rizafahmi/evalcode/tree/evalcode_dsh) | 8/8 (100%) | 86.7M (99.2% cached) | $1.37 | 44.2 ms | 5 viols (26 nodes) | 122 passed (18 files) | 88.5% |
 
 > Latency is mean Playwright `readyMs` across probed scenarios. Codex CLI only recorded `cold-home`, so that cell is not comparable to the full AGY/DSH matrices (`deal-open`, `cold-app`, `nav-contacts`). Accessibility audited via Axe-core (WCAG 2.2 AA). For milestone curves, per-run token logs, and cost formulas, visit the [interactive dashboard](https://rizafahmi.github.io/evalcode/).
 
-**Insights.** Codex CLI finished the same 8 logged milestones with more in-tree tests (136 vs 122) in about an hour of wall clock, but its execution log has no billed turn tokens or dollars — only context-window fill (`~65–119K / 258K`), which is not the same unit as DeepSeek’s 86.7M cached turns. Its perf and a11y probes are thinner (no `cold-app` / `deal-open` / `vue-app` / `deal-show`). The run notes a dual navigation bar / layout issue.
+**Insights.** Codex CLI logged all 8 milestones with more in-tree tests (136 vs 122), but held-out `score.md` **fails M7 and M8**: signed-in `/app` Vue mount and Vue Kanban drag never became visible. REST checks for those milestones passed. Its execution log has no billed turn tokens or dollars — only context-window fill (`~65–119K / 258K`), which is not the same unit as DeepSeek’s 86.7M cached turns. Perf and a11y probes are thinner (no `cold-app` / `deal-open` / `vue-app` / `deal-show`). The run notes a dual navigation bar / layout issue.
 
 ---
 

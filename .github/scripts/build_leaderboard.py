@@ -341,9 +341,20 @@ def parse_execution_report(raw_md, branch_name):
 
 
 def parse_score_report(raw_md):
-    """Parse report/score.md for rubric test results."""
+    """Parse report/score.md for held-out rubric results per milestone."""
+    empty = {
+        "pass": 0,
+        "fail": 0,
+        "skip": 0,
+        "has_results": False,
+        "milestones": {},
+        "failed_milestones": [],
+        "passed_milestones": [],
+        "held_out_passed": 0,
+        "held_out_total": 8,
+    }
     if not raw_md:
-        return {"pass": 0, "fail": 0, "skip": 0}
+        return empty
 
     pass_count = 0
     fail_count = 0
@@ -361,11 +372,59 @@ def parse_score_report(raw_md):
     if s_match:
         skip_count = int(s_match.group(1))
 
+    statuses_by_m = {}
+    for line in raw_md.splitlines():
+        if not line.startswith("|"):
+            continue
+        parts = [p.strip() for p in line.split("|")[1:-1]]
+        if len(parts) < 3:
+            continue
+        m_id, _bullet, status = parts[0], parts[1], parts[2].lower()
+        if not re.fullmatch(r"M[1-8]", m_id):
+            continue
+        if status not in ("pass", "fail", "skip"):
+            continue
+        statuses_by_m.setdefault(m_id, []).append(status)
+
+    def rollup(statuses):
+        if "fail" in statuses:
+            return "fail"
+        if "pass" in statuses:
+            return "pass"
+        if "skip" in statuses:
+            return "skip"
+        return None
+
+    rolled = {m: rollup(sts) for m, sts in statuses_by_m.items()}
+    failed = sorted([m for m, st in rolled.items() if st == "fail"], key=lambda x: int(x[1:]))
+    passed = sorted([m for m, st in rolled.items() if st == "pass"], key=lambda x: int(x[1:]))
+    has_results = (pass_count + fail_count) > 0 or any(rolled.values())
+
     return {
         "pass": pass_count,
         "fail": fail_count,
-        "skip": skip_count
+        "skip": skip_count,
+        "has_results": has_results,
+        "milestones": rolled,
+        "failed_milestones": failed,
+        "passed_milestones": passed,
+        "held_out_passed": len(passed),
+        "held_out_total": 8,
     }
+
+
+def run_has_held_out_failures(r):
+    score = r.get("score") or {}
+    return bool(score.get("has_results") and score.get("failed_milestones"))
+
+
+def run_is_prd_complete(r):
+    """100% PRD only when all 8 milestones are logged and held-out has no failures."""
+    if r["execution"].get("completion_rate") != 100.0:
+        return False
+    if run_has_held_out_failures(r):
+        return False
+    return True
 
 
 def get_git_metadata(ref, cwd=None):
@@ -452,8 +511,11 @@ def attach_run_metadata(runs):
             r["badges"].append({"type": "blue", "text": "Phx 1.8 Scoped"})
         if r["git"]["test_file_count"] >= 30:
             r["badges"].append({"type": "neutral", "text": "Modular Tests"})
-        if r["execution"]["completion_rate"] == 100.0:
+        if run_is_prd_complete(r):
             r["badges"].append({"type": "neutral", "text": "100% PRD"})
+        elif run_has_held_out_failures(r):
+            failed = ", ".join(r["score"]["failed_milestones"])
+            r["badges"].append({"type": "neutral", "text": f"Held-out fail {failed}"})
         if not r.get("has_reports", True):
             r["badges"].append({"type": "neutral", "text": "Pending Report"})
 
@@ -538,6 +600,13 @@ def render_insights_html(runs):
             items.append(
                 f"{harness} has no billed token or dollar log; "
                 "context-window snapshots are not comparable to DeepSeek turn totals."
+            )
+        if run_has_held_out_failures(r):
+            failed = ", ".join(r["score"]["failed_milestones"])
+            items.append(
+                f"{harness} held-out score.md marks {html.escape(failed)} failed "
+                f"(Vue /app mount and Vue Kanban probes; {r['score']['pass']} pass / "
+                f"{r['score']['fail']} fail / {r['score']['skip']} skip)."
             )
         notes = (r["execution"].get("notes") or "").strip()
         if notes:
@@ -820,7 +889,7 @@ def render_html_page(runs, generated_at):
     if best_ready != "—":
         best_ready = f"{best_ready} ms"
 
-    full_completed_count = sum(1 for r in runs if r["execution"]["completion_rate"] == 100.0)
+    full_completed_count = sum(1 for r in runs if run_is_prd_complete(r))
 
     token_runs = [r for r in runs if r["execution"].get("has_token_log")]
     token_strs = []
@@ -861,8 +930,16 @@ def render_html_page(runs, generated_at):
     for r in runs:
         title_esc = html.escape(r["title"])
         branch_esc = html.escape(r["branch"])
-        comp_str = f"{r['execution']['completed_milestones']}/{r['execution']['total_milestones']}"
-        comp_pct_str = f"({r['execution']['completion_rate']}%)"
+        score = r.get("score") or {}
+        if run_has_held_out_failures(r):
+            failed = ", ".join(score["failed_milestones"])
+            comp_str = f"{score['held_out_passed']}/{score['held_out_total']}"
+            comp_pct_str = f"held-out fail {failed}"
+            comp_cls = "mono-cell"
+        else:
+            comp_str = f"{r['execution']['completed_milestones']}/{r['execution']['total_milestones']}"
+            comp_pct_str = f"({r['execution']['completion_rate']}%)"
+            comp_cls = "mono-cell text-green"
 
         tok_str = r["execution"].get("total_tokens_str", "—")
         cache_hit_pct = r["execution"].get("cache_hit_rate", 0.0)
@@ -890,7 +967,7 @@ def render_html_page(runs, generated_at):
             <div class="mono-cell text-fog" style="font-size: 11px;">branch: {branch_esc}</div>
           </td>
           <td>
-            <span class="mono-cell text-green">{comp_str}</span>
+            <span class="{comp_cls}">{comp_str}</span>
             <span class="mono-cell text-fog" style="font-size: 11px;">{comp_pct_str}</span>
           </td>
           <td class="mono-cell">
@@ -947,23 +1024,38 @@ def render_html_page(runs, generated_at):
         m_list = r["execution"].get("milestones", [])
         m_dict = {m["milestone"]: m for m in m_list}
         
+        score_ms = (r.get("score") or {}).get("milestones") or {}
+
         def m_test_str(m_id):
             m_item = m_dict.get(m_id)
-            return f"{m_item['tests_passed']} passed" if (m_item and m_item['tests_passed']) else "—"
+            in_tree = f"{m_item['tests_passed']} passed" if (m_item and m_item['tests_passed']) else "—"
+            ho = score_ms.get(m_id)
+            if ho == "fail":
+                return f"{in_tree} · held-out fail"
+            return in_tree
+
+        def m_td(m_id, extra_cls=""):
+            ho = score_ms.get(m_id)
+            cls = extra_cls
+            if ho == "fail":
+                cls = ""
+            return f'<td class="mono-cell {cls}">{m_test_str(m_id)}</td>'
 
         cov_str = f"{r['execution']['final_coverage']}%" if r['execution']['final_coverage'] else "—"
+        m8_cls = "text-green" if score_ms.get("M8") != "fail" else ""
+        style8 = ' style="font-weight: 600;"' if score_ms.get("M8") != "fail" else ""
 
         milestone_rows.append(f'''
         <tr>
           <td style="font-weight: 600; color: var(--color-chalk);">{harness_esc}</td>
-          <td class="mono-cell">{m_test_str("M1")}</td>
-          <td class="mono-cell">{m_test_str("M2")}</td>
-          <td class="mono-cell">{m_test_str("M3")}</td>
-          <td class="mono-cell">{m_test_str("M4")}</td>
-          <td class="mono-cell">{m_test_str("M5")}</td>
-          <td class="mono-cell">{m_test_str("M6")}</td>
-          <td class="mono-cell">{m_test_str("M7")}</td>
-          <td class="mono-cell text-green" style="font-weight: 600;">{m_test_str("M8")}</td>
+          {m_td("M1")}
+          {m_td("M2")}
+          {m_td("M3")}
+          {m_td("M4")}
+          {m_td("M5")}
+          {m_td("M6")}
+          {m_td("M7")}
+          <td class="mono-cell {m8_cls}"{style8}>{m_test_str("M8")}</td>
           <td class="mono-cell">{cov_str}</td>
         </tr>''')
 
@@ -1601,7 +1693,7 @@ def render_html_page(runs, generated_at):
       <div class="kpi-card">
         <div class="kpi-label">100% PRD Completion</div>
         <div class="kpi-value">{full_completed_count} / {total_runs}</div>
-        <div class="kpi-subtext">M1 &rarr; M8 full autonomous passes</div>
+        <div class="kpi-subtext">Held-out complete (no score.md failures)</div>
       </div>
     </section>
 
@@ -1633,7 +1725,7 @@ def render_html_page(runs, generated_at):
             <thead>
               <tr>
                 <th onclick="sortTable(0)">Agent / Model</th>
-                <th onclick="sortTable(1)">Milestones</th>
+                <th onclick="sortTable(1)">PRD / Held-out</th>
                 <th onclick="sortTable(2)">Tokens</th>
                 <th onclick="sortTable(3)">Cost</th>
                 <th onclick="sortTable(4)">Mean Ready (ms)</th>
@@ -1743,7 +1835,7 @@ def render_html_page(runs, generated_at):
     <div id="tab-milestones" class="tab-content">
       <div class="panel">
         <div class="panel-header">
-          <span class="panel-title">Milestone Test Accumulation Curve (M1 to M8)</span>
+          <span class="panel-title">Milestone tests (in-tree) and held-out score.md</span>
           <span class="font-mono text-xs text-fog">Continuous verification</span>
         </div>
         <div class="table-responsive">
