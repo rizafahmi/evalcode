@@ -20,9 +20,12 @@ A worked example of a self-built LLM coding benchmark. Agents implement **Alur**
 | Agent / Harness | Model | Branch | PRD | Tokens | Cost | UI Ready | A11y | Tests | Coverage |
 | :--- | :--- | :--- | :---: | :---: | :---: | :---: | :---: | :---: | :---: |
 | Antigravity CLI | Gemini 3.8 Flash (High) | [`evalcode_agy`](https://github.com/rizafahmi/evalcode/tree/evalcode_agy) | 8/8 (100%) | 86.7M (99.2% cached) | $1.92 (est) | 40.0 ms | 6 viols (42 nodes) | 122 passed (31 files) | 88.5% |
+| Codex CLI | GPT 5.6-luna (Medium) | [`evalcode_codex_cli`](https://github.com/rizafahmi/evalcode/tree/evalcode_codex_cli) | 8/8 (100%) | — (context window only) | — | 40 ms (`cold-home` only) | 5 viols (19 nodes) | 136 passed (19 files) | 88.7% |
 | DeepSeek Harness | DeepSeek V4 Flash (High) | [`evalcode_dsh`](https://github.com/rizafahmi/evalcode/tree/evalcode_dsh) | 8/8 (100%) | 86.7M (99.2% cached) | $1.37 | 44.2 ms | 5 viols (26 nodes) | 122 passed (18 files) | 88.5% |
 
-> Latency measured via Playwright UI probes (`deal-open` drawer median). Accessibility audited via Axe-core (WCAG 2.2 AA). For full milestone curves, latency distributions, and cost formulas, visit the [interactive dashboard](https://rizafahmi.github.io/evalcode/).
+> Latency is mean Playwright `readyMs` across probed scenarios. Codex CLI only recorded `cold-home`, so that cell is not comparable to the full AGY/DSH matrices (`deal-open`, `cold-app`, `nav-contacts`). Accessibility audited via Axe-core (WCAG 2.2 AA). For milestone curves, per-run token logs, and cost formulas, visit the [interactive dashboard](https://rizafahmi.github.io/evalcode/).
+
+**Insights.** Codex CLI finished the same 8 logged milestones with more in-tree tests (136 vs 122) in about an hour of wall clock, but its execution log has no billed turn tokens or dollars — only context-window fill (`~65–119K / 258K`), which is not the same unit as DeepSeek’s 86.7M cached turns. Its perf and a11y probes are thinner (no `cold-app` / `deal-open` / `vue-app` / `deal-show`). The run notes a dual navigation bar / layout issue.
 
 ---
 
@@ -171,7 +174,7 @@ Issues and pull requests are welcome.
 
    | File | Who writes it |
    | --- | --- |
-   | `report/execution.md` | You. First heading after any “Getting Started” notes must be `# Harness - Model` (the builder parses that). Per-milestone `## Milestone 1` … `## Milestone 8` sections with time, cost, and `Result: N passed` are useful. Legacy `## M1` … `## M8` headings still parse. |
+   | `report/execution.md` | You. First heading after any “Getting Started” notes must be `# Harness - Model` (the builder parses that). Per-milestone `## Milestone 1` … `## Milestone 8` sections with time, cost, and `Result: N passed` are useful. Legacy `## M1` … `## M8` headings still parse. Billed token tables and `$` costs are optional — omit them rather than invent numbers. Context-window snapshots are not treated as turn-token totals. |
    | `report/perf.md`, `report/a11y.md` | Include them if you generated them. Omit rather than invent numbers. |
    | `report/score.md` | Held-out rubric. **You cannot produce an official score from this repo.** Leave it out; a maintainer can grade the branch after merge-to-branch. |
 
