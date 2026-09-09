@@ -3,7 +3,7 @@
 
 import unittest
 
-from build_leaderboard import parse_execution_report
+from build_leaderboard import parse_execution_report, parse_score_report
 
 
 class ParseExecutionMilestoneHeadingsTest(unittest.TestCase):
@@ -62,6 +62,51 @@ Coverage: 82.00%
         self.assertEqual(data["total_tokens_str"], "—")
         self.assertEqual(data["completed_milestones"], 0)
         self.assertEqual(data["gemini_total"], 0.0)
+
+
+class ParseScoreReportTest(unittest.TestCase):
+    def test_empty_score_is_not_results(self):
+        raw = """# Alur held-out milestone score
+
+| Milestone | Bullet | Status | Duration |
+| --- | --- | --- | --- |
+
+## Summary
+
+- pass: 0
+- fail: 0
+- skip: 0
+"""
+        data = parse_score_report(raw)
+        self.assertFalse(data["has_results"])
+        self.assertEqual(data["failed_milestones"], [])
+
+    def test_codex_m7_m8_fail_rollup(self):
+        raw = """# Alur held-out milestone score
+
+| Milestone | Bullet | Status | Duration |
+| --- | --- | --- | --- |
+| M1 | M1 create an account | pass | 5.1s |
+| M7 | M7 GET /api/health returns {status:ok} | pass | 0.0s |
+| M7 | M7 signed-in /app is a mounted Vue app | fail | 19.5s |
+| M7 | M7 mix test and Vitest both pass | skip | 0.0s |
+| M8 | M8 unauthenticated /api/deals* returns 401 | pass | 0.1s |
+| M8 | M8 /app Vue board drag via /api | fail | 20.1s |
+
+## Summary
+
+- pass: 11
+- fail: 2
+- skip: 1
+"""
+        data = parse_score_report(raw)
+        self.assertTrue(data["has_results"])
+        self.assertEqual(data["milestones"]["M7"], "fail")
+        self.assertEqual(data["milestones"]["M8"], "fail")
+        self.assertEqual(data["milestones"]["M1"], "pass")
+        self.assertEqual(data["failed_milestones"], ["M7", "M8"])
+        self.assertEqual(data["held_out_passed"], 1)
+        self.assertEqual(data["fail"], 2)
 
 
 if __name__ == "__main__":
