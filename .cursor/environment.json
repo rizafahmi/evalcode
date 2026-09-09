@@ -1,0 +1,13 @@
+{
+  "name": "evalcode",
+  "build": {
+    "dockerfile": "Dockerfile"
+  },
+  "install": "./.cursor/install.sh",
+  "ports": [
+    {
+      "name": "phoenix",
+      "port": 4000
+    }
+  ]
+}
