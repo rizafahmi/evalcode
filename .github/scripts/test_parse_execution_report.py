@@ -8,13 +8,12 @@ from build_leaderboard import parse_execution_report
 
 class ParseExecutionMilestoneHeadingsTest(unittest.TestCase):
     def test_parses_milestone_n_headings(self):
-        raw = """# Codex CLI - GPT 5.6-luna Effort Medium
+        raw = """# Codex CLI - GPT 5.6
 
 ## Milestone 1
 total time: 12m3s
 Result: 114 passed
 Coverage: 84.80%
-Context window:       57% left (119K used / 258K)
 
 ## Milestone 2
 total time: 9m0s
@@ -49,7 +48,6 @@ Coverage: 80.00%
 ## M2
 Result: 40 passed
 Coverage: 82.00%
-Cost: $0.13
 """
         data = parse_execution_report(raw, "evalcode_dsh")
         self.assertEqual([m["milestone"] for m in data["milestones"]], ["M1", "M2"])
